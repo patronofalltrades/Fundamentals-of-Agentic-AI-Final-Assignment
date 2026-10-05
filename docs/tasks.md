@@ -15,9 +15,9 @@ This file is a manual task record. It is not a lock or a running agent service.
 | Local foundation review | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Complete locally | Reviewed course contracts, code, reports and exclusions. Fixed unresolved token usage, unset cap admission, backup name reuse and verifier diagram input. See `docs/local_review.md`. Integration and publication remain pending. |
 | Review and publication | Coordinating reviewer | No integration branch selected | Pending review | Review the local diff and tests. Local implementation commit is authorized. Push is not authorized yet. |
 | Human labeling setup and prices | Codex coordinator | `feat/offline-foundation` / `.` | Complete locally | Blank source verified and isolated working copy made. Dated provider quote reference saved. GLM removed from current plan. Class 7 date recorded; time unknown. |
-| Manual-label workbook and exporter | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Workbook filled by human; export blocked | The workbook is outside the repo. All 350 answer cells have entries. Source columns match. Twenty-one exact quote errors need manual correction; no CSV export. Standard-library exporter and synthetic tests remain available. |
+| Manual-label workbook and exporter | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Workbook filled by human; export blocked | The workbook is outside the repo. All 350 answer cells have entries. Source columns match. Recheck reduced exact quote errors from 21 to four; no CSV export. Standard-library exporter and synthetic tests remain available. |
 | Human scoring guide | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Complete locally; human labels pending | Course-aligned severity 1–5 and optional sentiment anchors added to `docs/human_evaluation.md`; README points to it. No workbook or answer-file edit. |
-| Human golden labels | Hanif | Outside repo | Correction pending | Human entries filled. Exact `evidence_quote` check fails on Excel rows 6, 10, 11, 13, 15–22, 28–30, 35–37, 41–42, 48. No expected answers were sent to a model or committed. |
+| Human golden labels | Hanif | Outside repo | Correction pending | Human entries filled. Exact `evidence_quote` check still fails on Excel rows 15, 21, 30, 42. No expected answers were sent to a model or committed. |
 | Offline evaluation boundary | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Implemented with synthetic checks; real evaluation pending | Aggregate-only evaluator gates on complete source-matched human CSV and saved predictions. Direct CLI invocation works from repo root. Runtime source CSV parser rejects answer columns. 142 total offline tests pass. No real predictions exist. |
 | Runtime model access and pilot | Unassigned | No branch assigned | Pending | Verify classification/verifier routes. Approve budget. Run real cold/warm 100 before 500, 10,000, and full corpus. |
 
@@ -58,6 +58,6 @@ Full-run projections and live spend/recovery controls remain pending.
 The runtime budget must stay strictly below US$50. A ceiling is not spending approval.
 
 Class 7: October 13, 2026; time not supplied. All 50 rows have human entries,
-but 21 exact-quote corrections, CSV export and final evaluation remain pending. No model processes
+but four exact-quote corrections, CSV export and final evaluation remain pending. No model processes
 are running. Parent owns Space updates; each completed milestone is reported
 with files, commit, checks, and blockers before publication.

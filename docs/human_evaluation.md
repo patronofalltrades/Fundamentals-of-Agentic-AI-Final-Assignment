@@ -81,14 +81,14 @@ does not judge human label correctness. The initial blank workbook correctly
 failed export when tested. A completed answer CSV requires explicit validated
 export after the human has filled every answer.
 
-**October 5 mechanical checkpoint:** all 350 answer cells are filled. The 50
-source rows and columns still match the blank source exactly. Twenty-one
-`evidence_quote` cells fail the exact-substring rule, so export stopped and no
-completed CSV was created. Correct these cells manually by copying the exact
-text from the same row's `review_text` cell, including case, punctuation and
-spacing. Excel row numbers: **6, 10, 11, 13, 15–22, 28–30, 35–37, 41–42,
-48**. Do not change source cells or replace human choices automatically. Rerun
-the exporter after the corrections.
+**October 5 mechanical recheck:** all 350 answer cells are filled. The 50
+source rows and columns still match the blank source exactly. Manual edits
+reduced the exact-quote errors from 21 to four. Export remains blocked and no
+completed CSV was created. Correct `evidence_quote` manually by copying an
+exact substring from the same row's `review_text` cell, including case,
+punctuation and spacing. Remaining Excel row numbers: **15, 21, 30, 42**.
+Do not change source cells or replace human choices automatically. Rerun the
+exporter after the corrections.
 
 The offline evaluator is implemented in `tools/evaluate_human_labels.py`. It
 requires the valid exported CSV and saved prediction records; both stay outside

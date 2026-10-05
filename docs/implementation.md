@@ -184,7 +184,7 @@ synthetic and use temporary directories; they never touch the real dataset.
 
 ## Known limitations
 
-- Human answer export is blocked until 21 exact-quote errors are corrected by
+- Human answer export is blocked until four exact-quote errors are corrected by
   the human. The evaluator has only synthetic test evidence and no real score.
 - The model-input route accepts only six source CSV columns; expected answer
   columns belong solely to the isolated offline evaluator.
