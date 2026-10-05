@@ -1,6 +1,6 @@
 # Build provenance
 
-- Selected coding model: `opencode-go/deepseek-v4-flash-vision-exp`.
+- Historical model used for the two completed build passes: `opencode-go/deepseek-v4-flash-vision-exp`.
 - DeepSeek ran through OpenCode CLI in two coding passes.
 - Its tool access was limited to project file reads and edits. Shell, web,
   external-directory, and other-agent tools were denied.
@@ -36,3 +36,13 @@ scaffold status. That coding pass had no dataset, shell, or web-tool access.
 Final Codex checks corrected numeric synthetic wall-time fixtures, rejected
 unknown cache settings, kept configuration counts separate, and checked
 billing-unit consistency. These changes did not add provider adapters.
+
+## Current coding-route correction
+
+Hanif selected **DeepSeek V4 Flash 0731** from **OpenRouter**, accessed through
+**OpenCode CLI**. Local model metadata lists
+`openrouter/deepseek/deepseek-v4-flash-0731`. Project `opencode.json` records this
+choice. No inference used this route during this correction. No process is
+running. Current prices, billing route, and potential spend must be verified
+before further inference under the strictly below US$50 cap. The prior Go
+coding passes are historical facts and are not reattributed to OpenRouter.

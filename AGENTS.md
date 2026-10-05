@@ -29,10 +29,13 @@ Consider the Go programming language only if measurements show a need.
 OpenCode Go is a coding service. It is not a requirement to use the Go language.
 
 Use OpenCode CLI for coding collaboration.
-Hanif selected `opencode-go/deepseek-v4-flash-vision-exp` for the main build.
-Verify the provider route before using it. Do not substitute OpenRouter or
-another provider silently. Confirm that extra usage and recharge are off
-before relying on subscription-only coding access.
+Hanif now selected DeepSeek V4 Flash 0731 from OpenRouter.
+Use `openrouter/deepseek/deepseek-v4-flash-0731` through OpenCode CLI.
+The exact ID was verified in local OpenCode model metadata.
+Do not admit new OpenCode Go calls. Keep past Go usage in build provenance.
+Before further inference, verify current prices, billing route, and potential
+spend within the strictly below US$50 cap. Subscription assumptions do not apply.
+Do not top up credits or change credentials.
 Send only project requirements, code, and bounded synthetic examples.
 Do not send raw CSVs, credentials, or golden answer labels to coding models.
 Sol may help with occasional reasoning and review when authorized.

@@ -14,6 +14,8 @@ As of October 5, 2026, the supplied dataset packages have been inspected locally
 
 The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, and cost replay scaffolding. **134 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main implementation. Codex reviewed it, made targeted fixes, and ran the checks.
 
+**Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
+
 Role prompts, human golden labels, runtime model runs, evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is a bulk-classifier candidate. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
 
 Future paid execution requires configured credentials, verified API entitlement, and an approved spending limit. Offline replay must work without credentials; opening the calculator must never trigger paid calls.

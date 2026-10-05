@@ -10,7 +10,7 @@ flowchart TB
         Hanif[Hanif: decisions and approvals]
         Alfred[Alfred: plan and review]
         CLI[OpenCode CLI: selected coding route]
-        DeepSeek[DeepSeek via OpenCode Go: code]
+        DeepSeek[DeepSeek V4 Flash 0731 via OpenRouter: code]
         Sol[Sol: occasional reasoning and review]
         Golden[Human-only golden answer labels]
         Hanif --> Alfred
@@ -62,7 +62,8 @@ flowchart TB
 ```
 
 Hanif makes decisions and supplies the golden answers. Alfred coordinates the
-plan and review. DeepSeek uses the selected OpenCode Go route to write code.
+plan and review. DeepSeek V4 Flash 0731 uses OpenRouter through OpenCode CLI for future code work.
+The two past coding passes used OpenCode Go; see `build_provenance.md`.
 Sol can help with occasional reasoning. Coding runs through OpenCode CLI.
 
 Python will dispatch bounded tasks and save handoffs. The verifier will receive
