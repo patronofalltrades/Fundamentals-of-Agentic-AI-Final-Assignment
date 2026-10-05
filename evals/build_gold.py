@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from pipeline.rowhash import INTENTS, TOPICS, canonical  # noqa: E402
 
 SOURCE = ROOT / "evals" / "golden_50_human_labels.csv"
-VERSION = "golden-50-human-v1"
+VERSION = "golden-50-human-v2-adjudicated"
 REVIEWER = "Hanif Ramadhan"
 
 

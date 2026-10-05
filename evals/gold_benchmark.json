@@ -22,7 +22,7 @@
         1
       ],
       "accepted_topic": [
-        "access"
+        "other"
       ],
       "review_id": "a70e8d3e-3f84-46bc-b008-67f476c67963",
       "reviewer": "Hanif Ramadhan",
@@ -36,7 +36,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "0d4f8b48-74c1-4e2a-89b5-11eaa737027e",
       "reviewer": "Hanif Ramadhan",
@@ -64,7 +64,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "599a0d41-989a-40ef-8ed2-e92db76eea46",
       "reviewer": "Hanif Ramadhan",
@@ -75,10 +75,10 @@
         "complaint"
       ],
       "accepted_severity": [
-        4
+        2
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "0c6ca545-3f89-4da6-b3db-1a352371fb6e",
       "reviewer": "Hanif Ramadhan",
@@ -92,7 +92,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "111f9048-f7bd-4be0-813e-76b8fc49f73f",
       "reviewer": "Hanif Ramadhan",
@@ -106,7 +106,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "b567f70c-edba-4922-ac2a-e945e5eb3472",
       "reviewer": "Hanif Ramadhan",
@@ -128,13 +128,13 @@
     },
     {
       "accepted_intent": [
-        "unclear"
+        "praise"
       ],
       "accepted_severity": [
         1
       ],
       "accepted_topic": [
-        "access"
+        "billing"
       ],
       "review_id": "1fc8b08f-7d6a-472f-b317-8ceb28d00f22",
       "reviewer": "Hanif Ramadhan",
@@ -145,10 +145,10 @@
         "complaint"
       ],
       "accepted_severity": [
-        2
+        3
       ],
       "accepted_topic": [
-        "support"
+        "playback"
       ],
       "review_id": "947821dc-b356-45dc-a0bc-1903728fad40",
       "reviewer": "Hanif Ramadhan",
@@ -173,10 +173,10 @@
         "complaint"
       ],
       "accepted_severity": [
-        3
+        2
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "47428620-ec21-424d-a515-0b0b0012a5cf",
       "reviewer": "Hanif Ramadhan",
@@ -260,7 +260,7 @@
         2
       ],
       "accepted_topic": [
-        "usability"
+        "catalog"
       ],
       "review_id": "46842184-32f8-4088-ac15-2a700a7e94ed",
       "reviewer": "Hanif Ramadhan",
@@ -282,10 +282,10 @@
     },
     {
       "accepted_intent": [
-        "complaint"
+        "unclear"
       ],
       "accepted_severity": [
-        4
+        1
       ],
       "accepted_topic": [
         "other"
@@ -302,7 +302,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "catalog"
       ],
       "review_id": "de48c99b-46fe-4837-8634-e63dbc72a5ea",
       "reviewer": "Hanif Ramadhan",
@@ -316,7 +316,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "other"
       ],
       "review_id": "aa573851-0b86-4b1b-adf6-210268c08d2a",
       "reviewer": "Hanif Ramadhan",
@@ -330,7 +330,7 @@
         1
       ],
       "accepted_topic": [
-        "support"
+        "usability"
       ],
       "review_id": "372d4e67-59cc-4c54-879f-3e8a202ee554",
       "reviewer": "Hanif Ramadhan",
@@ -341,7 +341,7 @@
         "complaint"
       ],
       "accepted_severity": [
-        2
+        4
       ],
       "accepted_topic": [
         "playback"
@@ -394,10 +394,10 @@
     },
     {
       "accepted_intent": [
-        "complaint"
+        "cancellation"
       ],
       "accepted_severity": [
-        5
+        3
       ],
       "accepted_topic": [
         "usability"
@@ -436,13 +436,13 @@
     },
     {
       "accepted_intent": [
-        "request"
+        "complaint"
       ],
       "accepted_severity": [
-        5
+        4
       ],
       "accepted_topic": [
-        "support"
+        "playback"
       ],
       "review_id": "215463ae-95b7-4481-8747-1754b68f31fa",
       "reviewer": "Hanif Ramadhan",
@@ -565,10 +565,10 @@
         "request"
       ],
       "accepted_severity": [
-        2
+        1
       ],
       "accepted_topic": [
-        "catalog"
+        "usability"
       ],
       "review_id": "b58dd6f0-ad88-4319-b6db-58afb60c37c1",
       "reviewer": "Hanif Ramadhan",
@@ -610,7 +610,7 @@
         1
       ],
       "accepted_topic": [
-        "usability"
+        "catalog"
       ],
       "review_id": "5fba12ea-4980-4f25-a129-f830a3974fd2",
       "reviewer": "Hanif Ramadhan",
@@ -618,13 +618,13 @@
     },
     {
       "accepted_intent": [
-        "unclear"
+        "complaint"
       ],
       "accepted_severity": [
         2
       ],
       "accepted_topic": [
-        "usability"
+        "downloads"
       ],
       "review_id": "ac4e860a-c042-49cc-90f3-189591c336ac",
       "reviewer": "Hanif Ramadhan",
@@ -638,7 +638,7 @@
         2
       ],
       "accepted_topic": [
-        "other"
+        "usability"
       ],
       "review_id": "9034d675-9582-49b6-a1c1-c4ddabf8baf1",
       "reviewer": "Hanif Ramadhan",
@@ -701,5 +701,5 @@
       "status": "approved"
     }
   ],
-  "version": "golden-50-human-v1"
+  "version": "golden-50-human-v2-adjudicated"
 }

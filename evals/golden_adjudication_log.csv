@@ -1,0 +1,33 @@
+review_id,field,original,adjudicated,rubric_rule
+a70e8d3e-3f84-46bc-b008-67f476c67963,topic,access,other,General praise is `other`; no login/account content.
+0d4f8b48-74c1-4e2a-89b5-11eaa737027e,topic,usability,other,General praise is `other`.
+599a0d41-989a-40ef-8ed2-e92db76eea46,topic,usability,other,General praise is `other`.
+0c6ca545-3f89-4da6-b3db-1a352371fb6e,topic,usability,other,General 'bad app' complaint without a specific defect: `other`; generic criticism = severity 2.
+0c6ca545-3f89-4da6-b3db-1a352371fb6e,severity,4,2,General 'bad app' complaint without a specific defect: `other`; generic criticism = severity 2.
+111f9048-f7bd-4be0-813e-76b8fc49f73f,topic,usability,other,General praise is `other`.
+b567f70c-edba-4922-ac2a-e945e5eb3472,topic,usability,other,General praise is `other`.
+1fc8b08f-7d6a-472f-b317-8ceb28d00f22,topic,access,billing,"Premium-plan remark (`billing`), positive ('No ads at all!'); not login/account access."
+1fc8b08f-7d6a-472f-b317-8ceb28d00f22,intent,unclear,praise,"Premium-plan remark (`billing`), positive ('No ads at all!'); not login/account access."
+947821dc-b356-45dc-a0bc-1903728fad40,topic,support,playback,Playback stops = `playback`; no support contact; degraded with a workaround = 3.
+947821dc-b356-45dc-a0bc-1903728fad40,severity,2,3,Playback stops = `playback`; no support contact; degraded with a workaround = 3.
+47428620-ec21-424d-a515-0b0b0012a5cf,topic,usability,other,"Generic criticism: `other`, severity 2."
+47428620-ec21-424d-a515-0b0b0012a5cf,severity,3,2,"Generic criticism: `other`, severity 2."
+fc344263-308d-48a1-9715-c380d063b6de,evidence_quote,Great... ,Great,Quote must be an exact source substring (trailing space removed).
+46842184-32f8-4088-ac15-2a700a7e94ed,topic,usability,catalog,Lyrics availability is `catalog`.
+5de7f95b-ccad-41b2-9f63-a13f7c1d9f09,intent,complaint,unclear,"Bare boycott slogan, no product complaint = `unclear`; no reported problem = 1."
+5de7f95b-ccad-41b2-9f63-a13f7c1d9f09,severity,4,1,"Bare boycott slogan, no product complaint = `unclear`; no reported problem = 1."
+de48c99b-46fe-4837-8634-e63dbc72a5ea,topic,usability,catalog,Recommendations are `catalog`.
+aa573851-0b86-4b1b-adf6-210268c08d2a,topic,usability,other,General praise is `other`.
+372d4e67-59cc-4c54-879f-3e8a202ee554,topic,support,usability,Ad interruptions are `usability`; no support contact.
+47f1406d-4918-4d60-9647-5ca8e610caca,severity,2,4,Cannot play back songs = blocked core task = 4.
+3ddb3f4e-f7b9-430b-b335-eadc6d321f46,intent,complaint,cancellation,"'Deleting this App' = `cancellation` (precedence); restricted controls, no financial/privacy/data harm = 3."
+3ddb3f4e-f7b9-430b-b335-eadc6d321f46,severity,5,3,"'Deleting this App' = `cancellation` (precedence); restricted controls, no financial/privacy/data harm = 3."
+215463ae-95b7-4481-8747-1754b68f31fa,topic,support,playback,"Cannot play/open = `playback` complaint, blocked core task = 4; no support contact or financial harm."
+215463ae-95b7-4481-8747-1754b68f31fa,intent,request,complaint,"Cannot play/open = `playback` complaint, blocked core task = 4; no support contact or financial harm."
+215463ae-95b7-4481-8747-1754b68f31fa,severity,5,4,"Cannot play/open = `playback` complaint, blocked core task = 4; no support contact or financial harm."
+b58dd6f0-ad88-4319-b6db-58afb60c37c1,topic,catalog,usability,Library/collection management is `usability`; a pure feature request = 1.
+b58dd6f0-ad88-4319-b6db-58afb60c37c1,severity,2,1,Library/collection management is `usability`; a pure feature request = 1.
+5fba12ea-4980-4f25-a129-f830a3974fd2,topic,usability,catalog,First praised feature is finding/recommending music = `catalog`.
+ac4e860a-c042-49cc-90f3-189591c336ac,topic,usability,downloads,Offline listening = `downloads`; a reported failure = `complaint` (severity left as labelled).
+ac4e860a-c042-49cc-90f3-189591c336ac,intent,unclear,complaint,Offline listening = `downloads`; a reported failure = `complaint` (severity left as labelled).
+9034d675-9582-49b6-a1c1-c4ddabf8baf1,topic,other,usability,Ads are `usability`.
