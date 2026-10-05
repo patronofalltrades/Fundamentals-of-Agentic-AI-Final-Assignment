@@ -236,6 +236,14 @@ def main(argv=None, hooks=None) -> int:
                 warm = seed_warm_from(args.warm_from, store, prepared, label_config)
                 _log(args, "warm-from: copied %d completed records from %s" % (warm["records_copied"], args.warm_from))
         _write_run_config(run_dir, args, config, prepared, label_config, invocation_id, warm)
+        # Downstream stages (verify/group/memo) look up cached model outputs in the warm source too.
+        warm_dir = None
+        if args.warm_from is not None:
+            warm_dir = Path(args.warm_from).resolve()
+        else:
+            recorded = (json.loads((run_dir / "run_config.json").read_text(encoding="utf-8")).get("warm_from") or {})
+            if recorded.get("path"):
+                warm_dir = Path(recorded["path"])
     except (RunError, DuplicateReviewId, ValueError) as e:
         print("error: " + str(e), file=sys.stderr)
         return EXIT["config"]
@@ -304,7 +312,8 @@ def main(argv=None, hooks=None) -> int:
                                            invocation_id=invocation_id, dry_run=bool(args.dry_run),
                                            texts=prepared.texts, records=store.all_latest(prepared.texts),
                                            chat=chat, log_call=call_log.log, ledger=ledger,
-                                           extras={"source_sha": prepared.source_sha, "stop_event": stop_event})
+                                           extras={"source_sha": prepared.source_sha, "stop_event": stop_event,
+                                                   "warm_from": warm_dir})
                     try:
                         module = importlib.import_module("pipeline." + stage)
                     except ModuleNotFoundError as e:

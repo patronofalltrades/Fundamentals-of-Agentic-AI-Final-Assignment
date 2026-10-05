@@ -203,6 +203,23 @@ class CliTests(unittest.TestCase):
                                       out=self.dir / "warm2", cfg=p), 4)
         self.assertIn("differs", self.last_stderr)
 
+    def test_warm_from_all_stages_makes_no_calls(self):
+        # Regression: the warm pilot re-called verify/group/memo because the stage cache never saw
+        # the cold run dir. With all stages, a warm run must log zero calls of any role.
+        cold = self.dir / "cold-all"
+        self.assertEqual(self.run_cli("--dry-run", out=cold, client=FakeClient()), 0)
+        cold_roles = {c["role"] for c in self.calls(cold)}
+        self.assertTrue({"enrich", "verify", "group"} <= cold_roles, cold_roles)
+        warm = self.dir / "warm-all"
+        self.assertEqual(self.run_cli("--dry-run", "--warm-from", str(cold), out=warm, client=FakeClient()), 0)
+        self.assertEqual(self.calls(warm), [])
+        for stage in ("verify", "group"):
+            cache = json.loads((warm / stage / "cache.json").read_text())
+            self.assertTrue(cache["hit"], stage)
+        # Re-running the same warm command (no --warm-from) still finds the source via run_config.
+        self.assertEqual(self.run_cli("--dry-run", out=warm, client=FakeClient()), 0)
+        self.assertEqual(self.calls(warm), [])
+
     def test_torn_records_line_then_resume(self):
         self.assertEqual(self.run_cli("--dry-run", "--stages", "ingest,enrich", "--max-batches", "2",
                                       client=FakeClient()), 0)
