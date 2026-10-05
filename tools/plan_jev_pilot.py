@@ -52,7 +52,7 @@ def plan(source_path: str, manifest_path: str) -> dict:
         "documented_context_tokens_per_call": DOCUMENTED_MAX_INPUT_TOKENS_PER_CALL,
         "worst_case_200_attempt_context_cost_usd": str(worst_case),
         "live_calls": 0, "measured_usage": None, "measured_runtime": None,
-        "warning": "Byte-based token estimate is not a billing limit. The 0.60 USD cap proposal covers 200 attempts at the published 64k context maximum and input rate, but live execution still needs persisted pre-call reservation, actual usage reconciliation, credentials, and explicit approval.",
+        "warning": "Byte-based token estimate is not a billing limit. The approved 0.60 USD pilot cap covers 200 attempts at the published 64k context maximum and input rate. The runner has a pre-call ledger; live use still needs current-rate/account verification and a safe key route.",
     }
 
 

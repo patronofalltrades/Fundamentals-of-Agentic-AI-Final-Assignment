@@ -1,9 +1,9 @@
 # Jev enrichment adapter and pilot gate
 
-Status: offline adapter implemented and synthetic tests passed. No Jev review
-request has been sent. No runtime classifications or real pilot measurements
-exist. This design uses the source review text only. It must never use the human
-golden answer file as an input or tuning target.
+Status: adapter, persistent pilot ledger, and gated commands implemented with
+synthetic checks. No Jev or Codex review request has been sent. No real pilot
+measurement or completed classification exists. Model inputs use source review
+text only, never the human golden answer file.
 
 ## Current documented interface and price
 
@@ -34,24 +34,37 @@ pilot rule, not a calibrated accuracy guarantee. The versioned configuration
 from `label_config()` fits the foundation's exact-text cache key, which
 invalidates reuse when model, effort, prompt, or schema version changes.
 
-Entity and evidence extraction is a distinct pending role. The adapter does
-not invent entities or a quote from Jev's label output. Its
-`combine_with_evidence()` requires an exact nonblank source substring before
-it yields a classification payload. The existing SQLite state validator
-checks this again when a complete record is saved. There is currently no
-runtime runner connecting this adapter, extraction role, persistent budget
-ledger, and database; therefore **do not execute paid calls with this adapter
-yet**. A timeout is not retried because billing may have happened without a
-received response. HTTP 429 and selected 5xx errors can retry once, with
-bounded `Retry-After`; attempts and elapsed time are returned on success.
-Failed or uncertain calls require a run journal before live use.
+Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
+output is rejected unless every entity and the nonblank quote are exact
+source substrings. It uses a temporary working directory, an ephemeral
+ChatGPT-auth Codex session, read-only sandbox, and JSON schema. The local
+`codex login status` reports **Logged in using ChatGPT**, but this route has
+not been run on reviews, and its model availability and isolation behavior
+have not been verified with a live call. The adapter does not invent entities
+or quotes from Jev labels. The existing SQLite state validator checks exact
+quotes again when a complete record is saved. A final import into that
+canonical classification store remains a manual integration step.
+
+The Jev pilot runner has a separate SQLite ledger in ignored `local/`. It
+reserves the published 64k-token maximum, USD 0.002688, **before each attempt**
+and refuses an attempt that would exceed the approved cap. A successful
+response settles to `usage.input_tokens × 42` nanodollars; missing usage,
+network failure, or a crash keeps the full reserve as uncertain spend. A
+timeout is not retried because billing may have happened without a response.
+HTTP 429 and selected 5xx errors can retry once, with bounded `Retry-After`;
+each attempt has its own reservation and elapsed time. The ledger stores
+source ID, text and row hash locally, with config and model identity. Reuse
+requires exact text equality and a direct original; a cached row retains its
+own ID and points to the direct source. Reopening the ledger with a different
+sample, configuration, model or cap fails. Its replay is read-only and makes
+no calls.
 
 ## Reproducible dry run on the supplied sample
 
 From the Jev worktree root, using the newer course package:
 
 ```sh
-python3 -m tools.plan_jev_pilot \
+python3 -m tools.jev_pilot \
   --input '/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv' \
   --manifest '/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/manifest.json'
 ```
@@ -65,23 +78,45 @@ not a tokenizer, bill, or runtime measurement. One request per review means
 100 planned calls before retries, up to 200 attempts if every call hits the
 single permitted retry. The published 64k context maximum implies a
 conservative 200-attempt ceiling of USD **0.5376** at the listed rate. A
-proposed pilot hard cap is **USD 0.60**, subject to user approval. It is a
-proposal, not permission to spend. The global project ceiling is USD 49.99.
+pilot hard cap is **USD 0.60**, approved by Hanif for existing TypeSafe
+credits only. No top-up or paid fallback is approved. The global project
+ceiling is USD 49.99; this pilot cannot expand automatically.
 
-Before the live pilot, implement a persisted pre-call reservation and
-post-call usage ledger. Reserve for the full possible billed context of each
-attempt, check the approved cap before any call, record all attempts,
-response model, `usage.input_tokens`, `usage.output_tokens`, elapsed time,
-errors, and uncertain outcomes without storing secrets in logs. Reconcile
-actual cost using the then-current published rate. Keep source IDs and texts
-in ignored local state only. Use existing configuration-scoped SQLite state
-for completed results and direct exact-text cache provenance. The cold and
-warm 100-review runs must both be measured before proposing 500, 10,000, or
-full-corpus execution. Keep an offline replay of the measurements and a
-checkpoint; reopening either must make zero API calls.
+The CLI defaults to that offline plan. Paid `--execute` requires an explicit
+`--approved-cap-usd` no higher than 0.60, a key in the process environment,
+and the pinned sample/manifest. Hanif has approved the limit, but this
+worktree has no usable key route; verify account/model access before use.
+After a run, `--replay` reads the
+same ignored `local/jev_pilot.db` with no network. The separate
+`python3 -m tools.jev_evidence` command defaults to an offline count of Jev
+results missing evidence; its `--execute` option calls ChatGPT-auth Codex and
+must be separately reviewed before use. No external call is made by importing
+either module, running `--help`, planning, or replaying.
+
+Before a real cold/warm pilot, verify the pinned model and rate for the account,
+confirm the approved cap, and provide the existing key securely to this
+process. Measure actual Jev usage, wall time, and failures. Then review the
+Codex evidence route. The offline `spotify_pipeline.jev_import` integration
+builds complete records only after all 100 rows have labels and evidence,
+checks every ID, text, and row hash against the canonical source database,
+and imports direct originals before cache copies through the existing state
+validator. This import is implemented and synthetic tested but has not been
+run on real data. Its local attempt ID is a correlation ID, not a TypeSafe
+response ID. The evidence stage has no claimed accuracy or usage measurements.
+Run and report both cold and warm 100-review measurements before proposing
+500, 10,000, or full-corpus execution. No pilot ledger exists yet.
 
 The current shell has no `TYPESAFE_API_KEY`; the active worktree has no `.env`.
-A separate Desktop checkout has a nonblank TypeSafe key entry, but its value
-was not read, copied, or used. A live runner will need a secure key available
-to its own process, and a harmless account/model read should succeed before
-spending. No credential setup or billing change was performed.
+A separate Desktop checkout has a nonblank TypeSafe key entry. Its existing
+`src/labelling/smoke_typesafe.py` launcher can read that file for its own
+demo smoke test without copying or printing the key, but it does not launch
+this worktree's pilot runner. The key value was not read, copied, or used here.
+Hanif must make the already configured key available to the pilot process
+through an approved secure launcher or environment before execution. No
+credential setup, billing change, top-up, or paid fallback was performed.
+The Codex CLI reports ChatGPT login, but an isolated synthetic extraction
+attempt failed before reaching the model because the execution sandbox could
+not write its existing `~/.codex` state database. No synthetic answer was
+returned. The Codex evidence stage also remains blocked until a supported
+runtime permits that state access; do not copy its auth files or use an API-key
+fallback.

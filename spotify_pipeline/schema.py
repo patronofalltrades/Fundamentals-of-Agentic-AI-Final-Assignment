@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from .contract import INTENTS, TOPICS
 from .errors import ValidationError
 
-PROVENANCE_DIRECT = ("model_call_placeholder", "synthetic_fixture")
+PROVENANCE_DIRECT = ("model_call_placeholder", "synthetic_fixture", "typesafe_jev_direct")
 
 COMPLETED_CLASSIFICATION_FIELDS = (
     "topic",
