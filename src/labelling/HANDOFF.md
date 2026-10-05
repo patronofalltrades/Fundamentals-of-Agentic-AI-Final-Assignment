@@ -53,3 +53,35 @@ Single bad response must not silently lose a whole batch: retry → split → qu
   (`limits.spend_cap_usd` = $1.00; measured cold cost is a fraction of a cent).
 - `pilot_records.jsonl` / `pilot_calls.jsonl` go in `cost/` (yours); records/calls data come from
   the labelling run.
+
+## Chat roles (verify / group / memo) — DeepSeek V4.1 Flash via OpenRouter
+
+Text-generating roles use `src/labelling/chat_client.py` (OpenAI-compatible; **OpenRouter →
+`deepseek/deepseek-v4.1-flash`** by default) + `src/labelling/roles.py` (wrappers that return a
+parsed result AND a calls.jsonl-ready event dict):
+
+```python
+from labelling.chat_client import create_chat_client, ChatMessage
+from labelling import roles
+
+chat = create_chat_client({"provider": "openrouter"})  # -> DeepSeekClient (needs OPENROUTER_API_KEY)
+# or create_chat_client({}) with no key -> MockChatClient (offline dry-run)
+
+labels, event = roles.verify_batch(chat, [(rid, text), ...])   # role "verify", per-id JSON labels
+issues, event = roles.name_issues(chat, complaint_examples)    # role "group", ids validated vs pack
+memo,   event = roles.write_memo(chat, aggregates)             # role "memo", plain text
+```
+
+- Route: OpenAI-compatible `POST https://openrouter.ai/api/v1/chat/completions`, model
+  `deepseek/deepseek-v4.1-flash` (released 2026-09-10). Output tokens ARE billed; OpenRouter
+  returns per-response `usage.cost`, which the client captures as `cost_usd` for the calculator.
+- Alternatives wired in `pilot_config.json`: DeepSeek direct (`deepseek-flash`,
+  `DEEPSEEK_API_KEY`) and the $0 `deepseek/deepseek-v4-flash:free` variant (evaluate before use).
+- Non-thinking mode + `temperature 0.0` + capped `max_tokens` are the cheap defaults.
+- Ownership: verify prompt semantics/thresholds → ChatGPT (evals); group/memo orchestration →
+  Claude (infra). The prompts in `roles.py` are drafts for them to refine.
+- Independence rule: the verifier re-labels from original text only and never sees the enrichment
+  prediction or golden labels.
+
+**Action for Claude (repo hygiene):** add blank `OPENROUTER_API_KEY=` (and `DEEPSEEK_API_KEY=` if
+the direct fallback is kept) to `.env.example`.
