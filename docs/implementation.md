@@ -184,8 +184,9 @@ synthetic and use temporary directories; they never touch the real dataset.
 
 ## Known limitations
 
-- Human answer export is blocked until four exact-quote errors are corrected by
-  the human. The evaluator has only synthetic test evidence and no real score.
+- The human answer CSV passed mechanical validation and remains outside Git.
+  The evaluator has only synthetic test evidence and no real score because
+  runtime predictions do not exist yet.
 - The model-input route accepts only six source CSV columns; expected answer
   columns belong solely to the isolated offline evaluator.
 - No classification, provider adapter, retry policy or live spend control is

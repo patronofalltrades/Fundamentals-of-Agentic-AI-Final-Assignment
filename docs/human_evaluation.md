@@ -81,14 +81,16 @@ does not judge human label correctness. The initial blank workbook correctly
 failed export when tested. A completed answer CSV requires explicit validated
 export after the human has filled every answer.
 
-**October 5 mechanical recheck:** all 350 answer cells are filled. The 50
-source rows and columns still match the blank source exactly. Manual edits
-reduced the exact-quote errors from 21 to four. Export remains blocked and no
-completed CSV was created. Correct `evidence_quote` manually by copying an
-exact substring from the same row's `review_text` cell, including case,
-punctuation and spacing. Remaining Excel row numbers: **15, 21, 30, 42**.
-Do not change source cells or replace human choices automatically. Rerun the
-exporter after the corrections.
+**October 6 export:** all 50 rows and 350 answer cells passed the mechanical
+checks. Hanif authorized an assistant to correct only the case or whitespace
+of four human-selected `evidence_quote` spans (Excel rows 15, 21, 30, 42).
+Each corrected value matched one unique substring of its own review; the
+selected words and all other workbook cells remained unchanged. A private
+backup was saved first. The completed CSV is in the sibling `human-evaluation/`
+folder, outside Git. SHA-256:
+`ff084828aa2d88970e70508dd36362aaaade3d48a1d1ee1d09503e24ffaeb0f6`.
+Source fields match the verified blank template exactly. These checks verify
+format and source identity, not the human judgment behind the labels.
 
 The offline evaluator is implemented in `tools/evaluate_human_labels.py`. It
 requires the valid exported CSV and saved prediction records; both stay outside
@@ -100,8 +102,9 @@ repository root, once both real inputs exist, run:
 python3 tools/evaluate_human_labels.py --source ../human-evaluation/golden_50_human_labels.csv --answers ../human-evaluation/golden_50_human_labels_completed.csv --predictions local/records.jsonl --out local/evaluation-aggregate.json
 ```
 
-The direct CLI invocation was checked. The real answer CSV and prediction file
-do not yet coexist, so no real accuracy or agreement has been measured.
+The direct CLI invocation was checked. The human answer CSV is ready, but no
+runtime prediction file exists, so no real accuracy or agreement has been
+measured.
 
 The evaluator is not implemented yet. When added, it must fail until all 50
 human answers are validated. Prediction model inputs contain original text
