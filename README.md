@@ -120,7 +120,9 @@ Actual source-row comparison confirms that `cost_100.csv` is the first 100 check
 
 Golden labels must be supplied by a human. All 50 human-labeled rows are a required prerequisite for final evaluation. See [human labeling guidance](docs/human_evaluation.md). Expected labels must never enter model prompts, examples, routing thresholds, cache inputs, or issue-discovery inputs. All original golden texts still belong in the final full-corpus run. Synthetic tests must remain outside business aggregates.
 
-The local `../human-evaluation/golden_50_human_labels.xlsx` workbook makes manual labeling easier. Its dropdowns cover all 50 rows for topic, intent, severity, and needs-review. Sentiment accepts a manually entered decimal from −1 to 1; entities and an exact evidence quote remain manual. All seven answer fields are blank. The six original source fields are preserved, and rating is visually muted to keep attention on the review text. The blank source CSV and workbook stay outside this public repository. Neither creates human answers.
+The human labeling guide now includes the course-aligned severity scale and optional sentiment anchors. Severity measures reported harm or lost function; sentiment measures tone. The two scores are independent, and stars do not set either score. The invented examples are guidance only. Human labels remain pending.
+
+The local `../human-evaluation/golden_50_human_labels.xlsx` workbook makes manual labeling easier. Its dropdowns cover all 50 rows for topic, intent, severity, and needs-review. Sentiment accepts a manually entered decimal from −1 to 1; entities and an exact evidence quote remain manual. All seven answer fields were blank when created. The six original source fields are preserved, and rating is visually muted to keep attention on the review text. The blank source CSV and workbook stay outside this public repository. Neither creates human answers.
 
 Open the workbook in Excel or another spreadsheet app, fill every amber answer cell, and save it as `.xlsx`. From the repository root, export a separate completed CSV with:
 
@@ -128,7 +130,7 @@ Open the workbook in Excel or another spreadsheet app, fill every amber answer c
 python3 tools/export_human_labels.py --workbook ../human-evaluation/golden_50_human_labels.xlsx --source ../human-evaluation/golden_50_human_labels.csv --out ../human-evaluation/golden_50_human_labels_completed.csv
 ```
 
-The exporter checks that all 50 rows are complete, the six source columns match the verified blank template, and answer values have valid formats. It refuses to overwrite an existing file. It cannot judge whether a human label is semantically correct. The original course CSV is never the export destination. The current blank workbook fails export as intended; no completed answer CSV exists yet.
+The exporter checks that all 50 rows are complete, the six source columns match the verified blank template, and answer values have valid formats. It refuses to overwrite an existing file. It cannot judge whether a human label is semantically correct. The original course CSV is never the export destination. A blank workbook fails export as intended; a completed answer CSV requires explicit validated export.
 
 ### Obtain and prepare data
 

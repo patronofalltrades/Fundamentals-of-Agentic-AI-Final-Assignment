@@ -24,6 +24,49 @@ integer 1–5; entities as a JSON array of strings (or `[]`); an evidence quote
 copied exactly from the review; and `true` or `false` for `needs_review`.
 Use the assignment contract's intent vocabulary and guidance.
 
+## Severity and sentiment guide
+
+Score these two fields independently from the review text. **Severity** is the
+harm or loss of function the reviewer reports. **Sentiment** is the tone of
+their words. Do not infer either score from the star rating. Anger and
+cancellation intent alone do not raise severity. A severe problem can be
+described calmly; a mild problem can be described angrily.
+
+| Severity | Reported impact |
+| --- | --- |
+| 1 | No reported problem: praise, unclear or neutral content, or a pure feature request. |
+| 2 | Minor annoyance, dislike, or general criticism without supported functional loss. |
+| 3 | A function is degraded or restricted, but some use or a workaround remains. |
+| 4 | A core task is clearly blocked. |
+| 5 | Explicit serious financial, privacy, or data harm. |
+
+When a review reports several problems, use the highest supported severity.
+If problems tie, choose the first specific problem mentioned. Do not invent
+impact that the review does not state.
+
+Sentiment can be any decimal from **−1 to +1**. These optional anchors help
+calibrate tone; they are not mandatory assignment bins:
+
+| Anchor | Tone |
+| ---: | --- |
+| −1 | Very negative |
+| −0.5 | Negative |
+| 0 | Neutral or balanced |
+| +0.5 | Positive |
+| +1 | Very positive |
+
+Intermediate decimals are allowed. Do not derive sentiment from severity.
+For example, the invented review “Please fix sign-in. I cannot open my account
+at all.” reports a blocked core task (severity 4) in a mildly negative tone.
+The invented review “This app is awful!” has strongly negative tone but
+reports only general criticism (severity 2). These examples are not from the
+golden dataset and are not filled answers.
+
+If the text leaves important context uncertain, set `needs_review` to `true`
+and still provide your best human labels. Keep any uncertainty notes separate
+from the source columns and exported answer CSV. Never ask a model to fill or
+check expected golden answers.
+
 Open and edit the `.xlsx` workbook, then save it. From the repository root, run:
 
 ```sh
@@ -35,7 +78,8 @@ checks exact source field strings and the pinned blank-template checksum, and
 validates answer enums, numeric ranges, entities JSON, the exact quote, and
 the boolean. It refuses existing output paths. Validation is mechanical; it
 does not judge human label correctness. The initial blank workbook correctly
-fails export. No completed answer CSV exists yet.
+failed export when tested. A completed answer CSV requires explicit validated
+export after the human has filled every answer.
 
 The evaluator is not implemented yet. When added, it must fail until all 50
 human answers are validated. Prediction model inputs contain original text
