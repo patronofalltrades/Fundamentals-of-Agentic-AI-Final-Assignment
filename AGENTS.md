@@ -40,8 +40,9 @@ Send only project requirements, code, and bounded synthetic examples.
 Do not send raw CSVs, credentials, or golden answer labels to coding models.
 Alfred is OpenAI Dots and coordinates planning and review. Sol is ChatGPT
 and may help with occasional reasoning and review when authorized.
-GLM is not selected for current work. Jev is selected for an enrichment pilot,
-but no live quality or cost measurement has been made.
+GLM is not selected for current work. Jev ran a 100-review label pilot
+with measured token usage and usage-derived cost. Quality, end-to-end warm
+performance, and full pipeline cost remain unmeasured.
 Opus is a candidate for a
 small independent verifier sample. Both require pilot quality, access, and
 budget checks. They are not implemented runtime integrations.

@@ -22,7 +22,7 @@ This file is a manual task record. It is not a lock or a running agent service.
 | Jev enrichment and bounded pilot runner | Codex | `feat/jev-enrichment` / `../jev-enrichment-worktree` | Implemented and used for label pilot | Typed Choice/Score labels, persistent pre-call reservations and usage ledger, exact-text cache, offline replay. See `docs/jev_enrichment.md` and aggregate `reports/jev-pilot-100.json`. |
 | Jev `cost_100.csv` label pilot | Codex | `feat/jev-enrichment` / ignored `local/jev_pilot.db` | 100 labels complete | Hanif entered the existing key privately in Terminal. 100 settled calls, no retry, 87,887 input and 19,656 free output tokens, USD 0.003691254 usage-derived cost under USD 0.60 cap. Source IDs/hashes and label schema pass. See `reports/jev-pilot-100.json`. No top-up or fallback. Cold wall time was not persisted. |
 | Evidence and completed import | Codex, separately authorized by Hanif | `feat/jev-enrichment` / ignored local databases | 100 saved; structural checks passed | The earlier automatic approval rejection preceded a later authorized extraction. The local pilot ledger now has 100 evidence records; the separate sample database has 100 completed classifications. Source identity, exact spans, and output schema pass offline checks. Saved evidence uses prompt v1 for 90 rows and v2 for 10. No semantic accuracy or human agreement is claimed. |
-| Entity boundary repair and pilot report | Codex (authorized by Hanif) | `fix/jev-entity-boundaries` / `2026-10-06/task/jev-entity-boundaries` | Review-ready local branch; integration pending | Scope: `spotify_pipeline/codex_evidence.py`, `tests/test_jev_pilot.py`, `README.md`, `docs/jev_enrichment.md`, this tracker, the bug note, and `reports/jev-pilot-100.json`. Copied the two preexisting uncommitted Jev files into a separate worktree, then added entity boundary validation, synthetic regression tests, and a read-only offline warm replay. Original Jev worktree and saved outputs are untouched. See `docs/jev_entity_boundary_bug.md`. |
+| Entity boundary repair and pilot report | Codex (authorized by Hanif) | `fix/jev-entity-boundaries` / `2026-10-06/task/jev-entity-boundaries` | Integrated locally on `feat/offline-foundation` at `e24c3c6`; publication pending | Scope: `spotify_pipeline/codex_evidence.py`, `tests/test_jev_pilot.py`, `README.md`, `docs/jev_enrichment.md`, this tracker, the bug note, and `reports/jev-pilot-100.json`. Copied the two preexisting uncommitted Jev files into a separate worktree, then added entity boundary validation, synthetic regression tests, and a read-only offline warm replay. Original Jev worktree and saved outputs are untouched. Canonical integration passed 158 offline tests and read-only validation of 100 records. See `docs/jev_entity_boundary_bug.md`. |
 
 The current coding choice is **DeepSeek V4 Flash 0731**, provider **OpenRouter**,
 accessed through **OpenCode CLI**. The verified exact ID is
@@ -41,7 +41,7 @@ The local handoff is the latest commit on `feat/offline-foundation`.
 Use `git log -1 --oneline` and `git show --stat HEAD` to inspect it.
 See `reports/offline-verification.json` for the checks.
 Mermaid structure was checked. No local parser or render test was available.
-The implementation is not pushed. Central review and integration remain pending.
+The Jev repair is integrated locally on `feat/offline-foundation` at `e24c3c6`. It is not pushed; publication review remains pending.
 
 ## Taking another task
 

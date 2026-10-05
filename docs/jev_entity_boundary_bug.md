@@ -1,6 +1,6 @@
 # Jev entity boundary bug
 
-Hanif authorized recording and fixing the entity validation bug. This repair lives on `fix/jev-entity-boundaries` in its own worktree. It is not integrated or published.
+Hanif authorized recording and fixing the entity validation bug. This repair lives on `fix/jev-entity-boundaries` in its own worktree. It was integrated locally into `feat/offline-foundation` at `e24c3c6` and is not published.
 
 ## Observation
 
@@ -24,10 +24,10 @@ The repair copies the original Jev worktree's two uncommitted files before editi
 - Read-only replay of the ignored pilot ledger: 100 of 100 evidence records and all 93 entity mentions pass the repaired validator.
 - Word edges are conservative for scripts without spaces. A legitimate shorter entity embedded in a continuous run of Unicode letters may need a longer exact source span or human review.
 
-These checks do not establish model quality or human agreement. The active Jev branch's mixed saved evidence versions (90 `evidence-extract-v1`, 10 `evidence-extract-v2`) were not regenerated. Its original worktree remains the integration owner.
+These checks do not establish model quality or human agreement. The active Jev branch's mixed saved evidence versions (90 `evidence-extract-v1`, 10 `evidence-extract-v2`) were not regenerated. Its original worktree remains preserved for later reconciliation.
 
 ## Integration review
 
 The repair branch starts from Jev commit `e773e949` and includes byte-for-byte copies of the original worktree's two preexisting uncommitted v2 files before the boundary edits. A file comparison with that worktree shows only the boundary repair and its new tests in those files. The original worktree and its ignored databases are unchanged.
 
-Do not cherry-pick this combined branch directly into the dirty Jev worktree. The coordinating owner should first record or hand off the original v2 changes, then review this branch's diff and integrate it in a clean worktree. Run the affected suite after integration. No branch has been pushed.
+The clean canonical `feat/offline-foundation` checkout fast-forwarded to `e24c3c6`. From that checkout, 158 offline tests, CLI help, and read-only validation of all 100 saved records passed. The dirty Jev worktree and its original v2 files remain untouched for later reconciliation. No branch has been pushed.
