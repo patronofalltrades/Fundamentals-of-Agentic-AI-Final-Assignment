@@ -24,6 +24,8 @@ The [Jev enrichment adapter and bounded 100-review pilot runner](docs/jev_enrich
 
 The approved [topic rubric v2](docs/topic_rubric_v2.md) clarifies the same eight labels and the contract tie-break rules. It has not run on reviews. The saved 100-review labels and report remain v1; their cache identity differs from v2. The topic review used development text only, and the evaluation plan discloses exact-text overlap with the blank golden source without accessing human answers. Rubric v2 is integrated locally at `a7b6f7d` and remains unpublished.
 
+A [user-run v2 comparison launcher](docs/jev_v2_user_launch.md) is prepared in an isolated branch. It uses the same supplied `cost_100.csv`, a new ignored v2 ledger, and the remaining cumulative pilot cap of USD 0.596308746. Authentication is absent from the agent process and macOS Terminal control was denied. No v2 inference or comparison result exists yet; the user must enter the existing key at the launcher's hidden Terminal prompt.
+
 Future paid execution requires configured credentials, verified API entitlement, and an approved spending limit. Offline replay must work without credentials; opening the calculator must never trigger paid calls.
 
 ## Implemented offline foundation
