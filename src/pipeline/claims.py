@@ -89,7 +89,9 @@ def validate_memo_citations(memo_text: str, claims: Dict[str, dict], top_n: Opti
 UNSUPPORTED_TERMS = re.compile(
     r"\b(churn\w*|retention|retain(?:ed|ing)?|revenue|monetiz\w*|monetis\w*|profit\w*|ROI|"
     r"lifetime value|LTV|market share|conversion rate|engineering (?:effort|cost|work|time)|"
-    r"quick wins?|faster wins?|low[- ]hanging|easy fix\w*|cheap(?:er)? to fix|reversible|root cause)\b",
+    r"quick wins?|faster wins?|low[- ]hanging|easy fix\w*|cheap(?:er)? to fix|reversible|root causes?|"
+    r"(?:may|might|will|would|could|should) (?:likely )?(?:reduce|fix|solve|eliminate|lower|prevent|"
+    r"improve|increase|boost|drive|cut))\b",
     re.IGNORECASE)
 NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:,\d{3})*(?:\.\d+)?%?")
 SMALL_COUNT_LIMIT = 10  # "top 3", "2 of 4 areas", list numbering

@@ -28,6 +28,9 @@ class MemoRun(TempDirCase):
         self.assertLessEqual(len(inputs["top_issues"]), 10)
         self.assertTrue(all(len(t["quotes"]) <= 3 for t in inputs["top_issues"]))
         self.assertIn("DERIVED", inputs["area_rollup"]["label"])
+        order = inputs["area_rollup"]["order_by_severity_sum"]
+        self.assertEqual([o["position"] for o in order], [1, 2, 3, 4])
+        self.assertEqual([o["severity_sum"] for o in order], sorted((o["severity_sum"] for o in order), reverse=True))
         cov = inputs["coverage"]
         self.assertEqual((cov["source_ids"], cov["completed"], cov["quarantined"], cov["pending"]), (14, 13, 1, 0))
         self.assertEqual(cov["completed_via_exact_text_cache"], 2)
@@ -110,6 +113,8 @@ class MemoLint(TempDirCase):
         self.assertEqual(lint_memo(good + " This drives churn and retention.", self.claims, self.inputs)["unsupported_terms"],
                          ["churn", "retention"])
         self.assertEqual(lint_memo(good + " Fix 4,321 complaints.", self.claims, self.inputs)["unknown_numbers"], ["4,321"])
+        self.assertEqual(lint_memo(good + " Fixing it may reduce paywall complaints; distinct root causes.",
+                                   self.claims, self.inputs)["unsupported_terms"], ["may reduce", "root causes"])
         self.assertTrue(lint_memo(good + " See [the docs](https://x.y) for top 3.", self.claims, self.inputs)["ok"])
 
     def test_template_memo_passes_lint(self):

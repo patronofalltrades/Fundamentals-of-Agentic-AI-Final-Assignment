@@ -51,7 +51,9 @@ Rules:
    cancel is not evidence that anyone cancelled. Do not use those concepts, and do not guess causes
    or how hard something is to fix. Say "reviewers report" rather than stating product facts.
 3. Recommendation. Recommend the area with the highest derived severity_sum unless the input shows a
-   reason not to; if two areas are close, say so plainly and name what would separate them.
+   reason not to; if two areas are close, say so plainly and name what would separate them. When you
+   say an area is first, second, ahead or behind, follow area_rollup.order_by_severity_sum exactly.
+   Do not predict effects of fixes ("fixing X may reduce Y"): the data cannot show them.
 4. Caveats must be consistent with the numbers: sample size (coverage), verifier agreement as given
    (do not contradict it), keyword-based issue grouping, and that ranking = complaint-weighted severity.
 5. Quotes: only the quotes provided, verbatim, attributed to their issue ID.
@@ -137,7 +139,10 @@ def build_inputs(ctx: StageContext, top_n: int = 10, quotes_per_issue: int = 3) 
         "claims": [c for c in claims.values() if c["issue_id"] in top_ids],
         "area_rollup": {"label": "DERIVED from claims: per-area sums of the listed issue-level claims "
                                  "(complaint_count and severity_sum). Not themselves claims.csv rows.",
-                        "mapping": AREA_NOTE, "areas": rollup},
+                        "mapping": AREA_NOTE, "areas": rollup,
+                        "order_by_severity_sum": [
+                            {"position": i + 1, "area": a, "severity_sum": rollup[a]["severity_sum"]}
+                            for i, a in enumerate(sorted(AREAS, key=lambda a: (-rollup[a]["severity_sum"], a)))]},
         "coverage": coverage(ctx), "verify_agreement": verify,
     }
 
