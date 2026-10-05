@@ -1,0 +1,7 @@
+client: JevClient jev-1.13.0 https://api.typesafe.ai/v1/systemone
+HTTP 200 | served model: jev-1.13.0 | id: None | usage: {'input_tokens': 2275, 'output_tokens': 382}
+response keys: ['model', 'answers', 'usage']
+sample raw answer: {"type": "choice", "choice": "access", "confidence": 1.0, "probabilities": {"downloads": 0.0, "billing": 0.0, "access": 1.0, "playback": 0.0, "support": 0.0, "usability": 0.0, "catalog": 0.0, "other": 0.0}}
+{"review_id": "demo-1", "topic": "access", "intent": "complaint", "sentiment": -0.9, "severity": 4, "entities": ["playlist"], "evidence_quote": "Keeps logging me out every day. I can't even open my playlists.", "needs_review": false, "label_config": "typesafe/jev-1.13.0:smoke"}
+{"review_id": "demo-2", "topic": "usability", "intent": "praise", "sentiment": 0.72, "severity": 1, "entities": ["shuffle"], "evidence_quote": "Love it! Best music app. Please bring back the old shuffle though.", "needs_review": false, "label_config": "typesafe/jev-1.13.0:smoke"}
+OK
