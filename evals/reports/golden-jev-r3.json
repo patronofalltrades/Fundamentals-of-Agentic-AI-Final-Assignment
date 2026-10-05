@@ -1,0 +1,542 @@
+{
+  "agreement": {
+    "intent": 0.86,
+    "joint": 0.3,
+    "severity": 0.56,
+    "topic": 0.48
+  },
+  "approved_cases": 50,
+  "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+  "benchmark_version": "golden-50-human-v1",
+  "cases": [
+    {
+      "intent_correct": true,
+      "review_id": "292ce26a-815d-4bce-a3b6-93cb6c9e7e2c",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "a70e8d3e-3f84-46bc-b008-67f476c67963",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "0d4f8b48-74c1-4e2a-89b5-11eaa737027e",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "991b6b3a-f511-458a-a5b7-234f78048fb5",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "599a0d41-989a-40ef-8ed2-e92db76eea46",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "0c6ca545-3f89-4da6-b3db-1a352371fb6e",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "111f9048-f7bd-4be0-813e-76b8fc49f73f",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "b567f70c-edba-4922-ac2a-e945e5eb3472",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "b5ee7834-a0eb-4c15-9c7b-935831021922",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "1fc8b08f-7d6a-472f-b317-8ceb28d00f22",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "947821dc-b356-45dc-a0bc-1903728fad40",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "723f07de-9881-4049-8680-1a9e25652914",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "47428620-ec21-424d-a515-0b0b0012a5cf",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "fc344263-308d-48a1-9715-c380d063b6de",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "6112667b-3d71-475c-b1a4-159b87f73d2b",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "01d453b0-dca3-42e9-8aa4-5fc167b08070",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "ac6cd66d-a9d2-42a4-afb8-2f84beff7fd1",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "44129679-31a0-4108-9314-086a3456f6ae",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "46842184-32f8-4088-ac15-2a700a7e94ed",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "657f1b77-0183-4b06-bf48-5e6d9ab08f9a",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "5de7f95b-ccad-41b2-9f63-a13f7c1d9f09",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "de48c99b-46fe-4837-8634-e63dbc72a5ea",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "aa573851-0b86-4b1b-adf6-210268c08d2a",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "372d4e67-59cc-4c54-879f-3e8a202ee554",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "47f1406d-4918-4d60-9647-5ca8e610caca",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "82780cbe-6435-4efb-84f6-8e5fa47ffc3a",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "36609c5c-fe48-4459-86b8-cc78fd3c77cd",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "f4c8146a-d5c8-4168-b00e-21af666afc6a",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "3ddb3f4e-f7b9-430b-b335-eadc6d321f46",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "16d640e9-b281-4746-9562-c7dbcf7126b6",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "8cc4fad4-26ec-47b7-96e8-49c7da714eca",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "215463ae-95b7-4481-8747-1754b68f31fa",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "46c0b49f-83a1-427e-8f0b-cef62e3c94b5",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "283b5843-a992-464f-b1dc-9dc7281ff390",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "1d15724a-98ff-400a-8083-0d9afc801098",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "89ea724c-358f-48ab-9516-cd130d21c471",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "2aa566c6-b98d-4513-b900-83702a8db8eb",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "8c0546b0-ce43-4a36-9d33-9f979e98d522",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "a972945c-6601-4108-882a-afe986866a7b",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "8fd3dd72-5535-40f6-8779-1bd60892131e",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "b58dd6f0-ad88-4319-b6db-58afb60c37c1",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "1a41c7e1-a655-4c63-b4db-c22bdff18003",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "dceb14e7-2df0-422f-bb2b-73d7c373159a",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "5fba12ea-4980-4f25-a129-f830a3974fd2",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": false,
+      "review_id": "ac4e860a-c042-49cc-90f3-189591c336ac",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "9034d675-9582-49b6-a1c1-c4ddabf8baf1",
+      "severity_correct": true,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "d2f3874f-d15d-4a2f-bb97-4f1213defa46",
+      "severity_correct": false,
+      "topic_correct": false,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "99b93e31-9f15-4daa-88ac-349ab0419c48",
+      "severity_correct": false,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "ca63dfbe-7120-4e18-af6e-8ea786cd157d",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    },
+    {
+      "intent_correct": true,
+      "review_id": "083811c7-d469-499b-9bef-5b9fb096653d",
+      "severity_correct": true,
+      "topic_correct": true,
+      "valid_prediction": true
+    }
+  ],
+  "class_counts": {
+    "intent": {
+      "complaint:correct": 17,
+      "complaint:support": 19,
+      "praise:correct": 19,
+      "praise:support": 19,
+      "request:correct": 2,
+      "request:support": 3,
+      "unclear:correct": 5,
+      "unclear:support": 9
+    },
+    "severity": {
+      "1:correct": 24,
+      "1:support": 26,
+      "2:correct": 2,
+      "2:support": 9,
+      "3:correct": 1,
+      "3:support": 6,
+      "4:correct": 1,
+      "4:support": 5,
+      "5:correct": 0,
+      "5:support": 4
+    },
+    "topic": {
+      "access:correct": 0,
+      "access:support": 2,
+      "billing:correct": 1,
+      "billing:support": 2,
+      "catalog:correct": 1,
+      "catalog:support": 3,
+      "other:correct": 17,
+      "other:support": 19,
+      "playback:correct": 2,
+      "playback:support": 4,
+      "support:correct": 0,
+      "support:support": 4,
+      "usability:correct": 3,
+      "usability:support": 16
+    }
+  },
+  "label_configs": [
+    "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1"
+  ],
+  "missing_or_invalid_predictions": 0,
+  "note": "Missing, quarantined and invalid predictions count as incorrect in agreement; MAE reports valid predictions only. Pending labels prevent official use.",
+  "official": true,
+  "run": "runs/golden-jev-r3",
+  "severity_mae_on_valid_predictions": 0.64,
+  "singleton_metrics": {
+    "intent": {
+      "macro_f1": 0.822757,
+      "per_class": {
+        "complaint": {
+          "f1": 0.85,
+          "precision": 0.809524,
+          "predicted": 21,
+          "recall": 0.894737,
+          "support": 19
+        },
+        "praise": {
+          "f1": 0.974359,
+          "precision": 0.95,
+          "predicted": 20,
+          "recall": 1.0,
+          "support": 19
+        },
+        "request": {
+          "f1": 0.8,
+          "precision": 1.0,
+          "predicted": 2,
+          "recall": 0.666667,
+          "support": 3
+        },
+        "unclear": {
+          "f1": 0.666667,
+          "precision": 0.833333,
+          "predicted": 6,
+          "recall": 0.555556,
+          "support": 9
+        }
+      }
+    },
+    "severity": {
+      "macro_f1": 0.293187,
+      "per_class": {
+        "1": {
+          "f1": 0.923077,
+          "precision": 0.923077,
+          "predicted": 26,
+          "recall": 0.923077,
+          "support": 26
+        },
+        "2": {
+          "f1": 0.2,
+          "precision": 0.181818,
+          "predicted": 11,
+          "recall": 0.222222,
+          "support": 9
+        },
+        "3": {
+          "f1": 0.142857,
+          "precision": 0.125,
+          "predicted": 8,
+          "recall": 0.166667,
+          "support": 6
+        },
+        "4": {
+          "f1": 0.2,
+          "precision": 0.2,
+          "predicted": 5,
+          "recall": 0.2,
+          "support": 5
+        },
+        "5": {
+          "f1": 0.0,
+          "precision": null,
+          "predicted": 0,
+          "recall": 0.0,
+          "support": 4
+        }
+      }
+    },
+    "topic": {
+      "macro_f1": 0.293685,
+      "per_class": {
+        "access": {
+          "f1": 0.0,
+          "precision": null,
+          "predicted": 0,
+          "recall": 0.0,
+          "support": 2
+        },
+        "billing": {
+          "f1": 0.4,
+          "precision": 0.333333,
+          "predicted": 3,
+          "recall": 0.5,
+          "support": 2
+        },
+        "catalog": {
+          "f1": 0.222222,
+          "precision": 0.166667,
+          "predicted": 6,
+          "recall": 0.333333,
+          "support": 3
+        },
+        "other": {
+          "f1": 0.73913,
+          "precision": 0.62963,
+          "predicted": 27,
+          "recall": 0.894737,
+          "support": 19
+        },
+        "playback": {
+          "f1": 0.444444,
+          "precision": 0.4,
+          "predicted": 5,
+          "recall": 0.5,
+          "support": 4
+        },
+        "support": {
+          "f1": 0.0,
+          "precision": null,
+          "predicted": 0,
+          "recall": 0.0,
+          "support": 4
+        },
+        "usability": {
+          "f1": 0.25,
+          "precision": 0.375,
+          "predicted": 8,
+          "recall": 0.1875,
+          "support": 16
+        }
+      }
+    }
+  },
+  "status": "ready",
+  "total_cases": 50
+}
