@@ -2,7 +2,7 @@
   "config_version": "a5-run-v1",
   "notes": "Real 100-review pilot (cost_100.csv). Mirrors src/labelling/pilot_config.json: Jev via TypeSafe for enrich, Claude Haiku 4.5 via the Anthropic API for verify/group/memo, 1 worker, $1.00 cap, <=50 reviews per request. Cold: --out runs/pilot-cold. Warm: same command with --out runs/pilot-warm --warm-from runs/pilot-cold. Needs TYPESAFE_API_KEY and ANTHROPIC_API_KEY; without them the run is refused (mock guard).",
   "full_run": false,
-  "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+  "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
   "client": {
     "provider": "typesafe",
     "model": "jev-latest",

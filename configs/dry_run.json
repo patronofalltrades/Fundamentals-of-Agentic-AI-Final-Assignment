@@ -2,7 +2,7 @@
   "config_version": "a5-run-v1",
   "notes": "Offline dry run. Use with --dry-run: enrichment uses labelling.model_client.MockClient (model 'mock') and label_config becomes 'mock:<label_config>'; chat roles use pipeline.clients.MockChat. No keys, no network, no spend.",
   "full_run": false,
-  "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+  "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
   "client": {
     "provider": "typesafe",
     "model": "jev-latest",
