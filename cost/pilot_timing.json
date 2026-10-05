@@ -21,7 +21,7 @@
   "runs": {
     "cold": {
       "config": {
-        "base_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "base_label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
         "batching": {
           "max_reviews_per_request": 50
         },
@@ -74,7 +74,7 @@
             "max_tokens": 1500,
             "quotes_per_issue": 5
           },
-          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
           "limits": {
             "backoff_base_seconds": 2.0,
             "backoff_max_seconds": 60.0,
@@ -126,13 +126,13 @@
           }
         },
         "config_path": "configs/pilot_cost_100.json",
-        "created_at": "2026-10-05T23:13:15.734089Z",
+        "created_at": "2026-10-05T23:30:34.466574Z",
         "dry_run": false,
         "input_csv": "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv",
         "input_file_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
         "input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
-        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
-        "last_invocation_id": "20261005T231315Z-e95612",
+        "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+        "last_invocation_id": "20261005T233034Z-8ed8a4",
         "limit": null,
         "limited": false,
         "limits": {
@@ -167,16 +167,16 @@
         },
         "rows": 100,
         "run_id": "pilot-cold",
-        "updated_at": "2026-10-05T23:13:15.734231Z"
+        "updated_at": "2026-10-05T23:30:34.466668Z"
       },
       "data_source": "measured",
       "invocation_stage_seconds": {
-        "enrich": 6.255,
-        "group": 8.721,
+        "enrich": 2.693,
+        "group": 9.073,
         "ingest": 0.0,
-        "memo": 10.695,
-        "rank": 0.003,
-        "verify": 9.22
+        "memo": 12.512,
+        "rank": 0.002,
+        "verify": 9.674
       },
       "invocations": [
         {
@@ -190,12 +190,12 @@
             "records_completed": 100,
             "records_quarantined": 0
           },
-          "ended_at": "2026-10-05T23:13:50.630933Z",
-          "invocation_id": "20261005T231315Z-e95612",
+          "ended_at": "2026-10-05T23:31:08.424351Z",
+          "invocation_id": "20261005T233034Z-8ed8a4",
           "phase": "initial",
-          "started_at": "2026-10-05T23:13:14.903033Z",
+          "started_at": "2026-10-05T23:30:33.608320Z",
           "stop_reason": "completed",
-          "wall_seconds": 35.729
+          "wall_seconds": 34.816
         }
       ],
       "name": "cold",
@@ -215,7 +215,7 @@
         "enrich": {
           "batch_size": 50,
           "effort": "none",
-          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
           "max_tokens": null,
           "model": "jev-latest",
           "prompt_version": null,
@@ -258,30 +258,30 @@
       "stages": {
         "enrich": {
           "attempts": 3,
-          "duration_ms_sum": 6241,
-          "span_seconds": 6.250949
+          "duration_ms_sum": 2682,
+          "span_seconds": 2.689538
         },
         "group": {
           "attempts": 1,
-          "duration_ms_sum": 8703,
-          "span_seconds": 8.702942
+          "duration_ms_sum": 9061,
+          "span_seconds": 9.060928
         },
         "memo": {
           "attempts": 1,
-          "duration_ms_sum": 10684,
-          "span_seconds": 10.683893
+          "duration_ms_sum": 12502,
+          "span_seconds": 12.502074
         },
         "verify": {
           "attempts": 1,
-          "duration_ms_sum": 9212,
-          "span_seconds": 9.212071
+          "duration_ms_sum": 9666,
+          "span_seconds": 9.66671
         }
       },
-      "wall_seconds": 35.729
+      "wall_seconds": 34.816
     },
     "warm": {
       "config": {
-        "base_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "base_label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
         "batching": {
           "max_reviews_per_request": 50
         },
@@ -334,7 +334,7 @@
             "max_tokens": 1500,
             "quotes_per_issue": 5
           },
-          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
           "limits": {
             "backoff_base_seconds": 2.0,
             "backoff_max_seconds": 60.0,
@@ -386,13 +386,13 @@
           }
         },
         "config_path": "configs/pilot_cost_100.json",
-        "created_at": "2026-10-05T23:15:20.538822Z",
+        "created_at": "2026-10-05T23:31:15.623655Z",
         "dry_run": false,
         "input_csv": "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv",
         "input_file_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
         "input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
-        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
-        "last_invocation_id": "20261005T231520Z-ce55cc",
+        "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+        "last_invocation_id": "20261005T233115Z-1ee3bc",
         "limit": null,
         "limited": false,
         "limits": {
@@ -427,22 +427,22 @@
         },
         "rows": 100,
         "run_id": "pilot-warm",
-        "updated_at": "2026-10-05T23:15:20.539052Z",
+        "updated_at": "2026-10-05T23:31:15.623732Z",
         "warm_from": {
           "path": "/Users/haniframadhan/Desktop/Fundamentals-of-Agentic-AI-Final-Assignment-infra/runs/pilot-cold",
           "records_copied": 100,
-          "seeded_at": "2026-10-05T23:15:20.538636Z",
-          "source_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1"
+          "seeded_at": "2026-10-05T23:31:15.623568Z",
+          "source_label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1"
         }
       },
       "data_source": "measured",
       "invocation_stage_seconds": {
         "enrich": 0.0,
-        "group": 0.012,
+        "group": 0.007,
         "ingest": 0.0,
-        "memo": 0.005,
-        "rank": 0.002,
-        "verify": 0.006
+        "memo": 0.004,
+        "rank": 0.001,
+        "verify": 0.004
       },
       "invocations": [
         {
@@ -456,12 +456,12 @@
             "records_completed": 100,
             "records_quarantined": 0
           },
-          "ended_at": "2026-10-05T23:15:20.567960Z",
-          "invocation_id": "20261005T231520Z-ce55cc",
+          "ended_at": "2026-10-05T23:31:15.642238Z",
+          "invocation_id": "20261005T233115Z-1ee3bc",
           "phase": "resume",
-          "started_at": "2026-10-05T23:15:19.621974Z",
+          "started_at": "2026-10-05T23:31:14.826699Z",
           "stop_reason": "completed",
-          "wall_seconds": 0.946
+          "wall_seconds": 0.815
         }
       ],
       "name": "warm",
@@ -481,7 +481,7 @@
         "enrich": {
           "batch_size": 50,
           "effort": "none",
-          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
           "max_tokens": null,
           "model": "jev-latest",
           "prompt_version": null,
@@ -543,7 +543,7 @@
           "span_seconds": null
         }
       },
-      "wall_seconds": 0.946
+      "wall_seconds": 0.815
     }
   }
 }

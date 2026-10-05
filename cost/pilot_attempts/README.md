@@ -14,3 +14,19 @@ Other spend on 2026-10-06: one adapter check call to Claude Haiku 4.5 (53 input 
 Token-counting calls used to validate the API key are free.
 
 **Total API spend for pilot work: about $0.052** (measured pilot $0.027132 + attempts $0.024680 + check $0.0001).
+
+## Superseded: extract-v1 pilot (`pilot-extract-v1-superseded/`)
+
+The first clean pilot (cold $0.027132 / 35.7 s, warm 0 calls / 0.95 s) used `extract-v1`, whose substring
+entity matching tagged "bad app" reviews as `ads` (8 of 15 `ads` tags were false). After the whole-word fix
+(`extract-v2`, branch `fix/labelling-entity-boundaries`, reviewed and merged by OpenCode as 9a304ca), the pilot
+was re-run with `label_config = typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1`. The measured pilot in
+`../pilot_calls.jsonl` is the extract-v2 run (cold $0.027741 / 34.8 s; warm 0 calls / 0.81 s).
+
+**Run-to-run variation (measured, same 100 reviews, same Jev settings, two cold runs):** intent and severity
+identical on 100/100; topic differed on 3/100; needs_review on 2/100; sentiment differed (small float changes)
+on 59/100. Jev is therefore close to, but not exactly, deterministic. The exact-text result cache is what
+makes reruns reproducible; a fresh cold run can move a few labels and reorder close-ranked issues.
+
+Updated total API spend for pilot work: about $0.08 (extract-v2 pilot $0.027741 + superseded extract-v1
+pilot $0.027132 + failed attempts $0.024680 + adapter check $0.0001).

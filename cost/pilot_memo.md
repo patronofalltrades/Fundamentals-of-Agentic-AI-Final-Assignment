@@ -2,33 +2,35 @@
 
 ## Recommendation
 
-**Invest in Usability next quarter.** Usability issues command 13 complaints with severity_sum 35 [derived from C004, C006, C007, C009], driven by a recent UI redesign that removed core playback controls and excessive ad friction. While Playback (severity_sum 31) and Billing (severity_sum 20) also demand attention, Usability poses the highest immediate churn risk because it affects both free and premium users and stems from a reversible product decision. Restoring the seek-backward control and tuning ad load will recover user trust faster than addressing deeper playback bugs or billing policy friction.
+**Invest in Usability next quarter.** Usability issues command 14 complaints [C003-complaint_count, C004-complaint_count, C006-complaint_count, C008-complaint_count] with a combined severity sum of 38 [derived from C003-severity_sum, C004-severity_sum, C006-severity_sum, C008-severity_sum], driven by two critical regressions: a recent UI redesign that removed core playback controls (seeking, repeat) and queue/skip limitations that frustrate users trying to control their listening experience. These issues directly threaten retention and free-tier engagement. While billing concerns rank highest in isolation, they reflect user backlash to usability failures—fixing playback control will reduce premium paywall friction.
 
 ## Evidence: Top Issues by Area
 
-**Usability (5 issues, 13 complaints, severity_sum 35):**
-- **UI Update Removes Core Features** (severity_sum 9 [C004-severity_sum]): Users report the redesign eliminated seeking backward and basic playback options. One user stated: "We can't even go back few second to play music? WHAT IN THE WORLD IS THIS UPDATE?" [C004]
-- **Ad Overload Impact** (severity_sum 8 [C006-severity_sum]): "Such a worst app ... that always plays adds instead of songs" [C006]
-- **Excessive Ad Volume** (severity_sum 7 [C007-severity_sum]): "The ads are so loud" [C007]
-- **Forced Shuffle and Skip Limits** (severity_sum 6 [C009-severity_sum]): "I can only skip 6 of them 6!!!" [C009]
+**Usability (38 severity, 14 complaints):**
+- **Queue and Skip Limitations** [C003-severity_sum: 9]: Users cannot skip more than 6 songs or queue specific tracks. One user stated: "I just want to listen to one song but nooo I have to go through A HOLE PLAYLIST AND I CAN ONLY SKIP 6 OF THEM 6!!!" [C003]
+- **Major UI Update Removed Features** [C004-severity_sum: 9]: Seeking and repeat functionality vanished. A user reported: "We can't even go back few second to play music? WHAT IN THE WORLD IS THIS UPDATE?" [C004]
+- **Ads Interfere with Playback** [C006-severity_sum: 8]: Free users see ads instead of songs. One noted: "always plays adds instead of songs...if want to enjoy music free without adds don't download this app" [C006]
+- **Excessive Advertisements** [C008-severity_sum: 7]: Ads are loud and overwhelming [C008]
 
-**Playback (7 issues, 9 complaints, severity_sum 31):**
-- **Playback Feature Issues** (severity_sum 10 [C003-severity_sum]): "I can't play song happly. Can't repeat and play specific part" [C003]
+**Billing/Support (25 severity, 9 complaints):**
+- **Premium Paywall for Basic Features** [C001-severity_sum: 20]: Users must pay to select songs or skip. A user complained: "now you can't even pick a certain song without Spotify premium...forcing you to pay premium for basic things like just listening to music" [C001]
 
-**Billing/Support (3 issues, 7 complaints, severity_sum 20):**
-- **Premium Paywall Restrictions** (severity_sum 15 [C002-severity_sum]): "You can't even pick a certain song without Spotify premium" [C002]
+**Playback (28 severity, 8 complaints):**
+- **Playback and Integration Issues** [C007-severity_sum: 7]: Google Assistant integration broken; music adjustment bugs [C007]
+
+**Access (8 severity, 2 complaints):** Minimal impact.
 
 ## Why Not the Other Areas
 
-**Access** (2 issues, severity_sum 8): Lowest complaint volume and severity; no top-10 issues ranked.
+**Billing/Support** ranks second in severity (25) but is a symptom, not the root cause. Users resent premium paywalls because recent updates broke free-tier usability—they cannot control playback, skip freely, or avoid ad overload. Fixing usability will reduce the perception that Spotify is "forcing" premium adoption.
 
-**Playback** (severity_sum 31): Close second, but issues are technical bugs (repeat, Google Assistant integration, audio adjustment) requiring deeper engineering. Usability fixes are faster wins that will reduce churn immediately.
+**Playback** (28 severity) includes integration bugs, but the top usability issues (queue, seeking, repeat) are more acute and affect more users (14 vs. 8 complaints).
 
-**Billing/Support** (severity_sum 20): Premium paywall tightening is a deliberate monetization strategy. Complaints reflect policy, not product defect. Reversing restrictions risks revenue; addressing Usability does not.
+**Access** (8 severity) is negligible.
 
 ## Risks and Data Caveats
 
-- **Coverage**: 49 complaint/cancellation records analyzed; 100% completion rate. Sample size is modest; patterns may not represent all user segments.
-- **Verifier Agreement**: Joint topic-intent-severity agreement is 0.85 [verify_agreement]; severity_exact agreement 0.85. Severity ratings are reliable but not perfect; some issues may be miscategorized.
-- **Keyword-Based Grouping**: Issues are derived from keyword clustering. "Ad Overload" and "Excessive Ad Volume" may overlap; consolidation could reveal true magnitude.
-- **Recency Bias**: Top issues cluster around the recent update. Longer-term playback bugs may be underrepresented in recent reviews.
+- **Coverage:** Data spans 100 completed records from 49 complaint/cancellation entries; keyword-based grouping may conflate distinct issues (e.g., "ads" vs. "paywall").
+- **Verifier Agreement:** Joint topic-intent-severity agreement is 0.85 [verify_agreement]; severity exact match is 0.85, within-1 is 1.0. Severity estimates are reliable; topic boundaries less so.
+- **Recency Bias:** The "recent update" appears in multiple complaints (C004, C005), suggesting a single regression event. Prioritize rollback or rapid hotfix before investing in new features.
+- **Outside-Question Issues:** 38 severity in "other" (general quality, update regression, lyrics, catalog) fall outside the four investment areas but signal broader user dissatisfaction; address usability to rebuild trust.
