@@ -76,6 +76,14 @@ class AnthropicChatTests(unittest.TestCase):
         chat = anthropic_chat.build_anthropic_chat({"api_key": "k"}, sdk=fake_sdk(ok_response()))
         self.assertEqual(chat._client.init["max_retries"], 0)
 
+    def test_workspace_header(self):
+        with mock.patch.dict(os.environ, {"ANTHROPIC_WORKSPACE_ID": "wrkspc_x"}):
+            chat = anthropic_chat.build_anthropic_chat({"api_key": "k"}, sdk=fake_sdk(ok_response()))
+        self.assertEqual(chat._client.init["default_headers"], {"anthropic-workspace-id": "wrkspc_x"})
+        with mock.patch.dict(os.environ, {"ANTHROPIC_WORKSPACE_ID": ""}):
+            chat = anthropic_chat.build_anthropic_chat({"api_key": "k"}, sdk=fake_sdk(ok_response()))
+        self.assertNotIn("default_headers", chat._client.init)
+
     def test_error_mapping(self):
         _, Transient, Invalid = anthropic_chat._errors()
         Base = anthropic_chat._errors()[0]

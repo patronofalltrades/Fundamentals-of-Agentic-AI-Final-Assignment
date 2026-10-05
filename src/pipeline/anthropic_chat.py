@@ -58,12 +58,16 @@ class AnthropicChat:
     provider = PROVIDER
 
     def __init__(self, model: str = DEFAULT_MODEL, api_key: Optional[str] = None,
-                 timeout: float = 60.0, sdk: Any = None):
+                 timeout: float = 60.0, workspace_id: Optional[str] = None, sdk: Any = None):
         if sdk is None:
             import anthropic as sdk  # noqa: PLC0415 - deliberate lazy import (offline safety)
         self._sdk = sdk
         self.model = model
-        self._client = sdk.Anthropic(api_key=api_key, timeout=timeout, max_retries=0)
+        kwargs: Dict[str, Any] = {"api_key": api_key, "timeout": timeout, "max_retries": 0}
+        if workspace_id:
+            # Organization-level keys must name the workspace whose limits and billing apply.
+            kwargs["default_headers"] = {"anthropic-workspace-id": workspace_id}
+        self._client = sdk.Anthropic(**kwargs)
 
     def complete(self, messages: List[Dict[str, str]], *, max_tokens: int,
                  temperature: float = 0.0, response_format: Optional[str] = None) -> ChatResult:
@@ -142,5 +146,6 @@ def build_anthropic_chat(config: Optional[Dict[str, Any]] = None, sdk: Any = Non
     key = config.get("api_key") or os.environ.get(config.get("api_key_env", "ANTHROPIC_API_KEY"), "")
     if not key:
         return None
+    workspace = config.get("workspace_id") or os.environ.get("ANTHROPIC_WORKSPACE_ID", "") or None
     return AnthropicChat(model=config.get("model") or DEFAULT_MODEL, api_key=key,
-                         timeout=float(config.get("timeout_seconds", 60)), sdk=sdk)
+                         timeout=float(config.get("timeout_seconds", 60)), workspace_id=workspace, sdk=sdk)
