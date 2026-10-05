@@ -16,6 +16,7 @@ from .contract import INTENTS, TOPICS
 from .errors import ValidationError
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+MODELS_ENDPOINT = "https://api.typesafe.ai/v1/models"
 MODEL = "jev-1.13.0"
 PROMPT_VERSION = "jev-rubric-v1"
 SCHEMA_VERSION = "jev-labels-v1"
@@ -157,6 +158,23 @@ def post_systemone(request_body: Dict[str, Any], api_key: str, timeout: float = 
         except ValueError:
             retry_after = None
         raise JevHTTPError(error.code, retry_after) from None
+
+
+def check_model_access(api_key: str, timeout: float = 10.0) -> None:
+    """Read-only account check. Versioned model IDs may not appear in listing."""
+    if not api_key:
+        raise ValidationError("TypeSafe API key is missing")
+    request = urllib.request.Request(MODELS_ENDPOINT,
+                                     headers={"Authorization": "Bearer " + api_key}, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.load(response)
+    except urllib.error.HTTPError as error:
+        raise JevHTTPError(error.code) from None
+    models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(models, list) or "jev-latest" not in [
+            item.get("name") for item in models if isinstance(item, dict)]:
+        raise ValidationError("TypeSafe model listing does not show jev-latest")
 
 
 def enrich_labels(review_text: str, api_key: str, transport=post_systemone,

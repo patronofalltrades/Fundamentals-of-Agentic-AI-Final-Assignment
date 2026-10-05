@@ -1,11 +1,13 @@
 """Synthetic Jev request and response checks; never call a provider."""
 
 import unittest
+import io
+from unittest.mock import patch
 
 from spotify_pipeline.config import config_hash
 from spotify_pipeline.errors import ValidationError
 from spotify_pipeline.jev import (
-    JevHTTPError, build_request, combine_with_evidence, enrich_labels,
+    JevHTTPError, build_request, check_model_access, combine_with_evidence, enrich_labels,
     label_config, parse_response,
 )
 
@@ -72,6 +74,13 @@ class JevTests(unittest.TestCase):
             combine_with_evidence(labels, "Playback pauses", [], "playback")
         result = combine_with_evidence(labels, "Playback pauses", [], "Playback")
         self.assertEqual(result["evidence_quote"], "Playback")
+
+    def test_read_only_model_access_gate(self):
+        with patch("spotify_pipeline.jev.urllib.request.urlopen", return_value=io.BytesIO(b'{"models":[{"name":"jev-latest"}]}')):
+            check_model_access("synthetic-key")
+        with patch("spotify_pipeline.jev.urllib.request.urlopen", return_value=io.BytesIO(b'{"models":[]}')):
+            with self.assertRaises(ValidationError):
+                check_model_access("synthetic-key")
 
 
 if __name__ == "__main__":

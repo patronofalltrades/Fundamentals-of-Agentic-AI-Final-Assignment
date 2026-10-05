@@ -38,9 +38,10 @@ Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
 output is rejected unless every entity and the nonblank quote are exact
 source substrings. It uses a temporary working directory, an ephemeral
 ChatGPT-auth Codex session, read-only sandbox, and JSON schema. The local
-`codex login status` reports **Logged in using ChatGPT**, but this route has
-not been run on reviews, and its model availability and isolation behavior
-have not been verified with a live call. The adapter does not invent entities
+`codex login status` reports **Logged in using ChatGPT**. A single call on
+invented text succeeded under standard sandbox escalation with model
+`gpt-6.1-sol`, schema output, and exact-quote validation. No assignment review
+or golden answer was sent. The adapter does not invent entities
 or quotes from Jev labels. The existing SQLite state validator checks exact
 quotes again when a complete record is saved. A final import into that
 canonical classification store remains a manual integration step.
@@ -85,7 +86,10 @@ ceiling is USD 49.99; this pilot cannot expand automatically.
 The CLI defaults to that offline plan. Paid `--execute` requires an explicit
 `--approved-cap-usd` no higher than 0.60, a key in the process environment,
 and the pinned sample/manifest. Hanif has approved the limit, but this
-worktree has no usable key route; verify account/model access before use.
+worktree has no usable key route. Before creating the ledger or making a paid
+request, the runner makes a read-only `GET /v1/models` with the same key and
+requires the `jev-latest` alias to be listed. The actual request remains pinned
+to `jev-1.13.0` as documented by TypeSafe.
 After a run, `--replay` reads the
 same ignored `local/jev_pilot.db` with no network. The separate
 `python3 -m tools.jev_evidence` command defaults to an offline count of Jev
@@ -111,12 +115,30 @@ A separate Desktop checkout has a nonblank TypeSafe key entry. Its existing
 `src/labelling/smoke_typesafe.py` launcher can read that file for its own
 demo smoke test without copying or printing the key, but it does not launch
 this worktree's pilot runner. The key value was not read, copied, or used here.
-Hanif must make the already configured key available to the pilot process
-through an approved secure launcher or environment before execution. No
-credential setup, billing change, top-up, or paid fallback was performed.
-The Codex CLI reports ChatGPT login, but an isolated synthetic extraction
-attempt failed before reaching the model because the execution sandbox could
-not write its existing `~/.codex` state database. No synthetic answer was
-returned. The Codex evidence stage also remains blocked until a supported
-runtime permits that state access; do not copy its auth files or use an API-key
-fallback.
+Hanif can open the existing
+`/Users/haniframadhan/Desktop/Fundamentals-of-Agentic-AI-Final-Assignment/.env`
+locally and copy only the `TYPESAFE_API_KEY` value. Do not paste it into chat,
+the command line, or a new file. In a private zsh Terminal, run the following
+from this worktree. The prompt hides the pasted value; the variable exists
+only in the subshell and the pilot process, and shell history stores no key.
+
+```sh
+cd '/Users/haniframadhan/Documents/Codex/2026-10-05/task/jev-enrichment-worktree'
+(
+  read -s 'pilot_key?Paste existing TypeSafe key: '; print
+  TYPESAFE_API_KEY="$pilot_key" python3 -m tools.jev_pilot \
+    --input '/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv' \
+    --manifest '/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/manifest.json' \
+    --execute --approved-cap-usd 0.60
+)
+```
+
+The script records local labels and usage in the ignored
+`local/jev_pilot.db`. It does not run the Codex evidence stage automatically.
+The command checks model-list access before spending. Recheck the current
+published price before running it; the assistant cannot perform an
+authenticated account read without access to the key. No credential setup, billing change, top-up,
+or paid fallback was performed. The first synthetic Codex check failed under
+the ordinary workspace sandbox because its existing `~/.codex` state database
+was read-only; the normal `require_escalated` approval path succeeded on retry.
+No security settings or auth files were changed.

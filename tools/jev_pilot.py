@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from spotify_pipeline.contract import SOURCE_FIELDS, file_sha256, row_sha256
+from spotify_pipeline.jev import check_model_access
 from spotify_pipeline.jev_pilot import PilotLedger, run_reviews
 from tools.plan_jev_pilot import plan
 
@@ -69,6 +70,7 @@ def main() -> None:
     rows = list(sample_rows(args.input))
     if len(rows) != 100 or file_sha256(args.input) != aggregate["source_sha256"]:
         parser.error("cost sample changed after preflight; no calls made")
+    check_model_access(key)
     with PilotLedger(db_path, aggregate["source_sha256"], cap) as ledger:
         print(json.dumps(run_reviews(rows, ledger, key), indent=2))
 
