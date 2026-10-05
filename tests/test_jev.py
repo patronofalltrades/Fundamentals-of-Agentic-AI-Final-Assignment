@@ -4,11 +4,12 @@ import unittest
 import io
 from unittest.mock import patch
 
-from spotify_pipeline.config import config_hash
+from spotify_pipeline.config import cache_key, config_hash
+from spotify_pipeline.contract import TOPICS
 from spotify_pipeline.errors import ValidationError
 from spotify_pipeline.jev import (
-    JevHTTPError, build_request, check_model_access, combine_with_evidence, enrich_labels,
-    label_config, parse_response,
+    JevHTTPError, PROMPT_VERSION, TOPIC_CRITERIA, build_request, check_model_access,
+    combine_with_evidence, enrich_labels, label_config, parse_response,
 )
 
 
@@ -35,6 +36,32 @@ class JevTests(unittest.TestCase):
         self.assertEqual(len(config_hash(label_config())), 64)
         with self.assertRaises(ValidationError):
             build_request(" ")
+
+    def test_topic_rubric_v2_contains_contract_guidance_in_choice_payload(self):
+        topic = build_request("Synthetic review text")["questions"]["topic"]
+        self.assertEqual(topic["type"], "choice")
+        self.assertEqual(tuple(topic["criteria"]), TOPICS)
+        self.assertEqual(topic["criteria"], TOPIC_CRITERIA)
+        for phrase in ("highest supported severity", "first specific problem",
+                       "first specific praised feature", "Premium mention alone",
+                       "Ad interruptions", "loading failures", "missing offline lyrics"):
+            self.assertIn(phrase, topic["instructions"])
+        for name, phrase in (("usability", "ad interruptions"),
+                             ("playback", "crashes"),
+                             ("catalog", "recommendations"),
+                             ("catalog", "lyrics availability"),
+                             ("billing", "premium-only controls"),
+                             ("support", "customer service"),
+                             ("other", "General praise")):
+            self.assertIn(phrase, topic["criteria"][name])
+
+    def test_new_prompt_has_distinct_config_and_exact_text_cache_key(self):
+        current = label_config()
+        old = {**current, "prompt_version": "jev-rubric-v1"}
+        self.assertEqual(PROMPT_VERSION, "jev-rubric-v2")
+        self.assertNotEqual(config_hash(current), config_hash(old))
+        self.assertNotEqual(cache_key(current, "Synthetic review text"),
+                            cache_key(old, "Synthetic review text"))
 
     def test_response_maps_score_and_flags_low_confidence(self):
         result = parse_response(fixture_response())

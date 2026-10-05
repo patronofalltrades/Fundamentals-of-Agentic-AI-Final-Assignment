@@ -18,20 +18,20 @@ from .errors import ValidationError
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 MODELS_ENDPOINT = "https://api.typesafe.ai/v1/models"
 MODEL = "jev-1.13.0"
-PROMPT_VERSION = "jev-rubric-v1"
+PROMPT_VERSION = "jev-rubric-v2"
 SCHEMA_VERSION = "jev-labels-v1"
 MIN_CONFIDENCE = 0.60
 MAX_ATTEMPTS = 2
 
 TOPIC_CRITERIA = {
-    "access": "Sign-in, account access, or account availability.",
-    "usability": "App interface, navigation, settings, or general ease of use.",
-    "playback": "Playing, pausing, skipping, shuffling, or audio performance.",
-    "downloads": "Offline listening, saved downloads, or download failures.",
-    "catalog": "Availability or discovery of music, podcasts, playlists, or artists.",
-    "billing": "Charges, payment, pricing, subscriptions, or plan terms.",
-    "support": "Help from customer support or resolution of a support case.",
-    "other": "No listed topic clearly fits the text.",
+    "access": "Login, signup, passwords, or account access.",
+    "usability": "Navigation, layout, controls, queue or playlist management, or ad interruptions.",
+    "playback": "Playing, pausing, skipping, shuffling, crashes, loading failures, lag, audio or connection failures, or resource use.",
+    "downloads": "Downloading music, saved downloads, offline listening, or disappearing downloads.",
+    "catalog": "Missing music, artists, or podcasts; search, discovery, recommendations, or lyrics availability, including missing offline lyrics.",
+    "billing": "Prices, charges, subscriptions, paywalls, premium entitlement, or explicitly premium-only controls. A paid-plan mention alone is not billing.",
+    "support": "Contact with customer service or its response, not support meaning endorsement of a cause.",
+    "other": "General praise or criticism, unrelated or unclear text, or no supported specific product topic. Generic 'great music app' praise is other.",
 }
 INTENT_CRITERIA = {
     "cancellation": "Explicitly expresses intent to leave, cancel, or stop using the service.",
@@ -69,7 +69,13 @@ def build_request(review_text: str) -> Dict[str, Any]:
         "state": review_text,
         "model": MODEL,
         "questions": {
-            "topic": {"type": "choice", "instructions": "Choose the main product topic explicitly supported by this review.", "criteria": TOPIC_CRITERIA},
+            "topic": {"type": "choice", "instructions": (
+                "Choose only a product topic supported by the review text. For multiple problems, "
+                "choose the highest supported severity; on a tie, choose the first specific problem mentioned. "
+                "For a positive review, choose the first specific praised feature; general praise is other. "
+                "A Premium mention alone is not billing; an explicitly premium-only control is billing. "
+                "Ad interruptions are usability, loading failures are playback, and missing offline lyrics are catalog."
+            ), "criteria": TOPIC_CRITERIA},
             "intent": {"type": "choice", "instructions": "Choose the reviewer's clearest expressed intent. Do not infer cancellation from low stars.", "criteria": INTENT_CRITERIA},
             "severity": {"type": "choice", "instructions": "Choose the highest reported harm or lost function supported by the words. Tone and star rating do not set harm.", "criteria": SEVERITY_CRITERIA},
             "sentiment": {"type": "score", "instructions": "Rate the tone of the review independently of functional severity.", "criteria": SENTIMENT_LEVELS},

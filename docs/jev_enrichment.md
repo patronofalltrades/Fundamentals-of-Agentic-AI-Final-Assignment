@@ -35,6 +35,14 @@ pilot rule, not a calibrated accuracy guarantee. The versioned configuration
 from `label_config()` fits the foundation's exact-text cache key, which
 invalidates reuse when model, effort, prompt, or schema version changes.
 
+The current topic Choice wording is [rubric v2](topic_rubric_v2.md). It keeps
+the eight contract labels and adds the highest-severity and first-specific
+tie-break rules. The measured 100-review pilot below used `jev-rubric-v1`.
+Changing the prompt version changes the configuration hash, so that ledger
+cannot be reopened or imported as v2. The current `--replay` command also
+rejects the historical v1 ledger; use its frozen aggregate report or the v1
+code for historical replay. No v2 inference has run.
+
 Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
 output is rejected unless every entity is an exact whole-word source span
 without edge whitespace and the nonblank quote is an exact source substring.

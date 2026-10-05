@@ -1,5 +1,6 @@
 """Synthetic persistent budget, retry, cache, and replay checks."""
 
+import sqlite3
 import tempfile
 import unittest
 from decimal import Decimal
@@ -24,6 +25,18 @@ def row(review_id, text):
 
 
 class PilotTests(unittest.TestCase):
+    def test_v1_ledger_cannot_reopen_as_v2(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = str(Path(folder) / "pilot.db")
+            with PilotLedger(path, SOURCE, Decimal("0.60")):
+                pass
+            old = {**label_config(), "prompt_version": "jev-rubric-v1"}
+            with sqlite3.connect(path) as connection:
+                connection.execute("UPDATE meta SET value=? WHERE key='config_hash'",
+                                   (config_hash(old),))
+            with self.assertRaises(StateError):
+                PilotLedger(path, SOURCE, Decimal("0.60"))
+
     def test_persisted_reservation_survives_reopen_and_caps(self):
         with tempfile.TemporaryDirectory() as folder:
             path = str(Path(folder) / "pilot.db")
@@ -162,6 +175,11 @@ class PilotTests(unittest.TestCase):
                     for item in completed_items(ledger, db, expected_count=2):
                         db.save_completed_batch([item])
                     self.assertEqual(db.status_counts(config_hash(label_config()))["completed"], 2)
+                    old = {**label_config(), "prompt_version": "jev-rubric-v1"}
+                    ledger.conn.execute("UPDATE results SET config_hash=?", (config_hash(old),))
+                    ledger.conn.commit()
+                    with self.assertRaises(StateError):
+                        completed_items(ledger, db, expected_count=2)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 import json
 from typing import Any, Dict, List
 
+from .config import config_hash
 from .contract import text_sha256
 from .errors import StateError
 from .jev import label_config
@@ -17,9 +18,12 @@ def completed_items(ledger: PilotLedger, source_db: Any, expected_count: int = 1
     if len(saved) != expected_count or any(row["evidence_quote"] is None for row in saved):
         raise StateError("pilot labels and exact evidence are not complete")
     cfg = label_config()
+    expected_config_hash = config_hash(cfg)
     direct: List[Dict[str, Any]] = []
     cached: List[Dict[str, Any]] = []
     for saved_row in saved:
+        if saved_row["config_hash"] != expected_config_hash:
+            raise StateError("pilot label configuration differs from current rubric")
         source = source_db.get_record_by_review_id(saved_row["review_id"])
         if (source is None or source["review_text"] != saved_row["review_text"] or
                 source["row_sha256"] != saved_row["source_sha256"] or
