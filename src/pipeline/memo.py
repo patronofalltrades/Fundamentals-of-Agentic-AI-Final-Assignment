@@ -12,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pipeline.claims import METRICS, claim_id, load_claims, validate_memo_citations
+from pipeline.claims import lint_memo, METRICS, claim_id, load_claims, validate_memo_citations
 from pipeline.context import StageContext
 from pipeline.group import fallback_name, select_quotes
 from pipeline.io import atomic_write_json, atomic_write_text, dumps_line
@@ -21,7 +21,7 @@ from pipeline.rowhash import RANKED_INTENTS
 from pipeline.verify import StageCache, cached_chat, chat_model_name, sha256_hex
 
 STAGE = "memo"
-PROMPT_VERSION = "memo-v1"
+PROMPT_VERSION = "memo-v2"
 PRODUCT_QUESTION = ("Where should Spotify invest next quarter: access, usability, playback, or "
                     "billing/support?")
 AREAS = ("access", "usability", "playback", "billing_support")
@@ -34,13 +34,30 @@ AREA_NOTE = ("Topic-to-area mapping: access->access; usability->usability; playb
 
 PROMPT = """You write a one-page decision memo for Spotify's product leadership.
 Question: {question}
-Use ONLY the numbers in the JSON input. Every issue-level number you state must be followed by its
-claim ID in square brackets, e.g. "severity_sum 1234 [C001-severity_sum]". Area totals in
-area_rollup are derived sums of claims: say so, and cite the issue claims they come from for the
-leading area. Do not invent numbers, percentages or claim IDs. Quote reviews only from the quotes
-given. Structure: Recommendation (1 paragraph), Evidence (top issues with citations), Why not the
-other areas, Risks and data caveats (coverage, verifier agreement, keyword-based grouping).
-Plain markdown, at most 600 words."""
+
+The input is a saved aggregate pack from a review-classification pipeline: ranked complaint issues,
+their claims, an area rollup, coverage counts and verifier agreement. It is the ONLY evidence.
+
+Rules:
+1. Numbers. Use only numbers that appear in the input. After every issue-level number put its full
+   claim ID in square brackets, exactly as given, e.g. "severity_sum 35 [C004-severity_sum]". Never
+   write a bare "[C004]" and never put anything other than claim IDs in square brackets. Area totals
+   come from area_rollup: call them "derived sums of claims" and list the claim IDs they come from.
+   Coverage and verifier numbers are not claims: name their input field in backticks instead,
+   e.g. "topic agreement 1.0 (`verify_agreement.agreement.topic`)".
+2. What the data is. These are public app-store reviews, self-selected, with labels from a classifier.
+   Complaint counts and severity sums measure how often and how badly reviewers describe a problem.
+   They do not measure churn, retention, revenue, cost or engineering effort, and a stated intent to
+   cancel is not evidence that anyone cancelled. Do not use those concepts, and do not guess causes
+   or how hard something is to fix. Say "reviewers report" rather than stating product facts.
+3. Recommendation. Recommend the area with the highest derived severity_sum unless the input shows a
+   reason not to; if two areas are close, say so plainly and name what would separate them.
+4. Caveats must be consistent with the numbers: sample size (coverage), verifier agreement as given
+   (do not contradict it), keyword-based issue grouping, and that ranking = complaint-weighted severity.
+5. Quotes: only the quotes provided, verbatim, attributed to their issue ID.
+
+Structure: Recommendation (1 paragraph), Evidence (top issues with citations), Why not the other
+areas, Risks and data caveats. Plain markdown, at most 500 words."""
 
 
 def _read_csv(path) -> List[dict]:
@@ -217,15 +234,23 @@ def run(ctx: StageContext) -> dict:
         rep = validate_memo_citations(text or "", claims, top_n)
         if not rep["ok"]:
             raise ValueError("citation check failed: %d citations, unknown %s" % (rep["n_citations"], rep["unknown"][:5]))
-        return text, rep
+        lint = lint_memo(text, claims, inputs)
+        if not lint["ok"]:
+            raise ValueError("memo lint failed: %s" % {k: v for k, v in lint.items() if k != "ok" and v})
+        return text, dict(rep, lint=lint)
+
+    def revise(msgs, text, error):
+        return msgs + [{"role": "assistant", "content": text},
+                       {"role": "user", "content": "That memo failed automatic checks: " + str(error)
+                        + ". Rewrite the whole memo, fixing only these problems and keeping every rule."}]
 
     parsed, info = cached_chat(ctx, cache, role=STAGE, key=key, messages=messages, max_tokens=max_tokens,
-                               review_ids=[], validate=validate, artifact="memo/inputs.json")
+                               review_ids=[], validate=validate, artifact="memo/inputs.json", revise=revise)
     cache.finish()
     if parsed is None:
         memo = template_memo(inputs)
         report = dict(validate_memo_citations(memo, claims, top_n), source="template_fallback",
-                      model_errors=info.get("errors"))
+                      model_errors=info.get("errors"), lint=lint_memo(memo, claims, inputs))
     else:
         memo, report = parsed
         report = dict(report, source="model", request_id=info.get("request_id"), cache_hit=info["cache_hit"])

@@ -225,8 +225,13 @@ class StageCache:
 
 def cached_chat(ctx: StageContext, cache: StageCache, *, role: str, key: str, messages: List[dict],
                 max_tokens: int, review_ids: Sequence[str], validate, retries: int = 1,
-                response_format: Optional[str] = None, **extra) -> Tuple[Optional[Any], dict]:
-    """Return ``(parsed, info)``; use the stage cache, else call with one retry on failure."""
+                response_format: Optional[str] = None, revise=None, **extra) -> Tuple[Optional[Any], dict]:
+    """Return ``(parsed, info)``; use the stage cache, else call with one retry on failure.
+
+    ``revise(messages, text, error) -> messages`` (optional) builds the retry request from a response
+    that failed validation, so the model sees what to fix. The cache key stays that of the original
+    request: the cached text is the validated answer for these inputs.
+    """
     entry = cache.get(key)
     if entry is not None:
         try:
@@ -243,6 +248,8 @@ def cached_chat(ctx: StageContext, cache: StageCache, *, role: str, key: str, me
             cache.put(key, text, event)
             return parsed, {"cache_hit": False, "request_id": event["request_id"], "attempts": attempt}
         errors.append(event["error"])
+        if revise is not None and text:
+            messages = revise(messages, text, event["error"])
     cache.miss(key)
     return None, {"cache_hit": False, "request_id": None, "attempts": retries + 1, "errors": errors}
 

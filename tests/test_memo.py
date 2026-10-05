@@ -70,3 +70,71 @@ class MemoRun(TempDirCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScriptedMemoChat:
+    """Returns the given memo texts in order (memo role only) and records each request."""
+    model = "fake-chat-1"
+    provider = "fake"
+
+    def __init__(self, texts):
+        self.texts, self.requests = list(texts), []
+
+    def complete(self, messages, *, max_tokens, temperature=0.0, response_format=None):
+        from pipeline.context import ChatResult
+        self.requests.append(messages)
+        return ChatResult(text=self.texts.pop(0), request_id="scripted-%d" % len(self.requests),
+                          model=self.model, input_tokens=10, output_tokens=10)
+
+
+class MemoLint(TempDirCase):
+    def setUp(self):
+        super().setUp()
+        self.csv, self.run = build_fixture(self.tmp)
+        ctx = make_ctx(self.run, self.csv, FakeChat())
+        verify.run(ctx)
+        group.run(ctx)
+        rank.run(ctx)
+        memo.run(make_ctx(self.run, self.csv, None, dry_run=True))  # writes inputs.json + template
+        self.inputs = json.loads((self.run / "memo" / "inputs.json").read_text())
+        self.claims = load_claims(self.run / "rank" / "claims.csv")
+        self.cid = sorted(self.claims)[0]
+        self.value = self.claims[self.cid]["value"]
+
+    def test_lint_flags_each_problem(self):
+        from pipeline.claims import lint_memo
+        good = "Invest in usability: severity_sum %s [%s]." % (self.value, self.cid)
+        self.assertTrue(lint_memo(good, self.claims, self.inputs)["ok"])
+        bad = lint_memo("x %s [%s] and [C001] and [verify_agreement]" % (self.value, self.cid), self.claims, self.inputs)
+        self.assertEqual(bad["bad_citations"], ["C001", "verify_agreement"])
+        self.assertEqual(lint_memo(good + " This drives churn and retention.", self.claims, self.inputs)["unsupported_terms"],
+                         ["churn", "retention"])
+        self.assertEqual(lint_memo(good + " Fix 4,321 complaints.", self.claims, self.inputs)["unknown_numbers"], ["4,321"])
+        self.assertTrue(lint_memo(good + " See [the docs](https://x.y) for top 3.", self.claims, self.inputs)["ok"])
+
+    def test_template_memo_passes_lint(self):
+        from pipeline.claims import lint_memo
+        text = (self.run / "memo" / "memo.md").read_text()
+        self.assertEqual(lint_memo(text, self.claims, self.inputs),
+                         {"ok": True, "bad_citations": [], "unsupported_terms": [], "unknown_numbers": []})
+
+    def test_failed_lint_is_revised_with_feedback(self):
+        bad = "Invest in usability: severity_sum %s [%s]. It reduces churn." % (self.value, self.cid)
+        good = "Invest in usability: severity_sum %s [%s]." % (self.value, self.cid)
+        chat = ScriptedMemoChat([bad, good])
+        s = memo.run(make_ctx(self.run, self.csv, chat))
+        self.assertEqual(s["source"], "model")
+        self.assertEqual(len(chat.requests), 2)
+        retry = chat.requests[1]
+        self.assertEqual(retry[-2], {"role": "assistant", "content": bad})
+        self.assertIn("churn", retry[-1]["content"])
+        self.assertEqual((self.run / "memo" / "memo.md").read_text().strip(), good)
+        outcomes = [c["outcome"] for c in calls_of(self.run, "memo")]
+        self.assertEqual(outcomes, ["failed", "succeeded"])
+
+    def test_two_failed_lints_fall_back_to_template(self):
+        bad = "Invest: severity_sum %s [%s]; revenue at risk." % (self.value, self.cid)
+        s = memo.run(make_ctx(self.run, self.csv, ScriptedMemoChat([bad, bad])))
+        self.assertEqual(s["source"], "template_fallback")
+        report = json.loads((self.run / "memo" / "citations.json").read_text())
+        self.assertTrue(report["lint"]["ok"])

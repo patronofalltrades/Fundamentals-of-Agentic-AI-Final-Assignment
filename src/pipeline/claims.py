@@ -80,3 +80,84 @@ def validate_memo_citations(memo_text: str, claims: Dict[str, dict], top_n: Opti
     return {"ok": bool(cited) and not unknown, "n_citations": len(tokens), "cited": cited, "unknown": unknown,
             "issues_cited": issues_cited, "uncited_top_issues": uncited_issues,
             "uncited_top_claims": uncited_claims}
+
+
+# --------------------------------------------------------------------------- memo lint (memo-v2)
+
+# Claims the saved aggregates cannot support: the corpus has no revenue, churn, retention or
+# engineering-cost data, and a stated intent to cancel is not evidence that anyone cancelled.
+UNSUPPORTED_TERMS = re.compile(
+    r"\b(churn\w*|retention|retain(?:ed|ing)?|revenue|monetiz\w*|monetis\w*|profit\w*|ROI|"
+    r"lifetime value|LTV|market share|conversion rate|engineering (?:effort|cost|work|time)|"
+    r"quick wins?|faster wins?|low[- ]hanging|easy fix\w*|cheap(?:er)? to fix|reversible|root cause)\b",
+    re.IGNORECASE)
+NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:,\d{3})*(?:\.\d+)?%?")
+SMALL_COUNT_LIMIT = 10  # "top 3", "2 of 4 areas", list numbering
+
+
+def _input_numbers(value, out: set) -> set:
+    """Every number that appears anywhere in the memo input, in the forms a writer may use."""
+    if isinstance(value, bool) or value is None:
+        return out
+    if isinstance(value, (int, float)):
+        out.add(_norm_number(str(value)))
+        if isinstance(value, float) and 0 <= value <= 1:
+            out.add(_norm_number("%g" % round(value * 100, 4)))  # 0.85 -> 85 (written as 85%)
+            out.add(_norm_number("%.1f" % (value * 100)))
+            out.add(_norm_number("%d" % round(value * 100)))
+        return out
+    if isinstance(value, str):
+        for m in NUMBER_RE.findall(value):
+            out.add(_norm_number(m))
+        return out
+    if isinstance(value, dict):
+        for v in value.values():
+            _input_numbers(v, out)
+        return out
+    if isinstance(value, (list, tuple)):
+        for v in value:
+            _input_numbers(v, out)
+    return out
+
+
+def _norm_number(text: str) -> str:
+    text = text.replace(",", "").rstrip("%")
+    try:
+        number = float(text)
+    except ValueError:
+        return text
+    return ("%.6f" % number).rstrip("0").rstrip(".")
+
+
+def lint_memo(memo_text: str, claims: Dict[str, dict], inputs: dict) -> dict:
+    """Problems that make a memo unfit to submit. ``ok`` is False when any list is non-empty.
+
+    - ``bad_citations``: bracket tokens that look like citations but are not full claim IDs
+      (bare ``[C004]``, ``[verify_agreement]``). Markdown links ``[text](url)`` are ignored.
+    - ``unsupported_terms``: business/causal claims the data cannot support.
+    - ``unknown_numbers``: numbers that do not appear in the memo inputs (beyond small counts).
+    """
+    bad = []
+    for m in re.finditer(r"\[([^\[\]]*)\](?!\()", memo_text):
+        inner = m.group(1).strip()
+        parts = [p.strip() for p in re.split(r"[,;]", inner) if p.strip()]
+        looks_like_citation = (re.match(r"^C\d", inner) or re.fullmatch(r"[a-z_]+(?:\.[a-z_]+)*", inner)
+                               or any(re.match(r"^C\d", p) for p in parts))
+        if looks_like_citation and not all(p in claims for p in parts):
+            bad.append(inner)
+    terms = sorted({m.group(0).lower() for m in UNSUPPORTED_TERMS.finditer(memo_text)})
+    allowed = _input_numbers(inputs, set())
+    stripped = re.sub(r"\[[^\[\]]*\]", " ", memo_text)          # citations carry claim numbers
+    stripped = re.sub(r"`[^`]*`", " ", stripped)                # issue ids / field names
+    stripped = re.sub(r"(?m)^\s*(?:#+|\d+\.|[-*])\s*", " ", stripped)  # headings and list markers
+    unknown = []
+    for m in NUMBER_RE.finditer(stripped):
+        token = _norm_number(m.group(0))
+        try:
+            small = float(token).is_integer() and 0 <= float(token) <= SMALL_COUNT_LIMIT and "%" not in m.group(0)
+        except ValueError:
+            small = False
+        if not small and token not in allowed:
+            unknown.append(m.group(0))
+    return {"ok": not (bad or terms or unknown), "bad_citations": sorted(set(bad)),
+            "unsupported_terms": terms, "unknown_numbers": sorted(set(unknown))}
