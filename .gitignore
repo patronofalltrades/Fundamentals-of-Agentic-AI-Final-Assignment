@@ -4,3 +4,9 @@
 __pycache__/
 *.pyc
 .DS_Store
+runs/*
+!runs/.gitkeep
+.local/
+local-reference.json
+self-check*.json
+*.egg-info/

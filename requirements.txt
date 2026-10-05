@@ -1,0 +1,2 @@
+# Standard library only (Python 3.9+). Offline replay, export, the checker and the cost
+# calculator need no third-party packages and no provider SDKs.
