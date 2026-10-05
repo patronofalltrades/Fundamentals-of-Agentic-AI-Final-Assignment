@@ -13,9 +13,29 @@
     "needs_review_threshold": 0.5
   },
 
-  "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+  "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
   "prompt_version": "v1",
   "schema_version": "a5-v1",
+
+  "chat": {
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4.1-flash",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "api_key_env": "OPENROUTER_API_KEY",
+    "temperature": 0.0,
+    "max_output_tokens": 4096,
+    "thinking": "disabled",
+    "alternatives": {
+      "deepseek_direct": {"provider": "deepseek", "model": "deepseek-flash", "api_key_env": "DEEPSEEK_API_KEY"},
+      "free_fallback": {"provider": "openrouter", "model": "deepseek/deepseek-v4-flash:free", "note": "$0 older V4 variant; evaluate before relying on it"}
+    },
+    "roles": {
+      "verify": "re-labels a declared sample from original text only (independent of enrich output); ChatGPT owns prompt semantics + thresholds",
+      "group": "names recurring complaint issues from bounded evidence packs; Claude owns orchestration",
+      "memo": "drafts the decision memo from saved aggregates + claims; Claude owns orchestration"
+    },
+    "pricing_ref_usd_per_mtok": { "note": "OpenRouter returns per-response usage.cost; calculator uses its own dated rates.csv. DeepSeek direct ref: 0.14 in / 0.0028 cache-hit / 0.28 out, checked 2026-10" }
+  },
 
   "batching": {
     "max_reviews_per_request": 50,

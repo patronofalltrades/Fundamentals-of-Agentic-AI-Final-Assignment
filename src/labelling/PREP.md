@@ -269,6 +269,18 @@ rubric and per-review question builder (versioned); `extract.py` holds entities/
 extraction. `src/labelling/smoke_typesafe.py` is a one-call live smoke test (reads `.env`,
 git-ignored). No paid call happens at import or in `create_client`.
 
+**Chat roles (verify / group / memo) — DeepSeek V4.1 Flash via OpenRouter:** the text-generating
+roles use `src/labelling/chat_client.py` (OpenAI-compatible; default route **OpenRouter →
+`deepseek/deepseek-v4.1-flash`**, `POST https://openrouter.ai/api/v1/chat/completions`,
+`OPENROUTER_API_KEY`; alternatives: DeepSeek direct `deepseek-flash`, and the $0
+`deepseek/deepseek-v4-flash:free` variant) plus `src/labelling/roles.py` wrappers
+(`verify_batch`, `name_issues`, `write_memo`) that return parsed results AND calls.jsonl-ready
+events. Output tokens are billed on this route; OpenRouter returns per-response `usage.cost`,
+captured as `cost_usd` for the calculator. Independence rule holds: the verifier re-labels from
+original text only, never seeing the enrichment prediction or golden labels. Prompt semantics for
+verify are ChatGPT's to own; group/memo orchestration is Claude's. Offline `MockChatClient`
+covers dry-runs; no live chat call without Hanif's budget approval.
+
 ## 7. Exact-text cache mechanics (OpenCode's responsibility in runs)
 
 Keyed by exact `review_text` + all relevant model/effort/prompt/schema settings (i.e. identical
