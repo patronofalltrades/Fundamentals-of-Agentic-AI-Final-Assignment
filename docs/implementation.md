@@ -7,7 +7,9 @@ local development branch and is not yet published.
 
 Scope is deliberately narrow: source ingestion, bounded-memory dedup and
 state, completed/quarantined schema validation, checkpoints and an offline
-cost arithmetic scaffold. Provider inference, full projections, live budget
+cost arithmetic scaffold. Separate `tools/` commands validate human labels
+and compute aggregate offline agreement against saved records. They do not
+generate labels. Provider inference, full projections, live budget
 enforcement, grouping, ranking, memo writing and model execution remain
 future work.
 
@@ -182,6 +184,10 @@ synthetic and use temporary directories; they never touch the real dataset.
 
 ## Known limitations
 
+- Human answer export is blocked until 21 exact-quote errors are corrected by
+  the human. The evaluator has only synthetic test evidence and no real score.
+- The model-input route accepts only six source CSV columns; expected answer
+  columns belong solely to the isolated offline evaluator.
 - No classification, provider adapter, retry policy or live spend control is
   implemented.
 - Full cost projections and fixed-overhead scaling are not implemented.

@@ -14,11 +14,11 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
 
-The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, cost replay scaffolding, and a manual-label CSV exporter. **138 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main pipeline foundation. Codex reviewed it, made targeted fixes, added the manual-label exporter, and ran the checks.
+The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, cost replay scaffolding, a manual-label CSV exporter, and isolated offline evaluation. **142 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main pipeline foundation. Codex reviewed it, made targeted fixes, added the human-label tools, and ran the checks.
 
 **Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
 
-Role prompts, human golden labels, runtime model runs, evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is not selected for current work. The runtime classifier is undecided. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
+Role prompts, a validated human golden CSV, runtime model runs, actual evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is not selected for current work. The runtime classifier is undecided. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
 
 Future paid execution requires configured credentials, verified API entitlement, and an approved spending limit. Offline replay must work without credentials; opening the calculator must never trigger paid calls.
 
@@ -58,7 +58,7 @@ See [implementation notes](docs/implementation.md), [build provenance](docs/buil
 | Runtime classifications | 0 |
 | Distinct nonempty exact texts | 484,189 |
 | Contract profile versus course helper | Exact match |
-| Synthetic offline tests | 138 passed after manual-label exporter tests |
+| Synthetic offline tests | 142 passed after evaluation-boundary tests |
 | Local ingestion wall time | 118.151 seconds |
 | Peak ingestion process memory | 26,476,544 bytes on this Mac |
 
@@ -131,6 +131,10 @@ python3 tools/export_human_labels.py --workbook ../human-evaluation/golden_50_hu
 ```
 
 The exporter checks that all 50 rows are complete, the six source columns match the verified blank template, and answer values have valid formats. It refuses to overwrite an existing file. It cannot judge whether a human label is semantically correct. The original course CSV is never the export destination. A blank workbook fails export as intended; a completed answer CSV requires explicit validated export.
+
+**Human-label checkpoint, October 5:** all 350 answer cells have entries and all 50 source rows match the blank template. Export is paused because 21 `evidence_quote` cells are not exact substrings of their review text. The row numbers and correction rule are in [human labeling guidance](docs/human_evaluation.md). No answer was changed by code, and no completed CSV has been produced. Once those cells are corrected manually, rerun the export command above.
+
+An [offline evaluation tool](tools/evaluate_human_labels.py) now gates on a complete, valid human CSV and scores saved predictions using deterministic code. It returns aggregate diagnostics without texts, IDs, or individual answers. It has passed synthetic boundary tests; no real evaluation has run because valid answers and runtime predictions are not both available. The runtime source parser accepts only the six original columns, so expected-answer columns cannot enter that input route.
 
 ### Obtain and prepare data
 
