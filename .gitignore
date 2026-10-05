@@ -10,3 +10,4 @@ runs/*
 local-reference.json
 self-check*.json
 *.egg-info/
+.venv/

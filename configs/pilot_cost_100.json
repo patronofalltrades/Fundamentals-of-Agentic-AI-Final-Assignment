@@ -1,0 +1,93 @@
+{
+  "config_version": "a5-run-v1",
+  "notes": "Real 100-review pilot (cost_100.csv). Mirrors src/labelling/pilot_config.json: Jev via TypeSafe for enrich, Claude Haiku 4.5 via the Anthropic API for verify/group/memo, 1 worker, $1.00 cap, <=50 reviews per request. Cold: --out runs/pilot-cold. Warm: same command with --out runs/pilot-warm --warm-from runs/pilot-cold. Needs TYPESAFE_API_KEY and ANTHROPIC_API_KEY; without them the run is refused (mock guard).",
+  "full_run": false,
+  "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+  "client": {
+    "provider": "typesafe",
+    "model": "jev-latest",
+    "endpoint": "https://api.typesafe.ai/v1/systemone",
+    "api_key_env": "TYPESAFE_API_KEY",
+    "timeout_seconds": 60,
+    "needs_review_threshold": 0.5
+  },
+  "chat": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "api_key_env": "ANTHROPIC_API_KEY",
+    "timeout_seconds": 60,
+    "temperature": 0.0,
+    "max_output_tokens": {
+      "verify": 600,
+      "group": 1500,
+      "memo": 2500
+    },
+    "alternatives": {
+      "openrouter": {
+        "provider": "openrouter",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+        "api_key_env": "OPENROUTER_API_KEY"
+      }
+    },
+    "effort": "none"
+  },
+  "batching": {
+    "max_reviews_per_request": 50,
+    "size_by_tokens": true,
+    "token_budget": 32000
+  },
+  "result_cache": {
+    "enabled": true
+  },
+  "limits": {
+    "workers": 1,
+    "spend_cap_usd": 1.0,
+    "requests_per_minute": 30,
+    "tokens_per_minute": null,
+    "max_transient_attempts": 5,
+    "invalid_attempts": 2,
+    "missing_retry_rounds": 1,
+    "backoff_base_seconds": 1.0,
+    "backoff_max_seconds": 60.0,
+    "max_consecutive_failed_batches": 3,
+    "retry_quarantined": true,
+    "est_output_tokens_per_review": 60,
+    "reserve_usd_per_enrich_request": 0.05,
+    "progress_every_batches": 1
+  },
+  "rates": {
+    "_note": "Reservation/ledger rates only (USD per 1M tokens). The cost calculator uses cost/rates.csv. Jev billing unit not set here, so enrich calls are charged at reserve_usd_per_enrich_request as an 'unpriced' estimate unless the provider reports cost_usd. Chat rates: Claude Haiku 4.5 list price (USD/1M tokens) for reservations only; recheck before use.",
+    "verify": {
+      "input_per_mtok": 1.0,
+      "cached_input_per_mtok": 0.1,
+      "output_per_mtok": 5.0
+    },
+    "group": {
+      "input_per_mtok": 1.0,
+      "cached_input_per_mtok": 0.1,
+      "output_per_mtok": 5.0
+    },
+    "memo": {
+      "input_per_mtok": 1.0,
+      "cached_input_per_mtok": 0.1,
+      "output_per_mtok": 5.0
+    }
+  },
+  "verify": {
+    "sample_fraction": 0.2,
+    "min_items": 20,
+    "max_items": 100,
+    "max_tokens": 600
+  },
+  "group": {
+    "max_issues": 20,
+    "quotes_per_issue": 5,
+    "max_tokens": 1500
+  },
+  "memo": {
+    "top_n": 10,
+    "quotes_per_issue": 3,
+    "max_tokens": 2500
+  }
+}
