@@ -1,5 +1,5 @@
 {
-  "status": "labels_completed_evidence_pending",
+  "status": "pilot_100_structurally_complete",
   "source_file": "cost_100.csv",
   "source_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
   "source_rows": 100,
@@ -35,16 +35,36 @@
     "schema_or_identity_errors": 0,
     "needs_review": 73,
     "topic_other": 47,
-    "evidence_records": 0,
-    "foundation_completed_classifications": 0,
+    "evidence_records": 100,
+    "exact_evidence_records_validated": 100,
+    "entity_mentions": 93,
+    "evidence_model": "gpt-6.1-sol",
+    "evidence_prompt_versions": {
+      "evidence-extract-v1": 90,
+      "evidence-extract-v2": 10
+    },
+    "summed_evidence_attempt_seconds": 927.694823499,
+    "foundation_completed_classifications": 100,
     "human_agreement": null
   },
   "warm_run": "not_run",
-  "scope": "Supplied 100-review cost sample only; no other dataset stage was run.",
+  "offline_warm_replay": {
+    "measured_at_utc": "2026-10-05T23:10:57+00:00",
+    "method": "Read-only SQLite replay of saved labels, canonical source identity, and exact evidence. No ingestion or model execution.",
+    "first_pass_wall_seconds": 0.005421209,
+    "warm_pass_wall_seconds": 0.002301875,
+    "completed_items_per_pass": 100,
+    "validated_evidence_per_pass": 100,
+    "additional_model_calls": 0
+  },
+  "scope": "Supplied 100-review cost sample only; full-corpus classification, evaluation, grouping, and memo were not run.",
   "limitations": [
     "Cost is computed from returned usage at the published rate; the account debit was not independently checked.",
     "Summed request time is not total wall time. The runner did not persist cold wall time.",
-    "Labels have not been verified against human answers and have no extracted exact evidence yet.",
-    "The separate Codex evidence stage was blocked by automatic approval review before transmitting review text."
+    "Labels and evidence have not been verified against human answers; structural checks do not establish semantic accuracy.",
+    "Summed evidence attempt time is not total evidence wall time; evidence token usage and any account debit were not measured.",
+    "The offline warm replay made no model requests and is not the required end-to-end warm pilot measurement.",
+    "Replay wall times are one local two-pass measurement, not a stable performance benchmark.",
+    "Saved evidence spans two prompt versions; the original local databases and outputs were not rewritten."
   ]
 }

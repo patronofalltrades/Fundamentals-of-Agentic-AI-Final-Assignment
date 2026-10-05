@@ -1,10 +1,10 @@
 # Jev enrichment adapter and pilot gate
 
 Status: adapter, persistent pilot ledger, and gated commands implemented with
-synthetic checks. The supplied 100-review Jev label pilot completed. The
-separate Codex evidence stage was rejected by automatic approval review before
-any review text was sent to it. No complete classifications or human agreement
-exist. Model inputs use source review text only, never human golden answers.
+synthetic checks. The supplied 100-review Jev label pilot, separately authorized
+Codex evidence extraction, and offline classification import completed locally.
+All 100 outputs pass structural source and evidence checks. Human agreement is
+unmeasured. Model inputs use source review text only, never human golden answers.
 
 ## Current documented interface and price
 
@@ -36,16 +36,17 @@ from `label_config()` fits the foundation's exact-text cache key, which
 invalidates reuse when model, effort, prompt, or schema version changes.
 
 Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
-output is rejected unless every entity and the nonblank quote are exact
-source substrings. It uses a temporary working directory, an ephemeral
+output is rejected unless every entity is an exact whole-word source span
+without edge whitespace and the nonblank quote is an exact source substring.
+It uses a temporary working directory, an ephemeral
 ChatGPT-auth Codex session, read-only sandbox, and JSON schema. The local
 `codex login status` reports **Logged in using ChatGPT**. A single call on
 invented text succeeded under standard sandbox escalation with model
 `gpt-6.1-sol`, schema output, and exact-quote validation. No assignment review
 or golden answer was sent. The adapter does not invent entities
 or quotes from Jev labels. The existing SQLite state validator checks exact
-quotes again when a complete record is saved. A final import into that
-canonical classification store remains a manual integration step.
+quotes again when a complete record is saved. The saved 100-review pilot was
+imported into a separate ignored canonical classification database offline.
 
 The Jev pilot runner has a separate SQLite ledger in ignored `local/`. It
 reserves the published 64k-token maximum, USD 0.002688, **before each attempt**
@@ -98,19 +99,18 @@ results missing evidence; its `--execute` option calls ChatGPT-auth Codex and
 must be separately reviewed before use. No external call is made by importing
 either module, running `--help`, planning, or replaying.
 
-Before a real cold/warm pilot, verify the pinned model and rate for the account,
-confirm the approved cap, and provide the existing key securely to this
-process. Measure actual Jev usage, wall time, and failures. Then review the
-Codex evidence route. The offline `spotify_pipeline.jev_import` integration
+Before any further paid run, reverify the pinned model, current rate, account
+route, and explicit cap. The existing 100 labels are settled; offline replay
+must not repeat those calls. The offline `spotify_pipeline.jev_import` integration
 builds complete records only after all 100 rows have labels and evidence,
 checks every ID, text, and row hash against the canonical source database,
 and imports direct originals before cache copies through the existing state
-validator. This import is implemented and synthetic tested but has not been
-run on real data. Its local attempt ID is a correlation ID, not a TypeSafe
-response ID. The evidence stage has no claimed accuracy or usage measurements.
-Run and report both cold and warm 100-review measurements before proposing
-500, 10,000, or full-corpus execution. The cold label pilot is recorded below;
-the warm run is still pending.
+validator. The import ran on the saved 100-review pilot in a separate ignored
+database. Its local attempt ID is a correlation ID, not a TypeSafe response ID.
+Evidence semantic accuracy, token usage, and cost are unmeasured. The original
+cold wall time remains unknown. Measure end-to-end warm behavior, and a fresh
+cold run only if separately approved, before proposing 500, 10,000, or
+full-corpus execution.
 
 ## Actual 100-review label pilot
 
@@ -133,24 +133,33 @@ usage, and pinned-model validation.
 | Approved cap | USD 0.60 |
 | `needs_review` by declared rule | 73 |
 | Topic `other` | 47 |
-| Evidence records / completed foundation classifications | 0 / 0 |
+| Evidence records / completed sample classifications | 100 / 100 |
+| Exact source evidence validated / entity mentions | 100 / 93 |
+| Evidence prompt versions | v1: 90; v2: 10 |
+| Sum of evidence attempt elapsed time | 927.694823499 seconds |
+| Offline read-only warm replay | 100 items, 0 model calls, 0.002301875 seconds wall time |
 
 The account's actual credit debit was not independently checked. Total cold
 wall time was not persisted, so summed request time must not be presented as
-wall time. The local label distribution is not an accuracy result. No golden
-answers were used for prompts or tuning. See aggregate-only
-`reports/jev-pilot-100.json` for the frozen measurement and limits.
+wall time. Evidence attempt time is also a sum, not evidence wall time. The
+offline warm replay read the saved ledger and source database twice; its first
+pass took 0.005421209 seconds and its warm pass 0.002301875 seconds. It made
+no model calls by construction and does not replace an end-to-end warm pilot.
+The local label distribution is not an accuracy result. No golden answers were
+used for prompts or tuning. See aggregate-only `reports/jev-pilot-100.json`
+for the measurement and limits.
 
-Automatic approval review **rejected** the separate 100-review Codex evidence
-action as an external disclosure: it said the available earlier instruction
-prohibited uploading data and TypeSafe pilot approval did not cover this
-separate service. No source review was sent to Codex during that action. Do
-not retry it through another route without explicit user authorization for
-that transfer. The synthetic Codex check involved invented text only. Exact
-evidence, full classification import, cold/warm comparison, and human
-agreement remain pending. Do not expand beyond the 100-review pilot.
+Automatic approval review **rejected** an earlier separate Codex evidence
+action as an external disclosure: it said the then-available instruction
+prohibited uploading data and TypeSafe pilot approval did not cover that
+service. No source review was sent to Codex during that rejected action. A
+later user authorization enabled the saved 100-review evidence extraction.
+The evidence and offline import now pass structural checks, including the
+[entity boundary repair](jev_entity_boundary_bug.md). Semantic accuracy,
+end-to-end warm measurement, and human agreement remain pending. Do not
+expand beyond the 100-review pilot without the required gates.
 
-The current shell has no `TYPESAFE_API_KEY`; the active worktree has no `.env`.
+The recorded pilot worktree stored no `.env` for the run.
 A separate Desktop checkout has a nonblank TypeSafe key entry. Its existing
 `src/labelling/smoke_typesafe.py` launcher can read that file for its own
 demo smoke test without copying or printing the key, but it does not launch
