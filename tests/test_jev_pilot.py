@@ -5,8 +5,8 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
-from spotify_pipeline.errors import StateError
-from spotify_pipeline.codex_evidence import validate_evidence
+from spotify_pipeline.errors import StateError, ValidationError
+from spotify_pipeline.codex_evidence import align_unique_source_span, validate_evidence
 from spotify_pipeline.jev import JevHTTPError
 from spotify_pipeline.jev_pilot import PilotLedger, run_reviews
 from spotify_pipeline.jev_import import completed_items
@@ -96,6 +96,50 @@ class PilotTests(unittest.TestCase):
                 ledger.save_evidence("one", evidence, "synthetic", "v1", 0.1)
                 ledger.save_evidence("two", evidence, "synthetic", "v1", 0.0, cache_source_id="one")
                 self.assertEqual(ledger.summary()["evidence_records"], 2)
+
+    def test_quote_alignment_copies_only_unique_source_span(self):
+        text = "The Player\nStops, but resumes."
+        self.assertEqual(align_unique_source_span(text, "the player stops"), "The Player\nStops")
+        with self.assertRaises(Exception):
+            align_unique_source_span("play play", "PLAY")
+        with self.assertRaises(Exception):
+            align_unique_source_span(text, "a different claim")
+
+    def test_entity_validation_requires_clean_edges_and_whole_source_words(self):
+        for entity in ("ad", "ad ", " ad", "ads"):
+            with self.subTest(entity=entity), self.assertRaises(ValidationError):
+                validate_evidence("bad experience", {"entities": [entity],
+                                                     "evidence_quote": "bad"})
+        with self.assertRaises(ValidationError):
+            validate_evidence("ads play", {"entities": ["ad"], "evidence_quote": "ads"})
+        with self.assertRaises(ValidationError):
+            validate_evidence("cafe\u0301 tastes", {"entities": ["cafe"],
+                                               "evidence_quote": "tastes"})
+        with self.assertRaises(ValidationError):
+            validate_evidence("C++17", {"entities": ["C++"], "evidence_quote": "C++17"})
+        text = "A bad ad plays after the ads. C++ and café work. 広告 is shown."
+        valid = {"entities": ["ad", "ads", "C++", "café", "広告"],
+                 "evidence_quote": "bad ad plays"}
+        self.assertEqual(validate_evidence(text, valid), valid)
+        for entity in ("fé", "C++17"):
+            with self.subTest(entity=entity), self.assertRaises(ValidationError):
+                validate_evidence(text, {"entities": [entity], "evidence_quote": "bad"})
+        # Quotes remain exact substrings; they are not entity names.
+        self.assertEqual(validate_evidence("bad experience", {"entities": [],
+                          "evidence_quote": "ad"})["evidence_quote"], "ad")
+
+    def test_entity_alignment_rejects_partial_words_but_preserves_source_spans(self):
+        with self.assertRaises(ValidationError):
+            align_unique_source_span("bad experience", "ad", entity=True)
+        with self.assertRaises(ValidationError):
+            align_unique_source_span("an ad plays", "ad ", entity=True)
+        with self.assertRaises(ValidationError):
+            align_unique_source_span("ad ad", "AD", entity=True)
+        self.assertEqual(align_unique_source_span("bad AD plays", "ad", entity=True), "AD")
+        self.assertEqual(align_unique_source_span("The Player\nStops", "the player stops",
+                                                  entity=True), "The Player\nStops")
+        self.assertEqual(align_unique_source_span("Learn C++ today", "c++", entity=True),
+                         "C++")
 
     def test_completed_import_into_foundation_is_offline_and_idempotent(self):
         with tempfile.TemporaryDirectory() as folder:

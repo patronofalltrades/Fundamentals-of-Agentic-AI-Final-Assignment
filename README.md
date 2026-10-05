@@ -189,6 +189,8 @@ Severity: 1 = no reported problem/praise/unclear/pure request; 2 = annoyance or 
 
 A completed record must include `review_id`, `source_sha256`, `status`, `topic`, `intent`, `sentiment` in −1 to 1, integer `severity` in 1–5, `entities`, an exact-source-substring `evidence_quote`, boolean `needs_review`, and versioned `label_config`. Quarantines retain the ID, source hash, and reason. Source hashing uses compact UTF-8 JSON of the six exact original field strings in source-column order, through the supplied helper; whitespace and accents must not be normalized.
 
+The Jev evidence adapter also requires entity names to have clean edges and a whole-word source match. Evidence quotes remain exact substrings and may be shorter snippets. See the [entity boundary bug record](docs/jev_entity_boundary_bug.md) for the saved-pilot check and repair scope.
+
 Exact-text result caching will require identical model, effort, prompt, and schema settings. Each reused output keeps its own original ID and points directly to a completed original via `cache_source_id`; cache chains are disallowed. Reuse reduces calls, not business counts. Saved results/statuses must be atomic and resume must avoid new enrichment calls for completed IDs under unchanged configuration.
 
 The baseline includes completed `complaint` and `cancellation` records. Each belongs to an issue, normally one. Each `(issue_id, review_id)` pair occurs once; praise, requests, and unclear records are excluded. Any multiple-issue design must declare overlap.
