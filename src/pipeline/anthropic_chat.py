@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Optional
 from .context import ChatResult
 
 DEFAULT_MODEL = "claude-haiku-4-5"
+# Models that still accept temperature (Opus 4.7+ / Sonnet 5+ reject it): see the SDK 1.x upgrade notes.
+SAMPLING_MODELS = ("claude-haiku-4-5",)
 PROVIDER = "anthropic"
 
 
@@ -77,8 +79,10 @@ class AnthropicChat:
         turns = [{"role": m["role"], "content": m["content"]} for m in messages if m.get("role") != "system"]
         if response_format == "json":
             system_parts.append("Respond with one JSON value only: no prose, no code fences.")
-        kwargs: Dict[str, Any] = {"model": self.model, "max_tokens": int(max_tokens),
-                                  "temperature": float(temperature), "messages": turns}
+        kwargs: Dict[str, Any] = {"model": self.model, "max_tokens": int(max_tokens), "messages": turns}
+        if self.model.startswith(SAMPLING_MODELS):
+            # SDK 1.x dropped sampling kwargs; models that still honour them take them via extra_body.
+            kwargs["extra_body"] = {"temperature": float(temperature)}
         if system_parts:
             kwargs["system"] = "\n\n".join(system_parts)
 

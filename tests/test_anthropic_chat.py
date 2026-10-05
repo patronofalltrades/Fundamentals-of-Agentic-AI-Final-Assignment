@@ -28,7 +28,13 @@ def fake_sdk(response=None, error=None):
     calls = []
 
     class Messages:
-        def create(self, **kwargs):
+        # Mirrors the anthropic 1.x signature: sampling kwargs are a TypeError, extra_body is not.
+        def create(self, *, model, max_tokens, messages, system=None, extra_body=None,
+                   output_config=None, thinking=None):
+            kwargs = {"model": model, "max_tokens": max_tokens, "messages": messages}
+            for k, v in (("system", system), ("extra_body", extra_body)):
+                if v is not None:
+                    kwargs[k] = v
             calls.append(kwargs)
             if error is not None:
                 raise error(sdk)
@@ -69,6 +75,7 @@ class AnthropicChatTests(unittest.TestCase):
         sent = sdk.calls[0]
         self.assertEqual(sent["model"], "claude-haiku-4-5")
         self.assertNotIn("thinking", sent)
+        self.assertEqual(sent["extra_body"], {"temperature": 0.0})
         self.assertTrue(sent["system"].startswith("S"))
         self.assertEqual(sent["messages"], [{"role": "user", "content": "U"}])
 
