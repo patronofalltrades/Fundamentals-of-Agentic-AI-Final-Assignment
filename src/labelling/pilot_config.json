@@ -3,6 +3,7 @@
   "prepared_by": "OpenCode (labelling)",
   "prepared_on": "2026-10-05",
   "notes": "Pilot config for the measured 100-review cost/runtime calculator. COLD uses an empty result cache; WARM reuses it and must make ZERO new enrichment calls under identical settings.",
+
   "client": {
     "provider": "typesafe",
     "model": "jev-latest",
@@ -11,9 +12,11 @@
     "timeout_seconds": 60,
     "needs_review_threshold": 0.5
   },
+
   "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
   "prompt_version": "v1",
   "schema_version": "a5-v1",
+
   "chat": {
     "provider": "openrouter",
     "model": "deepseek/deepseek-v4.1-flash",
@@ -23,43 +26,37 @@
     "max_output_tokens": 4096,
     "thinking": "disabled",
     "alternatives": {
-      "deepseek_direct": {
-        "provider": "deepseek",
-        "model": "deepseek-flash",
-        "api_key_env": "DEEPSEEK_API_KEY"
-      },
-      "free_fallback": {
-        "provider": "openrouter",
-        "model": "deepseek/deepseek-v4-flash:free",
-        "note": "$0 older V4 variant; evaluate before relying on it"
-      }
+      "deepseek_direct": {"provider": "deepseek", "model": "deepseek-flash", "api_key_env": "DEEPSEEK_API_KEY"},
+      "free_fallback": {"provider": "openrouter", "model": "deepseek/deepseek-v4-flash:free", "note": "$0 older V4 variant; evaluate before relying on it"}
     },
     "roles": {
       "verify": "re-labels a declared sample from original text only (independent of enrich output); ChatGPT owns prompt semantics + thresholds",
       "group": "names recurring complaint issues from bounded evidence packs; Claude owns orchestration",
       "memo": "drafts the decision memo from saved aggregates + claims; Claude owns orchestration"
     },
-    "pricing_ref_usd_per_mtok": {
-      "note": "OpenRouter returns per-response usage.cost; calculator uses its own dated rates.csv. DeepSeek direct ref: 0.14 in / 0.0028 cache-hit / 0.28 out, checked 2026-10"
-    }
+    "pricing_ref_usd_per_mtok": { "note": "OpenRouter returns per-response usage.cost; calculator uses its own dated rates.csv. DeepSeek direct ref: 0.14 in / 0.0028 cache-hit / 0.28 out, checked 2026-10" }
   },
+
   "batching": {
     "max_reviews_per_request": 50,
     "size_by_tokens": true,
     "token_budget": 32000,
     "measured_max_reviews_per_request": 36
   },
+
   "result_cache": {
     "enabled": true,
     "key": "exact review_text + label_config",
     "cold": "empty cache",
     "warm": "reuse cache; zero new enrichment calls"
   },
+
   "verify": {
     "sample_fraction": 0.1,
     "declared": true,
     "note": "independent re-label on a declared sample; saved disagreement report"
   },
+
   "limits": {
     "workers": 1,
     "spend_cap_usd": 1.0,
@@ -67,13 +64,9 @@
     "max_fallback_fraction": 0.0,
     "retry_policy": "bounded retries with backoff+jitter; honor Retry-After on 429"
   },
-  "stages": [
-    "enrich",
-    "verify",
-    "group",
-    "rank",
-    "memo"
-  ],
+
+  "stages": ["enrich", "verify", "group", "rank", "memo"],
+
   "runs": {
     "cold": {
       "run_id": "cost_100-cold-2026-10-05",
