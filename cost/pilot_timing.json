@@ -1,0 +1,549 @@
+{
+  "provenance": {
+    "checksum_ok": true,
+    "collected_from": {
+      "cold": "runs/pilot-cold",
+      "warm": "runs/pilot-warm"
+    },
+    "csv_name": "cost_100.csv",
+    "csv_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+    "data_source": "measured",
+    "empty_texts": 0,
+    "expected_rows": 100,
+    "id_count": 100,
+    "ids_match_csv": true,
+    "manifest": "docs/specs/manifest.json",
+    "manifest_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+    "nonempty_texts": 100,
+    "reasoning_tokens_included_in_output": true,
+    "unique_nonempty_texts": 100
+  },
+  "runs": {
+    "cold": {
+      "config": {
+        "base_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "batching": {
+          "max_reviews_per_request": 50
+        },
+        "classification_input_fields": [
+          "review_text"
+        ],
+        "client": {
+          "model": "jev-latest",
+          "provider": "typesafe"
+        },
+        "config": {
+          "batching": {
+            "max_reviews_per_request": 50,
+            "size_by_tokens": true,
+            "token_budget": 32000
+          },
+          "chat": {
+            "alternatives": {
+              "openrouter": {
+                "api_key_env": "OPENROUTER_API_KEY",
+                "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+                "model": "deepseek/deepseek-v4.1-flash",
+                "provider": "openrouter"
+              }
+            },
+            "api_key_env": "ANTHROPIC_API_KEY",
+            "effort": "none",
+            "max_output_tokens": {
+              "group": 1500,
+              "memo": 2500,
+              "verify": 1700
+            },
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic",
+            "temperature": 0.0,
+            "timeout_seconds": 60
+          },
+          "client": {
+            "api_key_env": "TYPESAFE_API_KEY",
+            "endpoint": "https://api.typesafe.ai/v1/systemone",
+            "model": "jev-latest",
+            "needs_review_threshold": 0.5,
+            "provider": "typesafe",
+            "timeout_seconds": 60
+          },
+          "config_version": "a5-run-v1",
+          "full_run": false,
+          "group": {
+            "max_issues": 20,
+            "max_tokens": 1500,
+            "quotes_per_issue": 5
+          },
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "limits": {
+            "backoff_base_seconds": 2.0,
+            "backoff_max_seconds": 60.0,
+            "est_output_tokens_per_review": 60,
+            "invalid_attempts": 2,
+            "max_consecutive_failed_batches": 3,
+            "max_transient_attempts": 8,
+            "missing_retry_rounds": 1,
+            "progress_every_batches": 1,
+            "requests_per_minute": 30,
+            "reserve_usd_per_enrich_request": 0.05,
+            "retry_quarantined": true,
+            "spend_cap_usd": 1.0,
+            "tokens_per_minute": null,
+            "workers": 1
+          },
+          "memo": {
+            "max_tokens": 2500,
+            "quotes_per_issue": 3,
+            "top_n": 10
+          },
+          "notes": "Real 100-review pilot (cost_100.csv). Mirrors src/labelling/pilot_config.json: Jev via TypeSafe for enrich, Claude Haiku 4.5 via the Anthropic API for verify/group/memo, 1 worker, $1.00 cap, <=50 reviews per request. Cold: --out runs/pilot-cold. Warm: same command with --out runs/pilot-warm --warm-from runs/pilot-cold. Needs TYPESAFE_API_KEY and ANTHROPIC_API_KEY; without them the run is refused (mock guard).",
+          "rates": {
+            "_note": "Reservation/ledger rates only (USD per 1M tokens). The cost calculator uses cost/rates.csv. Jev billing unit not set here, so enrich calls are charged at reserve_usd_per_enrich_request as an 'unpriced' estimate unless the provider reports cost_usd. Chat rates: Claude Haiku 4.5 list price (USD/1M tokens) for reservations only; recheck before use.",
+            "group": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            },
+            "memo": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            },
+            "verify": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            }
+          },
+          "result_cache": {
+            "enabled": true
+          },
+          "verify": {
+            "max_items": 100,
+            "max_tokens": 1700,
+            "min_items": 20,
+            "sample_fraction": 0.2
+          }
+        },
+        "config_path": "configs/pilot_cost_100.json",
+        "created_at": "2026-10-05T23:13:15.734089Z",
+        "dry_run": false,
+        "input_csv": "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv",
+        "input_file_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+        "input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "last_invocation_id": "20261005T231315Z-e95612",
+        "limit": null,
+        "limited": false,
+        "limits": {
+          "spend_cap_usd": 1.0,
+          "workers": 1
+        },
+        "roles": {
+          "enrich": {
+            "effort": "none",
+            "max_tokens": null,
+            "model": "jev-latest",
+            "provider": "typesafe"
+          },
+          "group": {
+            "effort": "none",
+            "max_tokens": 1500,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          },
+          "memo": {
+            "effort": "none",
+            "max_tokens": 2500,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          },
+          "verify": {
+            "effort": "none",
+            "max_tokens": 1700,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          }
+        },
+        "rows": 100,
+        "run_id": "pilot-cold",
+        "updated_at": "2026-10-05T23:13:15.734231Z"
+      },
+      "data_source": "measured",
+      "invocation_stage_seconds": {
+        "enrich": 6.255,
+        "group": 8.721,
+        "ingest": 0.0,
+        "memo": 10.695,
+        "rank": 0.003,
+        "verify": 9.22
+      },
+      "invocations": [
+        {
+          "counts": {
+            "cache_copies": 0,
+            "calls_log_total": 6,
+            "completed_end": 100,
+            "completed_start": 0,
+            "enrich_calls": 3,
+            "enrich_calls_failed": 0,
+            "records_completed": 100,
+            "records_quarantined": 0
+          },
+          "ended_at": "2026-10-05T23:13:50.630933Z",
+          "invocation_id": "20261005T231315Z-e95612",
+          "phase": "initial",
+          "started_at": "2026-10-05T23:13:14.903033Z",
+          "stop_reason": "completed",
+          "wall_seconds": 35.729
+        }
+      ],
+      "name": "cold",
+      "recorded_input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+      "records": {
+        "cache_hits": 0,
+        "completed": 100,
+        "ids_missing": 0,
+        "pending": 0,
+        "quarantined": 0,
+        "record_lines_written_by_this_run": 100,
+        "reviews_sent_succeeded": 100
+      },
+      "run_dir": "runs/pilot-cold",
+      "run_id": "pilot-cold",
+      "settings": {
+        "enrich": {
+          "batch_size": 50,
+          "effort": "none",
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "max_tokens": null,
+          "model": "jev-latest",
+          "prompt_version": null,
+          "provider": "typesafe",
+          "schema_version": null,
+          "workers": 1
+        },
+        "group": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "memo": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 2500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "verify": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1700,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "sample_fraction": null,
+          "schema_version": null,
+          "workers": 1
+        }
+      },
+      "stages": {
+        "enrich": {
+          "attempts": 3,
+          "duration_ms_sum": 6241,
+          "span_seconds": 6.250949
+        },
+        "group": {
+          "attempts": 1,
+          "duration_ms_sum": 8703,
+          "span_seconds": 8.702942
+        },
+        "memo": {
+          "attempts": 1,
+          "duration_ms_sum": 10684,
+          "span_seconds": 10.683893
+        },
+        "verify": {
+          "attempts": 1,
+          "duration_ms_sum": 9212,
+          "span_seconds": 9.212071
+        }
+      },
+      "wall_seconds": 35.729
+    },
+    "warm": {
+      "config": {
+        "base_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "batching": {
+          "max_reviews_per_request": 50
+        },
+        "classification_input_fields": [
+          "review_text"
+        ],
+        "client": {
+          "model": "jev-latest",
+          "provider": "typesafe"
+        },
+        "config": {
+          "batching": {
+            "max_reviews_per_request": 50,
+            "size_by_tokens": true,
+            "token_budget": 32000
+          },
+          "chat": {
+            "alternatives": {
+              "openrouter": {
+                "api_key_env": "OPENROUTER_API_KEY",
+                "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+                "model": "deepseek/deepseek-v4.1-flash",
+                "provider": "openrouter"
+              }
+            },
+            "api_key_env": "ANTHROPIC_API_KEY",
+            "effort": "none",
+            "max_output_tokens": {
+              "group": 1500,
+              "memo": 2500,
+              "verify": 1700
+            },
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic",
+            "temperature": 0.0,
+            "timeout_seconds": 60
+          },
+          "client": {
+            "api_key_env": "TYPESAFE_API_KEY",
+            "endpoint": "https://api.typesafe.ai/v1/systemone",
+            "model": "jev-latest",
+            "needs_review_threshold": 0.5,
+            "provider": "typesafe",
+            "timeout_seconds": 60
+          },
+          "config_version": "a5-run-v1",
+          "full_run": false,
+          "group": {
+            "max_issues": 20,
+            "max_tokens": 1500,
+            "quotes_per_issue": 5
+          },
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "limits": {
+            "backoff_base_seconds": 2.0,
+            "backoff_max_seconds": 60.0,
+            "est_output_tokens_per_review": 60,
+            "invalid_attempts": 2,
+            "max_consecutive_failed_batches": 3,
+            "max_transient_attempts": 8,
+            "missing_retry_rounds": 1,
+            "progress_every_batches": 1,
+            "requests_per_minute": 30,
+            "reserve_usd_per_enrich_request": 0.05,
+            "retry_quarantined": true,
+            "spend_cap_usd": 1.0,
+            "tokens_per_minute": null,
+            "workers": 1
+          },
+          "memo": {
+            "max_tokens": 2500,
+            "quotes_per_issue": 3,
+            "top_n": 10
+          },
+          "notes": "Real 100-review pilot (cost_100.csv). Mirrors src/labelling/pilot_config.json: Jev via TypeSafe for enrich, Claude Haiku 4.5 via the Anthropic API for verify/group/memo, 1 worker, $1.00 cap, <=50 reviews per request. Cold: --out runs/pilot-cold. Warm: same command with --out runs/pilot-warm --warm-from runs/pilot-cold. Needs TYPESAFE_API_KEY and ANTHROPIC_API_KEY; without them the run is refused (mock guard).",
+          "rates": {
+            "_note": "Reservation/ledger rates only (USD per 1M tokens). The cost calculator uses cost/rates.csv. Jev billing unit not set here, so enrich calls are charged at reserve_usd_per_enrich_request as an 'unpriced' estimate unless the provider reports cost_usd. Chat rates: Claude Haiku 4.5 list price (USD/1M tokens) for reservations only; recheck before use.",
+            "group": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            },
+            "memo": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            },
+            "verify": {
+              "cached_input_per_mtok": 0.1,
+              "input_per_mtok": 1.0,
+              "output_per_mtok": 5.0
+            }
+          },
+          "result_cache": {
+            "enabled": true
+          },
+          "verify": {
+            "max_items": 100,
+            "max_tokens": 1700,
+            "min_items": 20,
+            "sample_fraction": 0.2
+          }
+        },
+        "config_path": "configs/pilot_cost_100.json",
+        "created_at": "2026-10-05T23:15:20.538822Z",
+        "dry_run": false,
+        "input_csv": "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/cost_100.csv",
+        "input_file_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+        "input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "last_invocation_id": "20261005T231520Z-ce55cc",
+        "limit": null,
+        "limited": false,
+        "limits": {
+          "spend_cap_usd": 1.0,
+          "workers": 1
+        },
+        "roles": {
+          "enrich": {
+            "effort": "none",
+            "max_tokens": null,
+            "model": "jev-latest",
+            "provider": "typesafe"
+          },
+          "group": {
+            "effort": "none",
+            "max_tokens": 1500,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          },
+          "memo": {
+            "effort": "none",
+            "max_tokens": 2500,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          },
+          "verify": {
+            "effort": "none",
+            "max_tokens": 1700,
+            "model": "claude-haiku-4-5",
+            "provider": "anthropic"
+          }
+        },
+        "rows": 100,
+        "run_id": "pilot-warm",
+        "updated_at": "2026-10-05T23:15:20.539052Z",
+        "warm_from": {
+          "path": "/Users/haniframadhan/Desktop/Fundamentals-of-Agentic-AI-Final-Assignment-infra/runs/pilot-cold",
+          "records_copied": 100,
+          "seeded_at": "2026-10-05T23:15:20.538636Z",
+          "source_label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1"
+        }
+      },
+      "data_source": "measured",
+      "invocation_stage_seconds": {
+        "enrich": 0.0,
+        "group": 0.012,
+        "ingest": 0.0,
+        "memo": 0.005,
+        "rank": 0.002,
+        "verify": 0.006
+      },
+      "invocations": [
+        {
+          "counts": {
+            "cache_copies": 0,
+            "calls_log_total": 0,
+            "completed_end": 100,
+            "completed_start": 100,
+            "enrich_calls": 0,
+            "enrich_calls_failed": 0,
+            "records_completed": 100,
+            "records_quarantined": 0
+          },
+          "ended_at": "2026-10-05T23:15:20.567960Z",
+          "invocation_id": "20261005T231520Z-ce55cc",
+          "phase": "resume",
+          "started_at": "2026-10-05T23:15:19.621974Z",
+          "stop_reason": "completed",
+          "wall_seconds": 0.946
+        }
+      ],
+      "name": "warm",
+      "recorded_input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+      "records": {
+        "cache_hits": 100,
+        "completed": 100,
+        "ids_missing": 0,
+        "pending": 0,
+        "quarantined": 0,
+        "record_lines_written_by_this_run": 100,
+        "reviews_sent_succeeded": 0
+      },
+      "run_dir": "runs/pilot-warm",
+      "run_id": "pilot-warm",
+      "settings": {
+        "enrich": {
+          "batch_size": 50,
+          "effort": "none",
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "max_tokens": null,
+          "model": "jev-latest",
+          "prompt_version": null,
+          "provider": "typesafe",
+          "schema_version": null,
+          "workers": 1
+        },
+        "group": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "memo": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 2500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "verify": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1700,
+          "model": "claude-haiku-4-5",
+          "prompt_version": null,
+          "provider": "anthropic",
+          "sample_fraction": null,
+          "schema_version": null,
+          "workers": 1
+        }
+      },
+      "stages": {
+        "enrich": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        },
+        "group": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        },
+        "memo": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        },
+        "verify": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        }
+      },
+      "wall_seconds": 0.946
+    }
+  }
+}

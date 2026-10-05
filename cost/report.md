@@ -1,6 +1,6 @@
 # 100-review cost and runtime report
 
-> **No measured pilot yet.** `pilot_calls.jsonl`, `pilot_records.jsonl`, `usage.csv` and `pilot_timing.json` are missing. Run the explicit pilot (cost/README.md), then `collect`. Measured values below are unknown, not zero; the projection uses editable assumptions only.
+**Data source: MEASURED pilot** (collected from real run directories by `cost_calc.py collect`).
 
 Generated offline by `python3 cost/cost_calc.py` from saved files only (no API key, no model calls). Spec: [docs/specs/COST_CALCULATOR.md](../docs/specs/COST_CALCULATOR.md). Rates multiplier in force: **1**.
 
@@ -10,38 +10,101 @@ Generated offline by `python3 cost/cost_calc.py` from saved files only (no API k
 |---|---|---|
 | assumptions.json | `cost/assumptions.json` | 5ed63dd510bb7a37… |
 | local_compute.csv | `cost/local_compute.csv` | eb46ef302735cf79… |
-| pilot_calls.jsonl | `cost/pilot_calls.jsonl` | missing |
-| pilot_records.jsonl | `cost/pilot_records.jsonl` | missing |
-| pilot_timing.json | `cost/pilot_timing.json` | missing |
+| pilot_calls.jsonl | `cost/pilot_calls.jsonl` | b3f3f862d7c467f5… |
+| pilot_records.jsonl | `cost/pilot_records.jsonl` | 2c6f18b7fb156dea… |
+| pilot_timing.json | `cost/pilot_timing.json` | e475a81bbe108b82… |
 | rates.csv | `cost/rates.csv` | 6715f9ce75d498fb… |
-| usage.csv | `cost/usage.csv` | missing |
+| usage.csv | `cost/usage.csv` | 2e7ae09de2b6aa1c… |
 
-## 1. Measured 100-review pilot — No measured pilot yet
-
-No measured pilot yet. Every measured cell is **unknown** until `collect` runs on real cold/warm run directories.
+## 1. Measured 100-review pilot (cold vs warm)
 
 ### 1.1 Input and records
 
 |  | cold | warm |
 |---|---|---|
-| input file / checksum (sha256) | **unknown** / **unknown** | same input |
-| checksum matches manifest | **unknown** | — |
-| IDs (expected **unknown**) | **unknown** | same IDs |
-| run id | **unknown** | **unknown** |
-| completed records | **unknown** | **unknown** |
-| failed / quarantined records | **unknown** | **unknown** |
-| pending (no record) | **unknown** | **unknown** |
-| nonempty texts / empty texts | **unknown** / **unknown** | same |
-| unique nonempty texts | **unknown** | same |
-| reviews sent to enrich (succeeded calls) | **unknown** | **unknown** |
-| result-cache hits (completed, not sent in this run) | **unknown** | **unknown** |
-| new enrichment calls | **unknown** | **unknown** |
+| input file / checksum (sha256) | cost_100.csv / `c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e` | same input |
+| checksum matches manifest | ✓ docs/specs/manifest.json | — |
+| IDs (expected 100) | 100 ✓ match CSV | same IDs |
+| run id | pilot-cold | pilot-warm |
+| completed records | 100 | 100 |
+| failed / quarantined records | 0 | 0 |
+| pending (no record) | 0 | 0 |
+| nonempty texts / empty texts | 100 / 0 | same |
+| unique nonempty texts | 100 | same |
+| reviews sent to enrich (succeeded calls) | 100 | 0 |
+| result-cache hits (completed, not sent in this run) | 0 | 100 |
+| new enrichment calls | 3 | 0 ✓ zero |
 
-Sections 1.2–1.5 (per-stage settings, requests and attempts incl. failures/retries/fallbacks/verification, usage and cost by stage, wall clock, stage times, throughput, cost per 1,000 rows and per completed record) appear here after `collect`. Until then they are **unknown**.
+`pilot_records.jsonl`: 100 lines; 0 quarantined for a reason other than empty text (fix before scaling).
+
+### 1.2 Per-stage settings (declared in run_config.json; observed in calls)
+
+| stage | run | provider | exact model ID | effort | prompt / schema version | label_config | reviews per request | workers |
+|---|---|---|---|---|---|---|---|---|
+| enrich | cold | typesafe | jev-1.13.0 | declared: none | **unknown** / **unknown** | typesafe/jev-latest:prompt-v1:schema-a5-v1 | 28–36 (mean 33.3) (declared max 50) | 1 |
+| enrich | warm | declared: typesafe | declared: jev-latest | declared: none | **unknown** / **unknown** | declared: typesafe/jev-latest:prompt-v1:schema-a5-v1 | no calls (declared max 50) | 1 |
+| verify | cold | anthropic | claude-haiku-4-5-20251001 | declared: none | **unknown** / **unknown** | — | 20–20 (mean 20.0) (declared max **unknown**) | 1 |
+| verify | warm | declared: anthropic | declared: claude-haiku-4-5 | declared: none | **unknown** / **unknown** | — | no calls (declared max **unknown**) | 1 |
+| group | cold | anthropic | claude-haiku-4-5-20251001 | declared: none | **unknown** / **unknown** | — | — (saved aggregate pack) | 1 |
+| group | warm | declared: anthropic | declared: claude-haiku-4-5 | declared: none | **unknown** / **unknown** | — | — (saved aggregate pack) | 1 |
+| memo | cold | anthropic | claude-haiku-4-5-20251001 | declared: none | **unknown** / **unknown** | — | — (saved aggregate pack) | 1 |
+| memo | warm | declared: anthropic | declared: claude-haiku-4-5 | declared: none | **unknown** / **unknown** | — | — (saved aggregate pack) | 1 |
+
+### 1.3 Requests and attempts
+
+| stage | run | attempts | succeeded | failed | retries (attempt>1) | fallbacks | uncertain charge (timeouts) | reviews in succeeded calls |
+|---|---|---|---|---|---|---|---|---|
+| enrich | cold | 3 | 3 | 0 | 0 | 0 | 0 | 100 |
+| enrich | warm | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| verify | cold | 1 | 1 | 0 | 0 | 0 | 0 | 20 |
+| verify | warm | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| group | cold | 1 | 1 | 0 | 0 | 0 | 0 | 42 |
+| group | warm | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| memo | cold | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
+| memo | warm | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+Verification calls are the `verify` rows. Failed attempts are listed with their error in `pilot_calls.jsonl`.
+
+### 1.4 Usage and cost by stage (API)
+
+| stage | run | input uncached (tokens) | input cached (tokens) | output (tokens) | reasoning (tokens) | calculated cost | provider-reported cost_usd | calculated − reported |
+|---|---|---|---|---|---|---|---|---|
+| enrich | cold | 90,629 | not reported | 33,560 | not reported | $0.003806 | **unknown** (not reported) | — |
+| enrich | warm | — | not reported | — | — | $0.000000 | — | — |
+| verify | cold | 1,884 | 0 | 1,083 | not reported | $0.007299 | none (Anthropic returns no per-call cost; calculated = bill) | — |
+| verify | warm | — | not reported | — | — | $0.000000 | — | — |
+| group | cold | 1,814 | 0 | 1,097 | not reported | $0.007299 | none (Anthropic returns no per-call cost; calculated = bill) | — |
+| group | warm | — | not reported | — | — | $0.000000 | — | — |
+| memo | cold | 4,583 | 0 | 829 | not reported | $0.008728 | none (Anthropic returns no per-call cost; calculated = bill) | — |
+| memo | warm | — | not reported | — | — | $0.000000 | — | — |
+
+### 1.5 Totals, time and throughput
+
+|  | cold | warm (incremental) |
+|---|---|---|
+| API spend (all stages) | $0.027132 | $0.000000 |
+| local compute (separate, from local_compute.csv) | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** (known part $0.000000 + 1 unknown item) |
+| end-to-end wall clock (invocations.jsonl) | 35.73 s | 0.95 s |
+| enrich time (request durations summed / first start→last end) | 6.24 s summed / 6.25 s span | 0 calls |
+| verify time (request durations summed / first start→last end) | 9.21 s summed / 9.21 s span | 0 calls |
+| group time (request durations summed / first start→last end) | 8.70 s summed / 8.70 s span | 0 calls |
+| memo time (request durations summed / first start→last end) | 10.68 s summed / 10.68 s span | 0 calls |
+| stage `enrich` (invocation timer) | 6.25 s | 0.00 s |
+| stage `group` (invocation timer) | 8.72 s | 0.01 s |
+| stage `ingest` (invocation timer) | 0.00 s | 0.00 s |
+| stage `memo` (invocation timer) | 10.70 s | 0.01 s |
+| stage `rank` (invocation timer) | 0.00 s | 0.00 s |
+| stage `verify` (invocation timer) | 9.22 s | 0.01 s |
+| throughput (input rows / wall second) | 2.799 | 105.708 |
+| API cost per 1,000 input rows | $0.271324 | $0.000000 |
+| API cost per completed record | $0.000271 | $0.000000 |
+| pilot budget | $1.000000 | cold + warm: $0.027132 |
+
+Summed request durations can exceed wall clock when calls overlap; wall clock comes from `invocations.jsonl`.
 
 ## 2. Full-run estimate (editable assumptions, not measured)
 
-Per-unit basis: **assumptions only (no pilot)**. Each stage is extrapolated from its own work count; group and memo are one-time overhead counted once.
+Per-unit basis: **measured cold pilot**. Each stage is extrapolated from its own work count; group and memo are one-time overhead counted once.
 
 ### 2.1 Work counts
 
@@ -63,7 +126,7 @@ Per-unit basis: **assumptions only (no pilot)**. Each stage is extrapolated from
 | max fallback fraction (declared cap) | 0.0 |
 | verify sample fraction / max items | 0.05 / 2000 |
 | retry rate base / conservative | 0.05 / 0.25 |
-| measured pilot enrich retry rate (retries / succeeded calls) | **unknown** |
+| measured pilot enrich retry rate (retries / succeeded calls) | 0.000 |
 | fallback fraction base / conservative | 0.0 / 0.0 |
 | fixed-overhead multiplier base / conservative | 1.0 / 2.0 |
 | concurrency efficiency base / conservative | 1.0 / 0.6 |
@@ -74,57 +137,55 @@ Output-token caps vs observed, and worst-case output cost of one call at the cap
 
 | stage | declared cap | max observed output tokens | worst-case output cost per call |  |
 |---|---|---|---|---|
-| enrich | not declared (unknown) | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| verify | 1700 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| group | 1500 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| memo | 2500 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
+| enrich | not declared (unknown) | 12091 | **unknown** (known part $0.000000 + 1 unknown item) |  |
+| verify | 1700 | 1083 | $0.008500 |  |
+| group | 1500 | 1097 | $0.007500 |  |
+| memo | 2500 | 829 | $0.012500 |  |
 
 ### 2.3 Per-unit basis
 
 | stage | unit | basis | API cost per unit | input tok/unit | output tok/unit | time |
 |---|---|---|---|---|---|---|
-| enrich | per review sent | PRE-PILOT ESTIMATE | $0.000021000 | 500 | 0 | **unknown** |
-| verify | per review sent | none | **unknown** (known part $0.000000000 + 1 unknown item) | **unknown** | **unknown** | **unknown** |
-| group | once per run (fixed) | none | **unknown** (known part $0.000000 + 1 unknown item) | — | — | **unknown** |
-| memo | once per run (fixed) | none | **unknown** (known part $0.000000 + 1 unknown item) | — | — | **unknown** |
+| enrich | per review sent | pilot | $0.000038064 | 906.3 | 335.6 | 16.023 reviews/s per worker |
+| verify | per review sent | pilot | $0.000364950 | 94.2 | 54.1 | 2.171 reviews/s per worker |
+| group | once per run (fixed) | pilot | $0.007299 | — | — | 8.70 s |
+| memo | once per run (fixed) | pilot | $0.008728 | — | — | 10.68 s |
 | fallback | per review routed | none | **unknown** (no fallback calls measured) | — | — | — |
-| local overhead | per input row | none | $0 API | — | — | **unknown** |
-
-Enrich unit cost is a **PRE-PILOT ESTIMATE** (src/labelling/PREP.md (Jev cost paragraph): about 500-600 input tokens per review at larger packs; Jev output is free.), not a measurement.
+| local overhead | per input row | pilot | $0 API | — | — | 8.890 ms/row (wall − summed call time, ÷ pilot rows; linear, upper bound) |
 
 ### 2.4 Base case (retry 0.050, fallback 0.0000, fixed ×1.0, 2.00 effective workers)
 
 | stage | work (reuse) | API cost (reuse) | time (reuse) | work (no reuse) | API cost (no reuse) | time (no reuse) |
 |---|---|---|---|---|---|---|
-| enrich | 484,189 | $10.676367 | **unknown** | 660,609 | $14.566428 | **unknown** |
+| enrich | 484,189 | $19.351770 | 15,864.6 s (4.41 h) | 660,609 | $26.402817 | 21,645.0 s (6.01 h) |
 | fallback | 0 | $0.000000 | 0.00 s | 0 | $0.000000 | 0.00 s |
-| verify | 2,000 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 2,000 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| group | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| memo | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| local overhead (ingest/rank/export) | 660,622 | $0.000000 | **unknown** | 660,622 | $0.000000 | **unknown** |
-| **API total** |  | **unknown** (known part $10.676367 + 3 unknown items) |  |  | **unknown** (known part $14.566428 + 3 unknown items) |  |
+| verify | 2,000 | $0.766395 | 483.63 s | 2,000 | $0.766395 | 483.63 s |
+| group | 1 | $0.007664 | 9.14 s | 1 | $0.007664 | 9.14 s |
+| memo | 1 | $0.009164 | 11.22 s | 1 | $0.009164 | 11.22 s |
+| local overhead (ingest/rank/export) | 660,622 | $0.000000 | 5,872.9 s (1.63 h) | 660,622 | $0.000000 | 5,872.9 s (1.63 h) |
+| **API total** |  | $20.134993 |  |  | $27.186040 |  |
 | local compute (separate) |  | **unknown** (known part $0.000000 + 1 unknown item) |  |  | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| API total if verify used the Batch API (−50.0%, ESTIMATE ONLY, not the measured tier) |  | **unknown** (known part $10.676367 + 3 unknown items) |  |  | **unknown** (known part $14.566428 + 3 unknown items) |  |
-| **elapsed time** |  |  | **unknown** |  |  | **unknown** |
-| API per 1,000 input rows |  | **unknown** (known part $0.016161 + 3 unknown items) |  |  | **unknown** (known part $0.022050 + 3 unknown items) |  |
-| **budget check** |  | ⚠ CANNOT CONFIRM within budget: 3 unknown item(s); known part $10.676367 ≤ $25.000000 |  |  | ⚠ CANNOT CONFIRM within budget: 3 unknown item(s); known part $14.566428 ≤ $25.000000 |  |
+| API total if verify used the Batch API (−50.0%, ESTIMATE ONLY, not the measured tier) |  | $19.751796 |  |  | $26.802843 |  |
+| **elapsed time** |  |  | 22,241.5 s (6.18 h) |  |  | 28,021.9 s (7.78 h) |
+| API per 1,000 input rows |  | $0.030479 |  |  | $0.041152 |  |
+| **budget check** |  | within budget ($20.134993 ≤ $25.000000) |  |  | ⚠ EXCEEDS BUDGET ($27.186040 > $25.000000) |  |
 
 ### 2.5 Conservative case (retry 0.250, fallback 0.0000, fixed ×2.0, 1.60 effective workers)
 
 | stage | work (reuse) | API cost (reuse) | time (reuse) | work (no reuse) | API cost (no reuse) | time (no reuse) |
 |---|---|---|---|---|---|---|
-| enrich | 484,189 | $12.709961 | **unknown** | 660,609 | $17.340986 | **unknown** |
+| enrich | 484,189 | $23.037822 | 23,608.0 s (6.56 h) | 660,609 | $31.431925 | 32,209.8 s (8.95 h) |
 | fallback | 0 | $0.000000 | 0.00 s | 0 | $0.000000 | 0.00 s |
-| verify | 2,000 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 2,000 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| group | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| memo | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** | 1 | **unknown** (known part $0.000000 + 1 unknown item) | **unknown** |
-| local overhead (ingest/rank/export) | 660,622 | $0.000000 | **unknown** | 660,622 | $0.000000 | **unknown** |
-| **API total** |  | **unknown** (known part $12.709961 + 3 unknown items) |  |  | **unknown** (known part $17.340986 + 3 unknown items) |  |
+| verify | 2,000 | $0.912375 | 719.69 s | 2,000 | $0.912375 | 719.69 s |
+| group | 1 | $0.018248 | 21.76 s | 1 | $0.018248 | 21.76 s |
+| memo | 1 | $0.021820 | 26.71 s | 1 | $0.021820 | 26.71 s |
+| local overhead (ingest/rank/export) | 660,622 | $0.000000 | 5,872.9 s (1.63 h) | 660,622 | $0.000000 | 5,872.9 s (1.63 h) |
+| **API total** |  | $23.990264 |  |  | $32.384367 |  |
 | local compute (separate) |  | **unknown** (known part $0.000000 + 1 unknown item) |  |  | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| API total if verify used the Batch API (−50.0%, ESTIMATE ONLY, not the measured tier) |  | **unknown** (known part $12.709961 + 3 unknown items) |  |  | **unknown** (known part $17.340986 + 3 unknown items) |  |
-| **elapsed time** |  |  | **unknown** |  |  | **unknown** |
-| API per 1,000 input rows |  | **unknown** (known part $0.019239 + 3 unknown items) |  |  | **unknown** (known part $0.026249 + 3 unknown items) |  |
-| **budget check** |  | ⚠ CANNOT CONFIRM within budget: 3 unknown item(s); known part $12.709961 ≤ $25.000000 |  |  | ⚠ CANNOT CONFIRM within budget: 3 unknown item(s); known part $17.340986 ≤ $25.000000 |  |
+| API total if verify used the Batch API (−50.0%, ESTIMATE ONLY, not the measured tier) |  | $23.534077 |  |  | $31.928180 |  |
+| **elapsed time** |  |  | 30,249.1 s (8.40 h) |  |  | 38,850.9 s (10.79 h) |
+| API per 1,000 input rows |  | $0.036315 |  |  | $0.049021 |  |
+| **budget check** |  | within budget ($23.990264 ≤ $25.000000) |  |  | ⚠ EXCEEDS BUDGET ($32.384367 > $25.000000) |  |
 
 ## 3. Rates used (`rates.csv`)
 

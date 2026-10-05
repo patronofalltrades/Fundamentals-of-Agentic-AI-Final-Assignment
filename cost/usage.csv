@@ -1,0 +1,16 @@
+request_id,run,role,provider,model,item,billed_units,unit,note
+req-6d48509d86a74171ac02b8bf6aebca18,cold,enrich,typesafe,jev-1.13.0,input_uncached,32442,token,cached_input_tokens not reported; all input billed uncached
+req-6d48509d86a74171ac02b8bf6aebca18,cold,enrich,typesafe,jev-1.13.0,output,12091,token,
+req-7ac2c43e02c943d68bfeb60f9082d13c,cold,enrich,typesafe,jev-1.13.0,input_uncached,32624,token,cached_input_tokens not reported; all input billed uncached
+req-7ac2c43e02c943d68bfeb60f9082d13c,cold,enrich,typesafe,jev-1.13.0,output,12064,token,
+req-0912bea01f9e4cf8ab3fd0c0de14a221,cold,enrich,typesafe,jev-1.13.0,input_uncached,25563,token,cached_input_tokens not reported; all input billed uncached
+req-0912bea01f9e4cf8ab3fd0c0de14a221,cold,enrich,typesafe,jev-1.13.0,output,9405,token,
+req_011CfjwNVCoCvipG8wqhwbFG,cold,verify,anthropic,claude-haiku-4-5-20251001,input_uncached,1884,token,input_tokens - cached_input_tokens
+req_011CfjwNVCoCvipG8wqhwbFG,cold,verify,anthropic,claude-haiku-4-5-20251001,input_cached,0,token,
+req_011CfjwNVCoCvipG8wqhwbFG,cold,verify,anthropic,claude-haiku-4-5-20251001,output,1083,token,
+req_011CfjwPAaemfrkU9kWvmvZ1,cold,group,anthropic,claude-haiku-4-5-20251001,input_uncached,1814,token,input_tokens - cached_input_tokens
+req_011CfjwPAaemfrkU9kWvmvZ1,cold,group,anthropic,claude-haiku-4-5-20251001,input_cached,0,token,
+req_011CfjwPAaemfrkU9kWvmvZ1,cold,group,anthropic,claude-haiku-4-5-20251001,output,1097,token,
+req_011CfjwPooXC5wjBi8hJmfhM,cold,memo,anthropic,claude-haiku-4-5-20251001,input_uncached,4583,token,input_tokens - cached_input_tokens
+req_011CfjwPooXC5wjBi8hJmfhM,cold,memo,anthropic,claude-haiku-4-5-20251001,input_cached,0,token,
+req_011CfjwPooXC5wjBi8hJmfhM,cold,memo,anthropic,claude-haiku-4-5-20251001,output,829,token,
