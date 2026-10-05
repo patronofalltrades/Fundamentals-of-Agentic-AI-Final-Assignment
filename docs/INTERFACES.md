@@ -130,4 +130,4 @@ Writes `run.json` (exact contract JSON), `ingestion.json` (via `check_submission
 
 ## Change requests
 
-(none yet)
+- 2026-10-06 (Hanif): chat roles verify / group / memo use **Claude Haiku 4.5** (`claude-haiku-4-5`, Anthropic API, `ANTHROPIC_API_KEY`) via infra-owned `src/pipeline/anthropic_chat.py`, instead of DeepSeek via OpenRouter. Live runs need Python >= 3.10 + `pip install anthropic`; offline paths stay stdlib-only on 3.9. OpenCode's `chat_client.py` remains a supported alternative (`chat.provider: openrouter`). Verify sample capped at ~2,000 reviews for the full run.
