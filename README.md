@@ -6,6 +6,8 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 **Deadline:** October 13, 2026, at 11:59 pm Pacific Time (America/Los_Angeles).
 
+**Class 7:** October 13, 2026; class time has not been supplied.
+
 **Submission:** This public repository will be the grader's entry point. Final submission through the course portal is pending.
 
 ## Current status
@@ -16,7 +18,7 @@ The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exa
 
 **Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
 
-Role prompts, human golden labels, runtime model runs, evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is a bulk-classifier candidate. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
+Role prompts, human golden labels, runtime model runs, evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is not selected for current work. The runtime classifier is undecided. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
 
 Future paid execution requires configured credentials, verified API entitlement, and an approved spending limit. Offline replay must work without credentials; opening the calculator must never trigger paid calls.
 
@@ -116,7 +118,7 @@ Actual source-row comparison confirms that `cost_100.csv` is the first 100 check
 
 **Known exact-text overlap:** six golden rows, representing five distinct texts, also occur in the 10,000-review development sample under different IDs. ID separation therefore does not guarantee text separation. Before evaluation, the plan is to identify these cases, exclude matching golden texts from prompt-tuning examples and issue-discovery inputs, disclose overlap and any cache reuse, and report agreement with the limitation visible. Any golden-informed revisions require disclosure and fresh held-out cases for a final check.
 
-Golden labels must be supplied by a human. Expected labels must never enter model prompts, examples, routing thresholds, cache inputs, or issue-discovery inputs. All original golden texts still belong in the final full-corpus run. Synthetic tests must remain outside business aggregates.
+Golden labels must be supplied by a human. All 50 human-labeled rows are a required prerequisite for final evaluation. See [human labeling guidance](docs/human_evaluation.md). Expected labels must never enter model prompts, examples, routing thresholds, cache inputs, or issue-discovery inputs. All original golden texts still belong in the final full-corpus run. Synthetic tests must remain outside business aggregates.
 
 ### Obtain and prepare data
 
@@ -237,3 +239,7 @@ The coverage component distinguishes accounting from successful classification: 
 These are self-selected public reviews from a historical snapshot, not the complete customer population. The data contains no account revenue, plan tier, confirmed cancellations, or observed retention effects. Cancellation text expresses intent. The eventual memo must avoid revenue-at-risk estimates and causal claims, disclose missing versions and incomplete classifications, and avoid unnecessary personal details. Any trend analysis must report denominators, comparable periods, and partial-month boundaries.
 
 This README records verified input facts, actual offline ingestion, and planned runtime work. Final conclusions will be added after runtime execution and evaluation are saved.
+
+### Coding model price reference
+
+See [dated OpenRouter provider prices](docs/coding_model_prices.md). These are quoted rates, not measured charges or a universal model price. Actual route, usage, and charges remain unmeasured.

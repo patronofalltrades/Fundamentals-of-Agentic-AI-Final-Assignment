@@ -1,0 +1,33 @@
+{
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "opencode_model": "openrouter/deepseek/deepseek-v4-flash-0731",
+  "provider": "OpenRouter",
+  "observed_on": "2026-10-05",
+  "source": "https://openrouter.ai/deepseek/deepseek-v4-flash-0731",
+  "currency": "USD",
+  "unit": "per_1m_tokens",
+  "quoted_providers": [
+    {
+      "name": "Relace",
+      "input": "0.0152",
+      "output": "1.28",
+      "cache_read": "0.0152"
+    },
+    {
+      "name": "DeepInfra",
+      "input": "0.06",
+      "output": "0.18",
+      "cache_read": "0.015"
+    },
+    {
+      "name": "Together",
+      "input": "0.14",
+      "output": "0.28",
+      "cache_read": "0.03"
+    }
+  ],
+  "actual_route": null,
+  "actual_usage": null,
+  "actual_charge": null,
+  "spending_approved": false
+}

@@ -13,6 +13,7 @@ This file is a manual task record. It is not a lock or a running agent service.
 | Full-source offline ingestion | Codex coordinator | `feat/offline-foundation` / `.` | Complete | 660,622 rows. Core profile matches the course helper exactly. 118.151 seconds. 660,609 pending nonempty texts; 13 empty quarantines. See `reports/`. SQLite state is ignored. No classification calls. |
 | Coding-route correction | Codex coordinator | `feat/offline-foundation` / `.` | Complete locally | Updated instructions, diagram, README, provenance, tracker and project config. Exact OpenRouter ID verified by `opencode models openrouter`. No inference run. |
 | Review and publication | Coordinating reviewer | No integration branch selected | Pending review | Review the local diff and tests. Local implementation commit is authorized. Push is not authorized yet. |
+| Human labeling setup and prices | Codex coordinator | `feat/offline-foundation` / `.` | Complete locally | Blank source verified and isolated working copy made. Dated provider quote reference saved. GLM removed from current plan. Class 7 date recorded; time unknown. |
 | Human golden labels | Unassigned human | No branch assigned | Pending | Human answers and overlap policy. Labels must remain outside model inputs. |
 | Runtime model access and pilot | Unassigned | No branch assigned | Pending | Verify classification/verifier routes. Approve budget. Run real cold/warm 100 before 500, 10,000, and full corpus. |
 
@@ -51,3 +52,8 @@ No runtime classification, real pilot, ranking, or memo exists yet.
 The cost scaffold has unknown measurements and prices.
 Full-run projections and live spend/recovery controls remain pending.
 The runtime budget must stay strictly below US$50. A ceiling is not spending approval.
+
+Class 7: October 13, 2026; time not supplied. Human labeling setup is complete,
+but all 50 answers and final evaluation remain pending. No model processes
+are running. Parent owns Space updates; each completed milestone is reported
+with files, commit, checks, and blockers before publication.

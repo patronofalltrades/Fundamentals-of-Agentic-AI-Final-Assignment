@@ -39,7 +39,8 @@ Do not top up credits or change credentials.
 Send only project requirements, code, and bounded synthetic examples.
 Do not send raw CSVs, credentials, or golden answer labels to coding models.
 Sol may help with occasional reasoning and review when authorized.
-GLM is a candidate for future bulk classification. Opus is a candidate for a
+GLM is not selected for current work. The classifier is undecided.
+Opus is a candidate for a
 small independent verifier sample. Both require pilot quality, access, and
 budget checks. They are not implemented runtime integrations.
 Do not contact, configure, or dispatch other agents without authorization.
@@ -127,3 +128,12 @@ Do not invent model outputs, calls, costs, evaluations, or successful recovery.
 Offline synthetic tests do not prove live model execution or live spending control.
 Run deterministic tests before a local commit. Keep implementation unpublished
 until the coordinating reviewer approves the result.
+
+## Human evaluation gate
+
+Class 7 is October 13, 2026; its time is not supplied.
+Require all 50 human labels before final evaluation. Never generate expected
+golden answers. The human working copy is outside this repository. Do not read
+its expected label columns with a coding or runtime model. The source golden
+CSV is immutable. No evaluation command exists yet; this gate must also be
+enforced in code when evaluation is implemented.

@@ -25,7 +25,7 @@ flowchart TB
     subgraph RUN[Planned runtime: not run]
         Python[Python orchestration]
         Prepare[Code: prepare, hash and deduplicate]
-        Classify[GLM candidate: classify, at most 50 reviews per request]
+        Classify[Classifier TBD: at most 50 reviews per request]
         Verify[Opus candidate: small independent sample, blind to first labels]
         Compare[Code: compare predictions and save disagreements]
         Group[Grouping role: model TBD, code saves accepted mapping]
@@ -73,7 +73,7 @@ The memo role will receive saved aggregates and a small evidence pack.
 A human will check the final argument.
 
 Golden answers flow only to code evaluation. They never enter model inputs.
-GLM and Opus remain candidates. Runtime access and pilot quality are pending.
+GLM is not selected. Opus remains a verifier candidate. Runtime access and pilot quality are pending.
 The project ceiling is US$49.99. Paid execution still needs approval.
 Saved state, validation, and budget controls are code responsibilities.
 The live controls and full runtime remain unimplemented.
