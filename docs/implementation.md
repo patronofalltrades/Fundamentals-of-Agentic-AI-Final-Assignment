@@ -159,8 +159,10 @@ quantities. It validates currency (USD), units, date and a real http(s) rate
 source. Billing items are nonoverlapping: `uncached_input_tokens`,
 `cached_input_tokens` and `output_tokens` for variable API work, one fixed
 call item, and local compute seconds. A legacy total-input field is rejected
-as ambiguous. Omitted or null units mean unknown; an explicitly empty object
-means no billed items. Missing stage usage, wall time or rates stay
+as ambiguous. Omitted or null units mean unknown. An explicitly empty object
+means no billed items only when no enrichment calls occurred. Positive calls
+require all three token-usage components; missing fields stay unresolved.
+Missing stage usage, wall time or rates stay
 unresolved/null.
 
 Test measurements are labelled `synthetic_fixture` and never claim a genuine

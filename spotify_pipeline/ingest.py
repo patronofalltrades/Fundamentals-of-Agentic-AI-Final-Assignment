@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import tempfile
+import uuid
 from collections import Counter
 from datetime import datetime
 from typing import Any, Dict, Iterable, Optional, Tuple
@@ -218,9 +219,9 @@ def _write_report_temp(payload: Dict[str, Any], report_path: str) -> str:
 
 def _publish(db_temp: str, report_temp: str, db_path: str, report_path: str) -> None:
     """Replace database then report with a best-effort rollback on failure."""
-    pid = os.getpid()
-    db_backup = "%s.bak-%d" % (db_path, pid)
-    report_backup = "%s.bak-%d" % (report_path, pid)
+    backup_id = "%d-%s" % (os.getpid(), uuid.uuid4().hex)
+    db_backup = "%s.bak-%s" % (db_path, backup_id)
+    report_backup = "%s.bak-%s" % (report_path, backup_id)
     db_moved = False
     try:
         if os.path.exists(db_path):

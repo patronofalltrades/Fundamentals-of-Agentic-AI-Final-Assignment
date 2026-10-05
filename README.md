@@ -14,7 +14,7 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
 
-The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, and cost replay scaffolding. **134 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main implementation. Codex reviewed it, made targeted fixes, and ran the checks.
+The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, and cost replay scaffolding. **135 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main implementation. Codex reviewed it, made targeted fixes, and ran the checks.
 
 **Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
 

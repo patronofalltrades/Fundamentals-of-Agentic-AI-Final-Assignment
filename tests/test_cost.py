@@ -45,11 +45,23 @@ class MissingCostTests(unittest.TestCase):
 
     def test_explicit_empty_units_are_zero(self):
         measurements = measured_measurements()
+        measurements["runs"]["cold"]["enrichment_calls"] = 0
         measurements["runs"]["cold"]["api_units"] = {}
         measurements["runs"]["cold"]["fixed_api_units"] = {}
         measurements["runs"]["cold"]["local"] = {}
         report = evaluate(measurements, measured_rates(), scenario())
         self.assertEqual(report["pilot"]["cold"]["total"], "0.000000")
+
+    def test_positive_calls_need_all_token_usage_components(self):
+        measurements = measured_measurements()
+        measurements["runs"]["cold"]["api_units"] = {}
+        report = evaluate(measurements, measured_rates(), scenario())
+        self.assertIsNone(report["pilot"]["cold"]["api_subtotal"])
+        self.assertIsNone(report["pilot"]["cold"]["total"])
+
+        measurements["runs"]["cold"]["api_units"] = {"output_tokens": 50}
+        report = evaluate(measurements, measured_rates(), scenario())
+        self.assertIsNone(report["pilot"]["cold"]["api_subtotal"])
 
     def test_empty_fixture_cannot_be_measured(self):
         measurements = {
@@ -189,6 +201,8 @@ class SpendControlTests(unittest.TestCase):
         no_worker_cap = scenario()
         no_worker_cap["limits"] = {"max_workers": None, "output_token_cap": 100, "fallback_cap": 2}
         self.assertFalse(admit("0", "0", "1", no_worker_cap, workers=1)["admitted"])
+        self.assertFalse(admit("0", "0", "1", unset)["admitted"])
+        self.assertFalse(admit("0", "0", "1", no_worker_cap)["admitted"])
 
     def test_bool_and_negative_values_rejected(self):
         with self.assertRaises(CostError):

@@ -8,10 +8,10 @@ checks. The offline foundation is under review. The runtime has not run.
 flowchart TB
     subgraph DEV[Development collaboration]
         Hanif[Hanif: decisions and approvals]
-        Alfred[Alfred: plan and review]
+        Alfred[Alfred - OpenAI Dots: plan and review]
         CLI[OpenCode CLI: selected coding route]
         DeepSeek[DeepSeek V4 Flash 0731 via OpenRouter: code]
-        Sol[Sol: occasional reasoning and review]
+        Sol[Sol - ChatGPT: occasional reasoning and review]
         Golden[Human-only golden answer labels]
         Hanif --> Alfred
         Alfred --> CLI
@@ -37,7 +37,8 @@ flowchart TB
         Eval[Code: evaluate against isolated human answers]
         Python --> Prepare
         Prepare --> Classify
-        Classify --> Verify
+        Prepare -->|original text and rubric only| Verify
+        Classify --> Compare
         Verify --> Compare
         Compare --> Group
         Group --> Rank
@@ -61,10 +62,12 @@ flowchart TB
     Golden --> Eval
 ```
 
-Hanif makes decisions and supplies the golden answers. Alfred coordinates the
-plan and review. DeepSeek V4 Flash 0731 uses OpenRouter through OpenCode CLI for future code work.
+Hanif makes decisions and supplies the golden answers. Alfred is OpenAI Dots
+and coordinates the plan and review. DeepSeek V4 Flash 0731 uses OpenRouter
+through OpenCode CLI for future code work.
 The two past coding passes used OpenCode Go; see `build_provenance.md`.
-Sol can help with occasional reasoning. Coding runs through OpenCode CLI.
+Sol is ChatGPT and can help with occasional reasoning. Coding runs through
+OpenCode CLI.
 
 Python will dispatch bounded tasks and save handoffs. The verifier will receive
 original text and the rubric before it sees the classifier's prediction.

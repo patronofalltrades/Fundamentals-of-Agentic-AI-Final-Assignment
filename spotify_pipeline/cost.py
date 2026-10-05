@@ -272,6 +272,17 @@ def _evaluate_run(run: Dict[str, Any], rates: Dict[str, Any], name: str) -> Dict
     api, api_known = _sum_costs(api_units, rates.get("api") or {}, name)
     fixed, fixed_known = _sum_costs(fixed_units, rates.get("api") or {}, "%s.fixed" % name)
     local, local_known = _sum_costs(local_units, rates.get("local") or {}, "%s.local" % name)
+    if run["enrichment_calls"] > 0:
+        # A model call consumes input and output usage even when a response
+        # omitted its usage fields. Missing components cannot mean zero.
+        if api_units is None or any(key not in api_units for key in VARIABLE_API_KEYS):
+            api, api_known = None, False
+        if any(
+            (rates.get("api") or {}).get(key, {}).get("price") is not None
+            for key in FIXED_API_KEYS
+            if isinstance((rates.get("api") or {}).get(key), dict)
+        ) and (fixed_units is None or not any(key in fixed_units for key in FIXED_API_KEYS)):
+            fixed, fixed_known = None, False
     wall_valid = _valid_wall(run.get("wall_seconds"))
 
     subtotal = None
@@ -391,6 +402,9 @@ def admit(
 
     limits = scenario.get("limits") or {}
     reasons: List[str] = []
+    for key in ("max_workers", "output_token_cap", "fallback_cap"):
+        if limits.get(key) is None:
+            reasons.append("%s cap is unset; admission blocked" % key)
     if workers is not None:
         if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
             raise CostError("workers must be a positive integer")
