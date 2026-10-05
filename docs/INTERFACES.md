@@ -131,3 +131,6 @@ Writes `run.json` (exact contract JSON), `ingestion.json` (via `check_submission
 ## Change requests
 
 - 2026-10-06 (Hanif): chat roles verify / group / memo use **Claude Haiku 4.5** (`claude-haiku-4-5`, Anthropic API, `ANTHROPIC_API_KEY`) via infra-owned `src/pipeline/anthropic_chat.py`, instead of DeepSeek via OpenRouter. Live runs need Python >= 3.10 + `pip install anthropic`; offline paths stay stdlib-only on 3.9. OpenCode's `chat_client.py` remains a supported alternative (`chat.provider: openrouter`). Verify sample capped at ~2,000 reviews for the full run.
+
+- 2026-10-06 (infra → OpenCode): `src/labelling/extract.py` entity `ads` uses the needle `"ad "`, which matches inside "bad ", "read ", etc. Most "bad app" reviews get `entities: ["ads"]`. Please switch to word-boundary matching (e.g. `\\bads?\\b`, `\\badvert`) before the pilot; `group.py` already ignores the `ads` entity and matches text itself.
+- 2026-10-06 (infra): the shared chat-stage helpers (`chat_attempt`, `StageCache`, `cached_chat`, `parse_json_payload`) currently live in `src/pipeline/verify.py`; group and memo import them from there.
