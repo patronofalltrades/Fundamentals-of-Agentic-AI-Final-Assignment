@@ -1,9 +1,10 @@
 # Jev enrichment adapter and pilot gate
 
 Status: adapter, persistent pilot ledger, and gated commands implemented with
-synthetic checks. No Jev or Codex review request has been sent. No real pilot
-measurement or completed classification exists. Model inputs use source review
-text only, never the human golden answer file.
+synthetic checks. The supplied 100-review Jev label pilot completed. The
+separate Codex evidence stage was rejected by automatic approval review before
+any review text was sent to it. No complete classifications or human agreement
+exist. Model inputs use source review text only, never human golden answers.
 
 ## Current documented interface and price
 
@@ -108,19 +109,59 @@ validator. This import is implemented and synthetic tested but has not been
 run on real data. Its local attempt ID is a correlation ID, not a TypeSafe
 response ID. The evidence stage has no claimed accuracy or usage measurements.
 Run and report both cold and warm 100-review measurements before proposing
-500, 10,000, or full-corpus execution. No pilot ledger exists yet.
+500, 10,000, or full-corpus execution. The cold label pilot is recorded below;
+the warm run is still pending.
+
+## Actual 100-review label pilot
+
+The user entered the already configured TypeSafe key privately in a visible
+Terminal window. The pinned source sample and manifest passed preflight, and
+the read-only model-list access check passed. The runner used existing TypeSafe
+credits with no top-up or fallback. Its ignored local ledger is
+`local/jev_pilot.db`; no key is stored there. Offline replay and a separate
+source-row comparison verified all 100 saved IDs, texts, row hashes, and the
+configuration. All 100 Jev label responses passed enum, score, confidence,
+usage, and pinned-model validation.
+
+| Measured or recorded item | Result |
+| --- | ---: |
+| Direct label results | 100 |
+| Settled attempts / retries / uncertain attempts | 100 / 0 / 0 |
+| Returned input / output tokens | 87,887 / 19,656 |
+| Sum of request elapsed time | 42.076869542 seconds |
+| Usage-derived input cost at USD 0.042/M | USD 0.003691254 |
+| Approved cap | USD 0.60 |
+| `needs_review` by declared rule | 73 |
+| Topic `other` | 47 |
+| Evidence records / completed foundation classifications | 0 / 0 |
+
+The account's actual credit debit was not independently checked. Total cold
+wall time was not persisted, so summed request time must not be presented as
+wall time. The local label distribution is not an accuracy result. No golden
+answers were used for prompts or tuning. See aggregate-only
+`reports/jev-pilot-100.json` for the frozen measurement and limits.
+
+Automatic approval review **rejected** the separate 100-review Codex evidence
+action as an external disclosure: it said the available earlier instruction
+prohibited uploading data and TypeSafe pilot approval did not cover this
+separate service. No source review was sent to Codex during that action. Do
+not retry it through another route without explicit user authorization for
+that transfer. The synthetic Codex check involved invented text only. Exact
+evidence, full classification import, cold/warm comparison, and human
+agreement remain pending. Do not expand beyond the 100-review pilot.
 
 The current shell has no `TYPESAFE_API_KEY`; the active worktree has no `.env`.
 A separate Desktop checkout has a nonblank TypeSafe key entry. Its existing
 `src/labelling/smoke_typesafe.py` launcher can read that file for its own
 demo smoke test without copying or printing the key, but it does not launch
 this worktree's pilot runner. The key value was not read, copied, or used here.
-Hanif can open the existing
+The completed label pilot used the existing
 `/Users/haniframadhan/Desktop/Fundamentals-of-Agentic-AI-Final-Assignment/.env`
-locally and copy only the `TYPESAFE_API_KEY` value. Do not paste it into chat,
-the command line, or a new file. In a private zsh Terminal, run the following
-from this worktree. The prompt hides the pasted value; the variable exists
-only in the subshell and the pilot process, and shell history stores no key.
+locally. Hanif copied only the `TYPESAFE_API_KEY` value into a hidden prompt;
+the variable existed only in the subshell and pilot process. No key was pasted
+into chat, a command line, or a new file. The following records the launch
+method for audit. **Do not rerun it now:** the 100-review label pilot is already
+complete, and no second paid process should be started.
 
 ```sh
 cd '/Users/haniframadhan/Documents/Codex/2026-10-05/task/jev-enrichment-worktree'

@@ -19,8 +19,9 @@ This file is a manual task record. It is not a lock or a running agent service.
 | Human scoring guide | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Complete locally | Course-aligned severity 1–5 and optional sentiment anchors added to `docs/human_evaluation.md`; README points to it. The guide task did not edit answer files. |
 | Human golden labels | Hanif | Outside repo | Mechanically validated; semantic quality unreviewed | Completed CSV has 50 rows and 350 valid answer fields. All source fields match. SHA-256 `ff084828aa2d88970e70508dd36362aaaade3d48a1d1ee1d09503e24ffaeb0f6`. No expected answers were sent to a model or committed. |
 | Offline evaluation boundary | Sol via ChatGPT | `feat/offline-foundation` / this checkout (`.`) | Implemented with synthetic checks; real evaluation pending | Aggregate-only evaluator gates on complete source-matched human CSV and saved predictions. Direct CLI invocation works from repo root. Runtime source CSV parser rejects answer columns. 142 total offline tests pass. No real predictions exist. |
-| Jev enrichment and bounded pilot runner | Codex | `feat/jev-enrichment` / `../jev-enrichment-worktree` | Implemented locally; live gate pending | Typed Choice/Score labels, persistent pre-call reservations and usage ledger, exact-text cache, offline replay, optional Codex evidence stage. Checked `cost_100.csv` offline. No review calls. See `docs/jev_enrichment.md`. |
-| Runtime model access and pilot | Unassigned | No branch assigned | Blocked on key route | Hanif approved up to USD 0.60 existing TypeSafe credits, no top-up/fallback. This worktree has no key in its environment; the Desktop smoke launcher only runs demo reviews. A synthetic ChatGPT-auth Codex evidence call succeeded through normal sandbox approval. No TypeSafe review calls or credits spent. See the private Terminal key prompt in `docs/jev_enrichment.md`; verify account access, then run cold/warm 100 before any expansion. |
+| Jev enrichment and bounded pilot runner | Codex | `feat/jev-enrichment` / `../jev-enrichment-worktree` | Implemented and used for label pilot | Typed Choice/Score labels, persistent pre-call reservations and usage ledger, exact-text cache, offline replay. See `docs/jev_enrichment.md` and aggregate `reports/jev-pilot-100.json`. |
+| Jev `cost_100.csv` label pilot | Codex | `feat/jev-enrichment` / ignored `local/jev_pilot.db` | 100 labels complete; evidence blocked | Hanif entered the existing key privately in Terminal. 100 settled calls, no retry, 87,887 input and 19,656 free output tokens, USD 0.003691254 usage-derived cost under USD 0.60 cap. Source IDs/hashes and label schema pass. See `reports/jev-pilot-100.json`. No top-up or fallback. Cold wall time was not persisted; warm run not performed. |
+| Evidence and completed import | Unassigned | No branch assigned | Blocked by automatic approval review | Synthetic ChatGPT-auth Codex evidence test passed, but auto review rejected sending 100 private review texts to that separate service because earlier available instruction forbade uploading data and TypeSafe pilot approval was narrower. No review text was sent in this stage; ask Hanif for explicit authorization before retrying. No exact evidence or completed classification yet. |
 
 The current coding choice is **DeepSeek V4 Flash 0731**, provider **OpenRouter**,
 accessed through **OpenCode CLI**. The verified exact ID is
@@ -53,8 +54,8 @@ Keep unrelated user changes. Do not reset, force-push, or publish without permis
 
 Record the exact commit, changed files, commands run, results, and remaining gaps.
 Distinguish synthetic checks from real data and real model runs.
-No runtime classification, real pilot, ranking, or memo exists yet.
-The cost scaffold has unknown measurements and prices.
+The Jev 100-review label pilot ran; complete classifications, ranking, and memo do not exist yet.
+The separate cost scaffold still lacks full cold/warm stage measurements and projections.
 Full-run projections and live spend/recovery controls remain pending.
 The runtime budget must stay strictly below US$50. A ceiling is not spending approval.
 

@@ -1,0 +1,50 @@
+{
+  "status": "labels_completed_evidence_pending",
+  "source_file": "cost_100.csv",
+  "source_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+  "source_rows": 100,
+  "source_identity_checks_passed": 100,
+  "model": "jev-1.13.0",
+  "configuration": {
+    "effort": "systemone",
+    "prompt_version": "jev-rubric-v1",
+    "schema_version": "jev-labels-v1",
+    "needs_review_rule": "Any of four confidence values below 0.60, or topic other, or intent unclear"
+  },
+  "attempts": {
+    "total": 100,
+    "settled": 100,
+    "uncertain": 0,
+    "retries": 0,
+    "input_tokens": 87887,
+    "output_tokens": 19656,
+    "summed_attempt_seconds": 42.076869542,
+    "cold_wall_seconds": null
+  },
+  "pricing": {
+    "source": "https://docs.typesafe.ai/models",
+    "input_usd_per_million_tokens": "0.042",
+    "output_usd_per_million_tokens": "0",
+    "usage_derived_cost_usd": "0.003691254",
+    "provider_credit_debit_usd": null,
+    "approved_hard_cap_usd": "0.60"
+  },
+  "results": {
+    "direct_labels": 100,
+    "exact_text_cache_copies": 0,
+    "schema_or_identity_errors": 0,
+    "needs_review": 73,
+    "topic_other": 47,
+    "evidence_records": 0,
+    "foundation_completed_classifications": 0,
+    "human_agreement": null
+  },
+  "warm_run": "not_run",
+  "scope": "Supplied 100-review cost sample only; no other dataset stage was run.",
+  "limitations": [
+    "Cost is computed from returned usage at the published rate; the account debit was not independently checked.",
+    "Summed request time is not total wall time. The runner did not persist cold wall time.",
+    "Labels have not been verified against human answers and have no extracted exact evidence yet.",
+    "The separate Codex evidence stage was blocked by automatic approval review before transmitting review text."
+  ]
+}
