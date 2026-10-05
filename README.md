@@ -14,7 +14,7 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
 
-The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, and cost replay scaffolding. **135 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main implementation. Codex reviewed it, made targeted fixes, and ran the checks.
+The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, cost replay scaffolding, and a manual-label CSV exporter. **138 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main pipeline foundation. Codex reviewed it, made targeted fixes, added the manual-label exporter, and ran the checks.
 
 **Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
 
@@ -58,7 +58,7 @@ See [implementation notes](docs/implementation.md), [build provenance](docs/buil
 | Runtime classifications | 0 |
 | Distinct nonempty exact texts | 484,189 |
 | Contract profile versus course helper | Exact match |
-| Synthetic offline tests | 134 passed |
+| Synthetic offline tests | 138 passed after manual-label exporter tests |
 | Local ingestion wall time | 118.151 seconds |
 | Peak ingestion process memory | 26,476,544 bytes on this Mac |
 
@@ -119,6 +119,16 @@ Actual source-row comparison confirms that `cost_100.csv` is the first 100 check
 **Known exact-text overlap:** six golden rows, representing five distinct texts, also occur in the 10,000-review development sample under different IDs. ID separation therefore does not guarantee text separation. Before evaluation, the plan is to identify these cases, exclude matching golden texts from prompt-tuning examples and issue-discovery inputs, disclose overlap and any cache reuse, and report agreement with the limitation visible. Any golden-informed revisions require disclosure and fresh held-out cases for a final check.
 
 Golden labels must be supplied by a human. All 50 human-labeled rows are a required prerequisite for final evaluation. See [human labeling guidance](docs/human_evaluation.md). Expected labels must never enter model prompts, examples, routing thresholds, cache inputs, or issue-discovery inputs. All original golden texts still belong in the final full-corpus run. Synthetic tests must remain outside business aggregates.
+
+The local `../human-evaluation/golden_50_human_labels.xlsx` workbook makes manual labeling easier. Its dropdowns cover all 50 rows for topic, intent, severity, and needs-review. Sentiment accepts a manually entered decimal from −1 to 1; entities and an exact evidence quote remain manual. All seven answer fields are blank. The six original source fields are preserved, and rating is visually muted to keep attention on the review text. The blank source CSV and workbook stay outside this public repository. Neither creates human answers.
+
+Open the workbook in Excel or another spreadsheet app, fill every amber answer cell, and save it as `.xlsx`. From the repository root, export a separate completed CSV with:
+
+```sh
+python3 tools/export_human_labels.py --workbook ../human-evaluation/golden_50_human_labels.xlsx --source ../human-evaluation/golden_50_human_labels.csv --out ../human-evaluation/golden_50_human_labels_completed.csv
+```
+
+The exporter checks that all 50 rows are complete, the six source columns match the verified blank template, and answer values have valid formats. It refuses to overwrite an existing file. It cannot judge whether a human label is semantically correct. The original course CSV is never the export destination. The current blank workbook fails export as intended; no completed answer CSV exists yet.
 
 ### Obtain and prepare data
 

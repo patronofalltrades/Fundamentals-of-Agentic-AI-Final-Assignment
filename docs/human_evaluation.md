@@ -7,6 +7,11 @@ Its original SHA-256 is
 
 A byte-identical, blank working copy is saved in the task's sibling
 `human-evaluation/golden_50_human_labels.csv`, outside this repository.
+An Excel workbook, `human-evaluation/golden_50_human_labels.xlsx`, is beside it.
+The workbook has dropdowns for topic, intent, severity and needs-review on all
+50 rows. Sentiment has a decimal range check from -1 to 1. Entities and the
+exact quote remain manual. All 350 answer cells start blank. Source columns
+are shaded gray; answer columns are amber. Review rating is visually muted.
 The local handoff provides its absolute path. Preserve the original source
 CSV. Do not publish or send expected answers to any model.
 
@@ -18,6 +23,19 @@ Topics: `access`, `usability`, `playback`, `downloads`, `catalog`, `billing`,
 integer 1–5; entities as a JSON array of strings (or `[]`); an evidence quote
 copied exactly from the review; and `true` or `false` for `needs_review`.
 Use the assignment contract's intent vocabulary and guidance.
+
+Open and edit the `.xlsx` workbook, then save it. From the repository root, run:
+
+```sh
+python3 tools/export_human_labels.py --workbook ../human-evaluation/golden_50_human_labels.xlsx --source ../human-evaluation/golden_50_human_labels.csv --out ../human-evaluation/golden_50_human_labels_completed.csv
+```
+
+The exporter uses Python's standard library. It requires 50 complete rows,
+checks exact source field strings and the pinned blank-template checksum, and
+validates answer enums, numeric ranges, entities JSON, the exact quote, and
+the boolean. It refuses existing output paths. Validation is mechanical; it
+does not judge human label correctness. The initial blank workbook correctly
+fails export. No completed answer CSV exists yet.
 
 The evaluator is not implemented yet. When added, it must fail until all 50
 human answers are validated. Prediction model inputs contain original text
