@@ -1,0 +1,1 @@
+{"invocation_id":"syn-inv-warm-1","phase":"resume","started_at":"2026-10-01T11:00:00.000000Z","ended_at":"2026-10-01T11:00:03.400000Z","wall_seconds":3.4,"stop_reason":"completed","stages":["ingest","enrich","verify","group","rank","memo"],"counts":{"completed":9,"quarantined":1,"cache_reused":9,"enrich_calls":0}}

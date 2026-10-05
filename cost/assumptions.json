@@ -1,0 +1,68 @@
+{
+  "_doc": {
+    "purpose": "Editable assumptions for the full-run projection in cost/report.md. Measured pilot numbers never come from this file. Change a value here (or pass --set key=value) and re-run `python3 cost/cost_calc.py`.",
+    "budget_usd": "Declared API budget for the full run. PLACEHOLDER: Hanif must confirm before the full run. The report shows a warning when a scenario exceeds it or cannot be checked because items are unknown.",
+    "pilot_budget_usd": "Spend cap for the cold+warm 100-review pilot (src/labelling/pilot_config.json limits.spend_cap_usd).",
+    "output_token_cap": "Declared max output tokens per call, by role. null = no cap declared (shown as unknown). Keep these equal to max_tokens in the run config. The report flags any observed call above the cap.",
+    "max_concurrency": "Maximum workers for the full run. The pilot uses 1 worker. Projected time divides per-worker throughput by this (times concurrency_efficiency).",
+    "max_fallback_fraction": "Declared hard cap on the fraction of enrich work routed to a stronger fallback model. 0.0 = no fallback model (pilot_config.json limits.max_fallback_fraction).",
+    "fallback_fraction": "Assumed fallback fraction per scenario. Must not exceed max_fallback_fraction (the report warns if it does).",
+    "verify_sample_fraction": "Declared verification sample fraction of non-cached completed records for the full-run projection (0.05, coordinator decision 2026-10-06; the pilot config uses 0.1 on 100 rows).",
+    "verify_max_items": "Cap on verified items in the full run (2000, coordinator decision 2026-10-06).",
+    "retry_rate": "Fraction of billed work assumed to be re-sent (retries that are charged). The report also shows the measured pilot retry rate.",
+    "fixed_overhead_multiplier": "Multiplier on the measured one-time group+memo cost. Counted once, never per row.",
+    "concurrency_efficiency": "Fraction of linear speed-up achieved per extra worker (rate limits, contention).",
+    "reasoning_tokens_included_in_output": "true = provider's output_tokens already include reasoning tokens, so reasoning is not billed again. false = reasoning tokens are billed as a separate 'reasoning' item.",
+    "projection": "Full-corpus work counts from docs/specs/manifest.json and AGENTS.md.",
+    "prepilot_estimate": "Used ONLY while no measured pilot exists, and labelled PRE-PILOT ESTIMATE in the report.",
+    "batch_api_estimate": "Hypothetical Batch API discount for eligible chat roles. Appears only as an estimated scenario line in section 2."
+  },
+  "budget_usd": 25.0,
+  "pilot_budget_usd": 1.0,
+  "output_token_cap": {
+    "enrich": null,
+    "verify": 600,
+    "group": 1500,
+    "memo": 2500
+  },
+  "max_concurrency": 2,
+  "max_fallback_fraction": 0.0,
+  "fallback_fraction": {
+    "base": 0.0,
+    "conservative": 0.0
+  },
+  "verify_sample_fraction": 0.05,
+  "verify_max_items": 2000,
+  "retry_rate": {
+    "base": 0.05,
+    "conservative": 0.25
+  },
+  "fixed_overhead_multiplier": {
+    "base": 1.0,
+    "conservative": 2.0
+  },
+  "concurrency_efficiency": {
+    "base": 1.0,
+    "conservative": 0.6
+  },
+  "reasoning_tokens_included_in_output": true,
+  "projection": {
+    "rows_accounted": 660622,
+    "rows_nonempty": 660609,
+    "empty_text_quarantines": 13,
+    "distinct_nonempty_texts": 484189,
+    "pilot_rows": 100
+  },
+  "prepilot_estimate": {
+    "enrich_input_tokens_per_review": 500,
+    "enrich_output_tokens_per_review": 0,
+    "source": "src/labelling/PREP.md (Jev cost paragraph): about 500-600 input tokens per review at larger packs; Jev output is free."
+  },
+  "batch_api_estimate": {
+    "discount_fraction": 0.5,
+    "roles": [
+      "verify"
+    ],
+    "note": "ESTIMATE ONLY. Anthropic Batch API price = 50% of standard. Shown as a separate estimated line; never applied to the measured bill. Only roles that could tolerate batch latency are listed (verify); Jev enrich is not eligible."
+  }
+}

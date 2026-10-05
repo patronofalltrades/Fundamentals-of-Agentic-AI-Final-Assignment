@@ -1,0 +1,322 @@
+{
+  "provenance": {
+    "checksum_ok": true,
+    "collected_from": {
+      "cold": "cost/fixtures/runs/pilot-cold",
+      "warm": "cost/fixtures/runs/pilot-warm"
+    },
+    "csv_name": "cost_10_synthetic.csv",
+    "csv_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+    "data_source": "synthetic",
+    "empty_texts": 1,
+    "expected_rows": 10,
+    "id_count": 10,
+    "ids_match_csv": true,
+    "manifest": "cost/fixtures/manifest_synthetic.json",
+    "manifest_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+    "nonempty_texts": 9,
+    "reasoning_tokens_included_in_output": true,
+    "unique_nonempty_texts": 8
+  },
+  "runs": {
+    "cold": {
+      "config": {
+        "SYNTHETIC": true,
+        "batching": {
+          "max_reviews_per_request": 50
+        },
+        "client": {
+          "api_key_env": "TYPESAFE_API_KEY",
+          "model": "jev-latest",
+          "provider": "typesafe"
+        },
+        "dry_run": false,
+        "input_csv": "cost/fixtures/cost_10_synthetic.csv",
+        "input_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "limits": {
+          "spend_cap_usd": 1.0,
+          "workers": 1
+        },
+        "prompt_version": "v1",
+        "roles": {
+          "group": {
+            "effort": "none",
+            "max_tokens": 1500,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          },
+          "memo": {
+            "effort": "none",
+            "max_tokens": 2500,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          },
+          "verify": {
+            "effort": "none",
+            "max_tokens": 600,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          }
+        },
+        "run_id": "syn-cold",
+        "schema_version": "a5-v1",
+        "synthetic": true,
+        "verify": {
+          "sample_fraction": 0.1
+        }
+      },
+      "data_source": "synthetic",
+      "invocation_stage_seconds": {},
+      "invocations": [
+        {
+          "counts": {
+            "cache_reused": 1,
+            "completed": 9,
+            "enrich_calls": 4,
+            "quarantined": 1
+          },
+          "ended_at": "2026-10-01T10:01:27.500000Z",
+          "invocation_id": "syn-inv-cold-1",
+          "phase": "initial",
+          "started_at": "2026-10-01T10:00:00.000000Z",
+          "stop_reason": "completed",
+          "wall_seconds": 87.5
+        }
+      ],
+      "name": "cold",
+      "recorded_input_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+      "records": {
+        "cache_hits": 1,
+        "completed": 9,
+        "ids_missing": 0,
+        "pending": 0,
+        "quarantined": 1,
+        "record_lines_written_by_this_run": 10,
+        "reviews_sent_succeeded": 8
+      },
+      "run_dir": "cost/fixtures/runs/pilot-cold",
+      "run_id": "syn-cold",
+      "settings": {
+        "enrich": {
+          "batch_size": 50,
+          "effort": null,
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "max_tokens": null,
+          "model": "jev-latest",
+          "prompt_version": "v1",
+          "provider": "typesafe",
+          "schema_version": "a5-v1",
+          "workers": 1
+        },
+        "group": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "memo": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 2500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "verify": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 600,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "sample_fraction": null,
+          "schema_version": null,
+          "workers": 1
+        }
+      },
+      "stages": {
+        "enrich": {
+          "attempts": 4,
+          "duration_ms_sum": 68400,
+          "span_seconds": 71.0
+        },
+        "group": {
+          "attempts": 1,
+          "duration_ms_sum": 3000,
+          "span_seconds": 3.0
+        },
+        "memo": {
+          "attempts": 1,
+          "duration_ms_sum": 6000,
+          "span_seconds": 6.0
+        },
+        "verify": {
+          "attempts": 1,
+          "duration_ms_sum": 2000,
+          "span_seconds": 2.0
+        }
+      },
+      "wall_seconds": 87.5
+    },
+    "warm": {
+      "config": {
+        "SYNTHETIC": true,
+        "batching": {
+          "max_reviews_per_request": 50
+        },
+        "client": {
+          "api_key_env": "TYPESAFE_API_KEY",
+          "model": "jev-latest",
+          "provider": "typesafe"
+        },
+        "dry_run": false,
+        "input_csv": "cost/fixtures/cost_10_synthetic.csv",
+        "input_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+        "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+        "limits": {
+          "spend_cap_usd": 1.0,
+          "workers": 1
+        },
+        "prompt_version": "v1",
+        "roles": {
+          "group": {
+            "effort": "none",
+            "max_tokens": 1500,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          },
+          "memo": {
+            "effort": "none",
+            "max_tokens": 2500,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          },
+          "verify": {
+            "effort": "none",
+            "max_tokens": 600,
+            "model": "claude-haiku-4-5",
+            "prompt_version": "draft-1",
+            "provider": "anthropic"
+          }
+        },
+        "run_id": "syn-warm",
+        "schema_version": "a5-v1",
+        "synthetic": true,
+        "verify": {
+          "sample_fraction": 0.1
+        },
+        "warm_from": "runs/pilot-cold"
+      },
+      "data_source": "synthetic",
+      "invocation_stage_seconds": {},
+      "invocations": [
+        {
+          "counts": {
+            "cache_reused": 9,
+            "completed": 9,
+            "enrich_calls": 0,
+            "quarantined": 1
+          },
+          "ended_at": "2026-10-01T11:00:03.400000Z",
+          "invocation_id": "syn-inv-warm-1",
+          "phase": "resume",
+          "started_at": "2026-10-01T11:00:00.000000Z",
+          "stop_reason": "completed",
+          "wall_seconds": 3.4
+        }
+      ],
+      "name": "warm",
+      "recorded_input_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+      "records": {
+        "cache_hits": 9,
+        "completed": 9,
+        "ids_missing": 0,
+        "pending": 0,
+        "quarantined": 1,
+        "record_lines_written_by_this_run": 10,
+        "reviews_sent_succeeded": 0
+      },
+      "run_dir": "cost/fixtures/runs/pilot-warm",
+      "run_id": "syn-warm",
+      "settings": {
+        "enrich": {
+          "batch_size": 50,
+          "effort": null,
+          "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+          "max_tokens": null,
+          "model": "jev-latest",
+          "prompt_version": "v1",
+          "provider": "typesafe",
+          "schema_version": "a5-v1",
+          "workers": 1
+        },
+        "group": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 1500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "memo": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 2500,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "schema_version": null,
+          "workers": 1
+        },
+        "verify": {
+          "batch_size": null,
+          "effort": "none",
+          "max_tokens": 600,
+          "model": "claude-haiku-4-5",
+          "prompt_version": "draft-1",
+          "provider": "anthropic",
+          "sample_fraction": null,
+          "schema_version": null,
+          "workers": 1
+        }
+      },
+      "stages": {
+        "enrich": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        },
+        "group": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        },
+        "memo": {
+          "attempts": 1,
+          "duration_ms_sum": 2000,
+          "span_seconds": 2.0
+        },
+        "verify": {
+          "attempts": 0,
+          "duration_ms_sum": 0,
+          "span_seconds": null
+        }
+      },
+      "wall_seconds": 3.4
+    }
+  }
+}

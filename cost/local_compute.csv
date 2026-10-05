@@ -1,0 +1,2 @@
+machine,scope,hours,power_watts,usd_per_kwh,fixed_usd,source,notes
+pipeline host (laptop that runs run_pipeline.py),measured pilot and projected full-run wall clock,,,,0,,"hours blank = use the measured (pilot) or projected (full run) wall-clock hours. power_watts and usd_per_kwh are unknown until measured or looked up; the calculator shows local compute as unknown, never 0. No local model inference is planned (all model work is API), so this is host CPU/network time only."

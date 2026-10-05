@@ -1,0 +1,9 @@
+{
+  "SYNTHETIC": "Test fixture only. Not the course manifest.",
+  "files": {
+    "cost_10_synthetic.csv": {
+      "bytes": 803,
+      "sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c"
+    }
+  }
+}

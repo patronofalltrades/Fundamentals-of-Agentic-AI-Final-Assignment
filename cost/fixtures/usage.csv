@@ -1,0 +1,22 @@
+request_id,run,role,provider,model,item,billed_units,unit,note
+syn-req-01,cold,enrich,typesafe,jev-1.13.0,input_uncached,0,token,cached_input_tokens not reported; all input billed uncached
+syn-req-01,cold,enrich,typesafe,jev-1.13.0,output,0,token,
+syn-req-02,cold,enrich,typesafe,jev-1.13.0,input_uncached,2400,token,cached_input_tokens not reported; all input billed uncached
+syn-req-02,cold,enrich,typesafe,jev-1.13.0,output,400,token,
+syn-req-03,cold,enrich,typesafe,jev-1.13.0,input_uncached,0,token,cached_input_tokens not reported; all input billed uncached
+syn-req-03,cold,enrich,typesafe,jev-1.13.0,output,0,token,
+syn-req-03,cold,enrich,typesafe,jev-1.13.0,uncertain_charge,,usd,timeout/unknown outcome: possible charge; reconcile with provider dashboard
+syn-req-04,cold,enrich,typesafe,jev-1.13.0,input_uncached,2300,token,cached_input_tokens not reported; all input billed uncached
+syn-req-04,cold,enrich,typesafe,jev-1.13.0,output,380,token,
+syn-req-05,cold,verify,anthropic,claude-haiku-4-5,input_uncached,600,token,input_tokens - cached_input_tokens
+syn-req-05,cold,verify,anthropic,claude-haiku-4-5,input_cached,300,token,
+syn-req-05,cold,verify,anthropic,claude-haiku-4-5,output,120,token,includes 40 reasoning tokens (not billed again)
+syn-req-06,cold,group,anthropic,claude-haiku-4-5,input_uncached,1500,token,input_tokens - cached_input_tokens
+syn-req-06,cold,group,anthropic,claude-haiku-4-5,input_cached,0,token,
+syn-req-06,cold,group,anthropic,claude-haiku-4-5,output,200,token,
+syn-req-07,cold,memo,anthropic,claude-haiku-4-5,input_uncached,2500,token,input_tokens - cached_input_tokens
+syn-req-07,cold,memo,anthropic,claude-haiku-4-5,input_cached,0,token,
+syn-req-07,cold,memo,anthropic,claude-haiku-4-5,output,600,token,
+syn-req-08,warm,memo,anthropic,claude-haiku-4-5,input_uncached,452,token,input_tokens - cached_input_tokens
+syn-req-08,warm,memo,anthropic,claude-haiku-4-5,input_cached,2048,token,
+syn-req-08,warm,memo,anthropic,claude-haiku-4-5,output,590,token,

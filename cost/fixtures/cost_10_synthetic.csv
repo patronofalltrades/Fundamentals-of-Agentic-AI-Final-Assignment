@@ -1,0 +1,11 @@
+review_id,review_text,review_rating,review_likes,app_version,review_timestamp
+syn-001,SYNTHETIC: app crashes every time I open a playlist,1,0,8.8.0.1,2023-01-01 10:00:00
+syn-002,SYNTHETIC: love it,5,2,8.8.0.1,2023-01-02 10:00:00
+syn-003,SYNTHETIC: please add a sleep timer to podcasts,4,0,8.8.0.2,2023-01-03 10:00:00
+syn-004,SYNTHETIC: love it,5,0,,2023-01-04 10:00:00
+syn-005,SYNTHETIC: charged twice for premium this month,1,7,8.8.0.2,2023-01-05 10:00:00
+syn-006,SYNTHETIC: downloads disappear after update,2,1,8.8.0.3,2023-01-06 10:00:00
+syn-007,"SYNTHETIC: cancelling, too many ads",1,0,8.8.0.3,2023-01-07 10:00:00
+syn-008,SYNTHETIC: cannot log in with my email,1,3,8.8.0.3,2023-01-08 10:00:00
+syn-009,SYNTHETIC: okay I guess,3,0,8.8.0.4,2023-01-09 10:00:00
+syn-010,,3,0,8.8.0.4,2023-01-10 10:00:00

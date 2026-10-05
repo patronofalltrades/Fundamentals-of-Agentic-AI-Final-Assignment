@@ -1,0 +1,50 @@
+{
+  "SYNTHETIC": true,
+  "batching": {
+    "max_reviews_per_request": 50
+  },
+  "client": {
+    "api_key_env": "TYPESAFE_API_KEY",
+    "model": "jev-latest",
+    "provider": "typesafe"
+  },
+  "dry_run": false,
+  "input_csv": "cost/fixtures/cost_10_synthetic.csv",
+  "input_sha256": "ace848ed66b9bdd7078b3d8b63e6dd58daf15f8c9f87b2ceb4bca777f152f66c",
+  "label_config": "typesafe/jev-latest:prompt-v1:schema-a5-v1",
+  "limits": {
+    "spend_cap_usd": 1.0,
+    "workers": 1
+  },
+  "prompt_version": "v1",
+  "roles": {
+    "group": {
+      "effort": "none",
+      "max_tokens": 1500,
+      "model": "claude-haiku-4-5",
+      "prompt_version": "draft-1",
+      "provider": "anthropic"
+    },
+    "memo": {
+      "effort": "none",
+      "max_tokens": 2500,
+      "model": "claude-haiku-4-5",
+      "prompt_version": "draft-1",
+      "provider": "anthropic"
+    },
+    "verify": {
+      "effort": "none",
+      "max_tokens": 600,
+      "model": "claude-haiku-4-5",
+      "prompt_version": "draft-1",
+      "provider": "anthropic"
+    }
+  },
+  "run_id": "syn-warm",
+  "schema_version": "a5-v1",
+  "synthetic": true,
+  "verify": {
+    "sample_fraction": 0.1
+  },
+  "warm_from": "runs/pilot-cold"
+}
