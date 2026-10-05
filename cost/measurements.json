@@ -1,0 +1,11 @@
+{
+  "status": "not_measured",
+  "provenance": null,
+  "cold": null,
+  "warm": null,
+  "note": "No pilot has been run. cold and warm are null, not zero. Fill only with real saved usage.",
+  "runs": {
+    "cold": null,
+    "warm": null
+  }
+}

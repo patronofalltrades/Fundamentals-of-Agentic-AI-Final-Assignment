@@ -10,11 +10,67 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 ## Current status
 
-As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. This README is the initial repository deliverable; the inspection results below are observations from source files, not pipeline outputs.
+As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
 
-The pipeline, role prompts, automated ingestion report, human golden labels, model runs, evaluations, cost calculator, ranking, and memo are **not implemented or completed**. No model usage, API cost, runtime, label accuracy, or classification success is claimed. Providers, model versions, framework, and storage choices remain pending measured quality, cost, and runtime. Distinct roles may share a provider or model, with separate instructions, inputs, outputs, and saved evidence.
+The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, and cost replay scaffolding. **134 synthetic tests pass.** DeepSeek through OpenCode CLI wrote the main implementation. Codex reviewed it, made targeted fixes, and ran the checks.
+
+Role prompts, human golden labels, runtime model runs, evaluations, real pilot measurements, ranking, and the memo remain **pending**. No runtime classification usage, cost, label accuracy, or completed classification is claimed. GLM is a bulk-classifier candidate. Opus is a candidate for a small independent verifier sample. Runtime provider access, pilot quality, and budget approval remain prerequisites. Development coding calls are separate from runtime model roles.
 
 Future paid execution requires configured credentials, verified API entitlement, and an approved spending limit. Offline replay must work without credentials; opening the calculator must never trigger paid calls.
+
+## Implemented offline foundation
+
+The `spotify_pipeline` package is runnable with no installation:
+
+```text
+python3 -m spotify_pipeline ingest --input PATH --manifest PATH --db PATH --report PATH
+python3 -m spotify_pipeline status --db PATH [--config PATH]
+python3 -m spotify_pipeline checkpoint --db PATH --out PATH --config PATH
+python3 -m spotify_pipeline cost --measurements PATH --rates PATH --scenario PATH --out PATH
+```
+
+- `ingest` streams a strict UTF-8-sig CSV (strict `csv` mode; invalid UTF-8 becomes a clean error), verifies the input against the supplied manifest, validates every row, builds an adjacent temporary SQLite database, and publishes the database and a contract-compatible report. The report temp file is written before the database is replaced so report errors are caught first; a best-effort rollback restores the prior files. Empty text is quarantined as `empty_review_text`; a missing app version is counted with `not app_version.strip()` but not quarantined. It never overwrites the input or manifest and guards against SQLite `-journal`/`-wal`/`-shm` path collisions.
+- `status` opens an existing database read-only (never creating a file) and prints source identity plus completed/pending/quarantined counts, optionally scoped to one configuration.
+- `checkpoint` opens the database read-only and writes sorted original completed IDs plus configuration and source identity for resume. Pending rows never count as completed.
+- `cost` replays saved measurements with editable dated rates using `Decimal`. Shipped artifacts are `not_measured` with null rates and unset output/fallback caps, so totals stay unresolved, admission is blocked, and no scaling is approved. Test measurements are labelled `synthetic_fixture`, never a genuine measured pilot. Projections are `not_implemented`. There is no paid execution command.
+
+This is a local development branch and is not yet published. SQLite databases, sidecars, checkpoints and other local state are git-ignored; only aggregate reports under `reports/` are tracked.
+
+Offline tests live in `tests/` and use synthetic fixtures in temporary directories only:
+
+```text
+python3 -m unittest discover -s tests -t . -v
+```
+
+See [implementation notes](docs/implementation.md), [build provenance](docs/build_provenance.md), [agent instructions](AGENTS.md), [coordination record](docs/tasks.md), and the [collaboration/runtime diagram](docs/architecture.md).
+
+### Actual offline results
+
+| Check | Result |
+| --- | --- |
+| Full-source IDs ingested | 660,622 |
+| Nonempty reviews pending | 660,609 |
+| Empty reviews quarantined | 13 |
+| Runtime classifications | 0 |
+| Distinct nonempty exact texts | 484,189 |
+| Contract profile versus course helper | Exact match |
+| Synthetic offline tests | 134 passed |
+| Local ingestion wall time | 118.151 seconds |
+| Peak ingestion process memory | 26,476,544 bytes on this Mac |
+
+These are local ingestion measurements. They are not pilot runtime or API-cost measurements. The SQLite file remains ignored and local. Reports contain aggregates and hashes, with no review text, original IDs, or private paths.
+
+Saved evidence: [extended ingestion report](reports/ingestion.json), [exact contract profile](reports/contract-ingestion.json), [ingestion checks](reports/ingestion-checks.json), [offline verification](reports/offline-verification.json), and [unmeasured cost scaffold](reports/cost-scaffold.json).
+
+After placing the supplied source and manifest in `data/`, run:
+
+```sh
+python3 -m spotify_pipeline ingest --input data/spotify_reviews_18months.csv --manifest data/manifest.json --db local/reviews.db --report reports/ingestion.json
+python3 -m spotify_pipeline status --db local/reviews.db
+python3 -m spotify_pipeline cost --measurements cost/measurements.json --rates cost/rates.json --scenario cost/scenario.json --out reports/cost-scaffold.json
+```
+
+No API key is needed. Close all database writers before re-ingestion. Status without a label configuration describes the source split; saved classification progress is reported per configuration. Checkpoints and result reuse have been tested with synthetic records only.
 
 ## Assignment references and scope
 
@@ -64,7 +120,7 @@ Golden labels must be supplied by a human. Expected labels must never enter mode
 
 Download the expanded eleven-file course ZIP from the dataset link in the assignment brief, then extract it locally into a proposed `data/` directory. Preserve originals and validate against the supplied `manifest.json`, including the full-file checksum above. Raw CSVs are not part of this initial commit.
 
-The supplied `prepare_dataset.py` can reproduce the course extract from the pinned original Kaggle ZIP using Python's standard library. Its documented interface is a source ZIP path with an optional `--output` directory. The [pinned version-2 source download](https://www.kaggle.com/api/v1/datasets/download/bwandowando/3-4-million-spotify-google-store-reviews?datasetVersionNumber=2) is separate from the smaller course ZIP. Reproduction has not been run for this project. Project setup and execution commands will be added only after implementation and verification.
+The supplied `prepare_dataset.py` can reproduce the course extract from the pinned original Kaggle ZIP using Python's standard library. Its documented interface is a source ZIP path with an optional `--output` directory. The [pinned version-2 source download](https://www.kaggle.com/api/v1/datasets/download/bwandowando/3-4-million-spotify-google-store-reviews?datasetVersionNumber=2) is separate from the smaller course ZIP. Reproduction has not been run for this project. The offline commands above are implemented. Runtime model commands will be added after implementation and verification.
 
 ## Proposed architecture
 
@@ -121,7 +177,7 @@ Sort by descending integer severity sum, then ascending issue ID; ranks start at
 
 ## Roadmap and planned artifacts
 
-1. **Prepare:** add dependency/setup documentation, blank credential examples, ignore rules, label examples, prompts, schema, input-path interface, full ingestion profile, and original-row accounting. Only the dataset inspection summarized above is complete.
+1. **Prepare:** add dependency/setup documentation, blank credential examples, ignore rules, label examples, prompts, schema, input-path interface, full ingestion profile, and original-row accounting. The offline ingestion/state/schema/cost foundation and setup files are implemented; prompts, label examples and model roles are pending.
 2. **Human evaluation preparation:** hand-label the golden 50 and establish the overlap policy before final evaluation; use development records for tuning.
 3. **Measured 100-review pilot:** implement the calculator and actual pipeline; use `cost_100.csv` unchanged, an empty result cache, and one worker. Include enrichment, declared verification, grouping, ranking, and memo. Record all statuses and attempts. Repeat warm with saved results and demonstrate zero new enrichment calls under unchanged settings; disclose downstream calls.
 4. **500-review checkpoint:** demonstrate the enricher, evaluate labels and failures, test interruption/resume, and refresh cost/runtime estimates before Class 7.
@@ -133,15 +189,15 @@ Planned repository artifacts are listed as plain paths because they do not exist
 
 | Planned artifact | Purpose | Status |
 | --- | --- | --- |
-| Source program, dependency versions, role prompts, schema, label examples, blank `.env.example`, `.gitignore` | Runnable staged implementation and safe setup | Pending |
-| Full ingestion report and run/data manifests | Checksum, profile, code/config versions and provenance | Pending |
+| Source program, dependency versions, role prompts, schema, label examples, blank `.env.example`, `.gitignore` | Runnable staged implementation and safe setup | Partial: offline foundation and setup files implemented; prompts and label examples pending |
+| Full ingestion report and run/data manifests | Checksum, profile, code/config versions and provenance | Ingestion reports saved; runtime manifest pending |
 | `grading/run.json`, `ingestion.json`, `records.jsonl`, `membership.csv`, `ranking.csv`, `claims.csv`, `calls.jsonl`, `checkpoint_before.json`, `checkpoint_after.json` | Standardized grading export, including completed and quarantined IDs | Pending |
-| `cost/` calculator, `pilot_records.jsonl`, `pilot_calls.jsonl`, editable rates/usage, report, offline replay instructions | Real cold/warm measurements and reproducible projections | Pending |
+| `cost/` calculator, `pilot_records.jsonl`, `pilot_calls.jsonl`, editable rates/usage, report, offline replay instructions | Real cold/warm measurements and reproducible projections | Offline scaffold exists; real pilot and projections pending |
 | `evals/` human labels, predictions, comparisons, verifier results, system tests | Actual evaluation and inspected failures | Pending |
 | Run logs, quarantine details, interruption/resume recording | Usage, attempts, timing, recovery and stop evidence | Pending |
 | Decision memo, real review trace, failed/ambiguous case trace | Recommendation tied to source, membership, ranking and claims | Pending |
 
-Large saved outputs may be supplied as accessible downloadable assets; JSONL grading files may be gzip-compressed. Evidence links will be added after artifacts exist and are verified. No pipeline or replay commands are available yet.
+Large saved outputs may be supplied as accessible downloadable assets; JSONL grading files may be gzip-compressed. Evidence links will be added after artifacts exist and are verified. Offline ingestion, status, checkpoint and cost-replay commands are available. Model-run commands and replay of real measured results are not available yet.
 
 ## Cost, recovery, and evaluation requirements
 
@@ -157,18 +213,18 @@ System checks must cover malformed output, missing text, ambiguous/unsupported-l
 
 ## Rubric evidence checklist
 
-All criteria remain pending; source inspection alone does not complete a grading criterion. This table will gain verified evidence links as work is completed.
+No rubric category is complete yet. The offline foundation supplies initial evidence. It does not demonstrate runtime execution, label quality, or a finished recommendation.
 
 | Category | Criterion | Evidence to provide | Status |
 | --- | --- | --- | --- |
-| Deliverable quality (4) | Accessible code/setup and artifacts | Tested setup, dependencies, runnable program, accessible saved evidence | Pending |
+| Deliverable quality (4) | Accessible code/setup and artifacts | Tested setup, dependencies, runnable program, accessible saved evidence | Partial: offline commands and reports exist; staged runtime pending |
 | Deliverable quality | Architecture, schema and provenance | Implemented roles, prompts, manifests, schema and saved handoffs | Pending |
 | Deliverable quality | Correct memo numbers and source evidence | Claims reconciled to records, membership and deterministic calculations; real trace | Pending |
 | Deliverable quality | Coherent recommendation and limitations | Memo, alternatives and inspected source examples | Pending |
 | Testing & evaluation (3) | Human golden labels and error analysis | 50 human labels, per-field comparisons, disagreements and overlap disclosure | Pending |
 | Testing & evaluation | Independent verification and adversarial checks | Verifier procedure/results, planted-error and injection outcomes | Pending |
 | Testing & evaluation | T3 cost/recovery evidence | Real cold/warm 100 pilot, correct offline calculator, retry/spend/recovery demonstrations | Pending |
-| Working result (3) | Full ingestion and classification coverage | Exact profile, one final record per ID, completed/quarantined accounting | Pending |
+| Working result (3) | Full ingestion and classification coverage | Exact profile, one final record per ID, completed/quarantined accounting | Ingestion verified; classification and grading export pending |
 | Working result | Runnable bounded stages and resume | Saved handoffs, call logs, checkpoint snapshots and recording | Pending |
 | Working result | Reproducible ranking and grounded output | Offline ranking, checker results and usable final memo | Pending |
 
@@ -178,4 +234,4 @@ The coverage component distinguishes accounting from successful classification: 
 
 These are self-selected public reviews from a historical snapshot, not the complete customer population. The data contains no account revenue, plan tier, confirmed cancellations, or observed retention effects. Cancellation text expresses intent. The eventual memo must avoid revenue-at-risk estimates and causal claims, disclose missing versions and incomplete classifications, and avoid unnecessary personal details. Any trend analysis must report denominators, comparable periods, and partial-month boundaries.
 
-The first README records verified input facts and a proposed implementation. Final conclusions and measured outcomes will be added only after the corresponding work is executed and saved.
+This README records verified input facts, actual offline ingestion, and planned runtime work. Final conclusions will be added after runtime execution and evaluation are saved.
