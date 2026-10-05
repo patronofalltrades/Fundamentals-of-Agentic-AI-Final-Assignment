@@ -25,7 +25,7 @@ result.request_id, result.records, result.usage
 - **Do not re-implement prompts.** `prompts.build_questions` already embeds the per-review reference
   in each question's `instructions`; this is required because **TypeSafe does not send the question
   key to the model** (without it, packed reviews get identical labels).
-- **label_config:** `"typesafe/jev-latest:prompt-v1:schema-a5-v1"`. Must be identical in the
+- **label_config:** `"typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1"` (extract-v2 since the whole-word entity fix; `EXTRACT_VERSION` in `extract.py`). Must be identical in the
   completed `records.jsonl` row and the enrich `calls.jsonl` event. A change invalidates the cache.
 
 ## Error handling the harness must implement
