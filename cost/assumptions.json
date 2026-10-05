@@ -21,7 +21,7 @@
   "pilot_budget_usd": 1.0,
   "output_token_cap": {
     "enrich": null,
-    "verify": 600,
+    "verify": 1700,
     "group": 1500,
     "memo": 2500
   },

@@ -18,7 +18,7 @@
     "timeout_seconds": 60,
     "temperature": 0.0,
     "max_output_tokens": {
-      "verify": 600,
+      "verify": 1700,
       "group": 1500,
       "memo": 2500
     },
@@ -78,7 +78,7 @@
     "sample_fraction": 0.2,
     "min_items": 20,
     "max_items": 100,
-    "max_tokens": 600
+    "max_tokens": 1700
   },
   "group": {
     "max_issues": 20,

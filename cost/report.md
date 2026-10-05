@@ -8,7 +8,7 @@ Generated offline by `python3 cost/cost_calc.py` from saved files only (no API k
 
 | file | path | sha256 |
 |---|---|---|
-| assumptions.json | `cost/assumptions.json` | b3ff892ac8373d25… |
+| assumptions.json | `cost/assumptions.json` | 5ed63dd510bb7a37… |
 | local_compute.csv | `cost/local_compute.csv` | eb46ef302735cf79… |
 | pilot_calls.jsonl | `cost/pilot_calls.jsonl` | missing |
 | pilot_records.jsonl | `cost/pilot_records.jsonl` | missing |
@@ -67,7 +67,7 @@ Per-unit basis: **assumptions only (no pilot)**. Each stage is extrapolated from
 | fallback fraction base / conservative | 0.0 / 0.0 |
 | fixed-overhead multiplier base / conservative | 1.0 / 2.0 |
 | concurrency efficiency base / conservative | 1.0 / 0.6 |
-| output-token cap per call | {"enrich": null, "group": 1500, "memo": 2500, "verify": 600} |
+| output-token cap per call | {"enrich": null, "group": 1500, "memo": 2500, "verify": 1700} |
 | reasoning tokens included in output | True |
 
 Output-token caps vs observed, and worst-case output cost of one call at the cap:
@@ -75,7 +75,7 @@ Output-token caps vs observed, and worst-case output cost of one call at the cap
 | stage | declared cap | max observed output tokens | worst-case output cost per call |  |
 |---|---|---|---|---|
 | enrich | not declared (unknown) | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
-| verify | 600 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
+| verify | 1700 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
 | group | 1500 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
 | memo | 2500 | **unknown** | **unknown** (known part $0.000000 + 1 unknown item) |  |
 
