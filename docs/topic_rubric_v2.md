@@ -1,6 +1,6 @@
 # Jev topic rubric v2
 
-Hanif approved this wording revision for the fixed eight-topic grading contract. It changes the topic Choice prompt from `jev-rubric-v1` to `jev-rubric-v2`; the output schema stays `jev-labels-v1`. The saved 100-review pilot used v1 and was not relabeled. No v2 model call or quality measurement has run.
+Hanif approved this wording revision for the fixed eight-topic grading contract. It changes the topic Choice prompt from `jev-rubric-v1` to `jev-rubric-v2`; the output schema stays `jev-labels-v1`. The saved 100-review pilot used v1 and was not relabeled. No v2 model call or quality measurement has run. The code was integrated locally on `feat/offline-foundation` at `a7b6f7d` and has not been pushed.
 
 | Topic | v2 Choice meaning |
 | --- | --- |
