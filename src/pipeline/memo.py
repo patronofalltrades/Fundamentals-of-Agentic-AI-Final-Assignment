@@ -21,7 +21,7 @@ from pipeline.rowhash import RANKED_INTENTS
 from pipeline.verify import StageCache, cached_chat, chat_model_name, sha256_hex
 
 STAGE = "memo"
-PROMPT_VERSION = "memo-v2"
+PROMPT_VERSION = "memo-v3"
 PRODUCT_QUESTION = ("Where should Spotify invest next quarter: access, usability, playback, or "
                     "billing/support?")
 AREAS = ("access", "usability", "playback", "billing_support")
@@ -39,12 +39,14 @@ The input is a saved aggregate pack from a review-classification pipeline: ranke
 their claims, an area rollup, coverage counts and verifier agreement. It is the ONLY evidence.
 
 Rules:
-1. Numbers. Use only numbers that appear in the input. After every issue-level number put its full
-   claim ID in square brackets, exactly as given, e.g. "severity_sum 35 [C004-severity_sum]". Never
-   write a bare "[C004]" and never put anything other than claim IDs in square brackets. Area totals
-   come from area_rollup: call them "derived sums of claims" and list the claim IDs they come from.
-   Coverage and verifier numbers are not claims: name their input field in backticks instead,
-   e.g. "topic agreement 1.0 (`verify_agreement.agreement.topic`)".
+1. Numbers and citations. Use only numbers that appear in the input. Square brackets are reserved
+   for claim IDs: one full claim ID per bracket, nothing else inside, written exactly as in the input.
+     Allowed:   severity_sum 9 [C003-severity_sum]; 3 complaints [C003-complaint_count]
+     Allowed:   derived sum 38 from [C003-severity_sum] [C004-severity_sum] [C006-severity_sum]
+     Forbidden: [C003]  [C003-severity_sum: 9]  [derived from C003-severity_sum]  [verify_agreement]
+   Area totals come from area_rollup: call them "derived sums of claims" and cite the claim IDs they
+   come from, each in its own brackets. Coverage and verifier numbers are not claims: name their input
+   field in backticks instead, e.g. "topic agreement 1.0 (`verify_agreement.agreement.topic`)".
 2. What the data is. These are public app-store reviews, self-selected, with labels from a classifier.
    Complaint counts and severity sums measure how often and how badly reviewers describe a problem.
    They do not measure churn, retention, revenue, cost or engineering effort, and a stated intent to

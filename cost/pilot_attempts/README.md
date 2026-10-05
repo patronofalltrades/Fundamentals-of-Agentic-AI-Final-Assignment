@@ -30,3 +30,14 @@ makes reruns reproducible; a fresh cold run can move a few labels and reorder cl
 
 Updated total API spend for pilot work: about $0.08 (extract-v2 pilot $0.027741 + superseded extract-v1
 pilot $0.027132 + failed attempts $0.024680 + adapter check $0.0001).
+
+## Memo prompt iterations (scratch copies of the extract-v2 cold run; not part of the measured pilot)
+
+| Prompt | Result | Haiku calls |
+|---|---|---|
+| memo-v1 (pilot) | Passed the old checks, but cited bare `[C004]` and `[verify_agreement]` and claimed churn, retention, "reversible" fixes and "root causes". | 1 |
+| memo-v2 | Draft 1 failed the new lint (unsupported terms); revision passed but called billing/support "second" (it is third) and predicted that fixing usability "may reduce" paywall complaints. | 2 |
+| memo-v2 + area order + effect lint | Both drafts failed on citation format (`[C003]`, `[C001-severity_sum: 20]`, `[derived from …]`); deterministic template used. | 2 |
+| memo-v3 (explicit allowed/forbidden citation forms) | Draft 1 failed the lint; the revision passed: `memo-v3-sample.md`. Remaining issues a lint cannot catch: "driven entirely by" (20 of 25), "directly addressable through…", some citations without the number beside them. The memo still needs a human read before submission. | 2 |
+
+Memo iteration spend: 7 Haiku calls, about $0.06 (≈5,000–6,000 input and 800 output tokens each).
