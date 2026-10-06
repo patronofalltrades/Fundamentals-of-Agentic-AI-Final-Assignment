@@ -13,7 +13,7 @@
     "needs_review_threshold": 0.5
   },
 
-  "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+  "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
   "prompt_version": "v1",
   "schema_version": "a5-v1",
 

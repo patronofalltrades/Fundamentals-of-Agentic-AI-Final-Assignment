@@ -4,7 +4,7 @@ The rubric text is placed once in the request ``state``; per-review questions st
 reference it. Versioned by the ``prompt`` component of ``label_config``.
 """
 
-RUBRIC_VERSION = "v1"
+RUBRIC_VERSION = "v2"  # v2: topic criteria and topic instruction (ported from Codex jev-rubric-v2)
 
 RUBRIC = """SPOTIFY REVIEW LABELLING RUBRIC
 Classify the review text itself. Stars/ratings and other metadata are NOT inputs to intent or
@@ -21,8 +21,11 @@ TOPIC (choose exactly one):
 - other: General praise/criticism, unrelated content, or no supported specific topic.
 Rules: Choose the problem with the highest supported severity; on a tie choose the first specific
 problem mentioned. For a positive review choose the first specific praised feature; general praise
-is 'other'. Mentioning a paid plan alone is not 'billing'. A subscription failing to activate is
-'billing'; music crashing for a paying customer is 'playback'.
+is 'other' (generic "great music app" praise is 'other'). Mentioning a paid plan alone is not
+'billing'; an explicitly premium-only control is 'billing'. A subscription failing to activate is
+'billing'; music crashing for a paying customer is 'playback'. Ad interruptions are 'usability';
+loading failures are 'playback'; missing (including offline) lyrics are 'catalog'. 'support' means
+contact with customer service, not support for a cause.
 
 INTENT (choose the highest-precedence one that applies): cancellation > complaint > request > praise > unclear
 - cancellation: Explicitly leaving, uninstalling, cancelling, or threatening to do so.
@@ -50,15 +53,23 @@ to label confidently; do not invent impact.
 """
 
 TOPIC_GLOSS = {
-    "access": "login, signup, password, account access",
-    "usability": "navigation, controls, layout, queue/playlist management, ads",
-    "playback": "playback failure, crashes, lag, connection, audio quality",
-    "downloads": "downloading, saved music, offline listening",
-    "catalog": "missing songs/artists, search, recommendations, lyrics",
-    "billing": "price, charges, subscriptions, paywalls, premium-only controls",
-    "support": "contacting support and the support response",
-    "other": "general praise/criticism, unrelated content, no specific topic",
+    "access": "Login, signup, passwords, or account access.",
+    "usability": "Navigation, layout, controls, queue or playlist management, or ad interruptions.",
+    "playback": "Playing, pausing, skipping, shuffling, crashes, loading failures, lag, audio or connection failures, or resource use.",
+    "downloads": "Downloading music, saved downloads, offline listening, or disappearing downloads.",
+    "catalog": "Missing music, artists, or podcasts; search, discovery, recommendations, or lyrics availability, including missing offline lyrics.",
+    "billing": "Prices, charges, subscriptions, paywalls, premium entitlement, or explicitly premium-only controls. A paid-plan mention alone is not billing.",
+    "support": "Contact with customer service or its response, not support meaning endorsement of a cause.",
+    "other": "General praise or criticism, unrelated or unclear text, or no supported specific product topic. Generic 'great music app' praise is other.",
 }
+
+TOPIC_INSTRUCTIONS = (
+    "Choose only a product topic supported by the review text. For multiple problems, choose the "
+    "highest supported severity; on a tie, choose the first specific problem mentioned. For a positive "
+    "review, choose the first specific praised feature; general praise is other. A Premium mention "
+    "alone is not billing; an explicitly premium-only control is billing. Ad interruptions are "
+    "usability, loading failures are playback, and missing offline lyrics are catalog."
+)
 
 INTENT_GLOSS = {
     "cancellation": "explicitly leaving, uninstalling, cancelling, or threatening to",
@@ -101,7 +112,7 @@ def build_questions(review_id):
     q = {
         "topic": {
             "type": "choice",
-            "instructions": f"Using state.rubric, choose the single best topic for {target}.",
+            "instructions": f"Using state.rubric, for {target}: {TOPIC_INSTRUCTIONS}",
             "criteria": TOPIC_GLOSS,
         },
         "intent": {
