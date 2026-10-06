@@ -41,7 +41,9 @@ tie-break rules. The measured 100-review pilot below used `jev-rubric-v1`.
 Changing the prompt version changes the configuration hash, so that ledger
 cannot be reopened or imported as v2. The current `--replay` command also
 rejects the historical v1 ledger; use its frozen aggregate report or the v1
-code for historical replay. No v2 inference has run.
+code for historical replay. A later, separate 100-review v2 run and its
+read-only comparison are documented in
+[`reports/jev-rubric-v1-v2-100.md`](../reports/jev-rubric-v1-v2-100.md).
 
 Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
 output is rejected unless every entity is an exact whole-word source span

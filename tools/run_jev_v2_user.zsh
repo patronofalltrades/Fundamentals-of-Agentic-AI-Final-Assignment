@@ -37,7 +37,7 @@ if [[ -z "$pilot_key" ]]; then
 fi
 
 # v1 measured cost is USD 0.003691254. The remaining cumulative cap is USD 0.596308746.
-run_start_ns=$(python3 -c 'import time; print(time.monotonic_ns())')
+run_start_ns=$(python3 -c 'import time; print(time.time_ns())')
 if TYPESAFE_API_KEY="$pilot_key" python3 -m tools.jev_pilot \
     --input "$sample" --manifest "$manifest" --db "$ledger" \
     --execute --approved-cap-usd 0.596308746 > "${result}.tmp"; then
@@ -45,7 +45,7 @@ if TYPESAFE_API_KEY="$pilot_key" python3 -m tools.jev_pilot \
 else
   run_status=$?
 fi
-run_end_ns=$(python3 -c 'import time; print(time.monotonic_ns())')
+run_end_ns=$(python3 -c 'import time; print(time.time_ns())')
 unset pilot_key
 python3 - "$run_start_ns" "$run_end_ns" "$run_status" > "${timing}.tmp" <<'PY'
 import json

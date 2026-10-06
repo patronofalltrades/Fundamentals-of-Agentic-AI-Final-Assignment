@@ -1,19 +1,20 @@
-# User launch for the bounded Jev rubric v2 comparison
+# User launch record for the bounded Jev rubric v2 comparison
 
-This is a prepared handoff, not a completed run. No v2 model call has been made.
-The agent's computer control was denied access to macOS Terminal, and no API
-key is available in its process. The user must run the launcher and enter the
-existing TypeSafe key in a visible Terminal. Do not paste the key into chat.
+The user completed the 100-review v2 launch. The agent's computer control was
+denied access to macOS Terminal, and no API key was available in its process.
+The user entered the existing key at a hidden-input prompt in a visible
+Terminal. The command below is recorded for provenance. **Do not run it
+again:** the v2 ledger and result exist, and the launch guard will stop it.
 
 The launcher is `tools/run_jev_v2_user.zsh` on branch
-`feat/jev-rubric-v2-comparison`. From any visible Mac Terminal, run:
+`feat/jev-rubric-v2-comparison`. The user ran:
 
 ```sh
 zsh '/Users/haniframadhan/Documents/Codex/2026-10-06/task-2/spotify-v2-comparison/tools/run_jev_v2_user.zsh'
 ```
 
-It checks the unchanged supplied `cost_100.csv` and manifest before prompting.
-At `Paste existing TypeSafe key:` paste the existing key and press Return.
+It checked the unchanged supplied `cost_100.csv` and manifest before prompting.
+At `Paste existing TypeSafe key:` the user entered the existing key.
 Input echo is disabled. The key is held only in the launch shell and passed to
 the one runner process as `TYPESAFE_API_KEY`; it is not in the command line,
 shell history, a new credential file, or the results. The launch shell clears
@@ -29,7 +30,7 @@ per <https://docs.typesafe.ai/models> checked October 6, 2026. The runner
 reserves the 64,000-token maximum before each attempt. No execution beyond
 these same 100 reviews is approved.
 
-The ignored `local/jev_pilot_v2.db` is a new versioned ledger. Successful
+The ignored `local/jev_pilot_v2.db` is the separate versioned ledger. Successful
 aggregate stdout is saved as ignored `local/jev_pilot_v2_run.json`. The
 launcher measures its runner process wall time, including the access check,
 in ignored `local/jev_pilot_v2_timing.json`. The ledger keeps per-attempt
@@ -62,9 +63,16 @@ else:
 PY
 ```
 
-After a successful run, the aggregate result file and offline replay can be
-read without the key. The separate v1 and v2 ledgers can then be compared by
+The aggregate result file and offline replay can be read without the key.
+The separate v1 and v2 ledgers were compared by
 source row hash and ID without exposing review text in the report. Saved Codex
 evidence is conditioned on predicted labels; reuse needs per-row label
 compatibility and explicit v1 evidence provenance. This launch does not run
 evidence extraction, golden evaluation, grouping, ranking, or a memo.
+
+The first completed v2 launch saved an invalid negative wall duration because
+the original launcher used a monotonic value from two separate Python
+processes. The script now uses a cross-process wall clock for future use, but
+the saved first-run value is not repaired or presented as measured elapsed
+time. The launch guard remains in place; do not repeat this run to measure
+wall time.

@@ -1,6 +1,6 @@
 # Jev topic rubric v2
 
-Hanif approved this wording revision for the fixed eight-topic grading contract. It changes the topic Choice prompt from `jev-rubric-v1` to `jev-rubric-v2`; the output schema stays `jev-labels-v1`. The saved 100-review pilot used v1 and was not relabeled. No v2 model call or quality measurement has run. The code was integrated locally on `feat/offline-foundation` at `a7b6f7d` and has not been pushed.
+Hanif approved this wording revision for the fixed eight-topic grading contract. It changes the topic Choice prompt from `jev-rubric-v1` to `jev-rubric-v2`; the output schema stays `jev-labels-v1`. The original 100-review pilot used v1 and was not relabeled. A separate v2 run on the same sample and its [read-only comparison](../reports/jev-rubric-v1-v2-100.md) are now saved locally. Human label quality remains unmeasured. The code was integrated locally on `feat/offline-foundation` at `a7b6f7d` and has not been pushed.
 
 | Topic | v2 Choice meaning |
 | --- | --- |
@@ -13,7 +13,7 @@ Hanif approved this wording revision for the fixed eight-topic grading contract.
 | `support` | Customer-service contact or response, rather than support meaning endorsement of a cause. |
 | `other` | General praise or criticism, unrelated or unclear text, or no supported specific topic. Generic music-app praise stays here. |
 
-For multiple problems, choose the highest supported severity, then the first specific problem mentioned if tied. For praise, choose the first specific praised feature; general praise is `other`. The agreed boundary cases are loading failures → `playback`, missing offline lyrics → `catalog`, and generic “great music app” praise → `other`. The contract's eight labels are unchanged. These instructions are not deterministic relabeling code; they guide a future model call.
+For multiple problems, choose the highest supported severity, then the first specific problem mentioned if tied. For praise, choose the first specific praised feature; general praise is `other`. The agreed boundary cases are loading failures → `playback`, missing offline lyrics → `catalog`, and generic “great music app” praise → `other`. The contract's eight labels are unchanged. These instructions are model guidance, not deterministic relabeling code.
 
 The v2 prompt version changes `label_config()`, its configuration hash, and the exact-text cache key. The pilot ledger refuses to open a different configuration. The completed-import path also rejects saved rows whose configuration hash differs from the current rubric. The historical v1 report and ignored saved databases stay untouched.
 
@@ -33,4 +33,4 @@ One of the 47 development-pilot `other` texts inspected during rubric review mat
 
 ## Offline checks
 
-The full standard-library test suite passed 161 synthetic/offline tests, and `python3 -m spotify_pipeline --help` succeeded. The default 100-review Jev dry run verified the pinned sample and manifest, built 100 planned requests, and reported `live_calls: 0`, `measured_usage: null`, and `measured_runtime: null`. Its 298,038 serialized request bytes and USD 0.003129378 four-bytes-per-token illustration are planning estimates, not v2 usage or a bill. A read-only check confirmed the saved 100-result ledger matches v1's configuration hash and differs from v2's. No model calls, relabeling, database edits, or publication occurred.
+Before the live v2 run, the full standard-library test suite passed 161 synthetic/offline tests, and `python3 -m spotify_pipeline --help` succeeded. The default 100-review Jev dry run verified the pinned sample and manifest, built 100 planned requests, and reported `live_calls: 0`, `measured_usage: null`, and `measured_runtime: null`. Its 298,038 serialized request bytes and USD 0.003129378 four-bytes-per-token illustration are planning estimates, not v2 usage or a bill. A read-only check confirmed the then-saved 100-result ledger matched v1's configuration hash and differed from v2's. No model call or relabeling occurred during those offline checks. The later v2 measurements are in the comparison report.
