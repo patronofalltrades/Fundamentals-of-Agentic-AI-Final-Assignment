@@ -30,6 +30,10 @@ documents `data_collection: deny` and `zdr: true`. The request also pins
 `provider.only` to one tag and sets `allow_fallbacks: false`. If those
 safeguards cannot be honored by a route, the request must fail; no route or
 policy is silently relaxed. Authenticated route/access remains unverified.
+The public endpoint listings do not expose a per-endpoint ZDR field. They
+therefore do **not** establish that either pinned route accepts ZDR. A live
+request with `zdr: true` is the remaining compatibility check; if it fails,
+stop instead of removing the safeguard.
 
 ## Controls and offline result
 
@@ -45,13 +49,19 @@ unknown delivery. A returned response with invalid evidence retains any
 available usage and charge. Changed source, prompt, schema, or output limit
 cannot reuse the ledger.
 
-The **total approved cap is USD 1**, shared across both routes. There are no
-new calls if the next worst-case reservation would reach the cap. The local
-reservation formula uses four times UTF-8 request bytes plus 8,192 tokens
-for input, plus the full 320-token output limit. That conservative input
-ceiling is an admission estimate, not a provider guarantee. On the fixed
-100 rows, the offline sum of per-call reservations is **$0.051740024** for
-DeepInfra and **$0.1031214** for Groq, **$0.154861424** combined. These are
+The **total approved cap is USD 1**, shared across both routes. SQLite takes
+a write lock before checking settled charges and outstanding reservations,
+so concurrent launches cannot each spend the same remaining budget. No new
+call is admitted if its reservation would reach the cap. The local formula
+uses four times UTF-8 request bytes plus 8,192 tokens for input, plus 640
+output tokens for a requested 320-token limit. [OpenRouter says](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)
+reasoning tokens are billed output and usually count against `max_tokens`,
+but documents occasional provider overrun. The 640-token allowance is a
+conservative margin, **not a provable provider-side maximum**. If billed
+tokens exceed it, the runner stops further admission; account-side spend
+controls would be needed for a hard provider guarantee. On the fixed 100
+rows, the offline sum of per-call reservations is **$0.057180024** for
+DeepInfra and **$0.1127214** for Groq, **$0.169901424** combined. These are
 exposure estimates, **not usage-derived charges**. The 100 rows have 100
 distinct exact texts. No cache reuse is expected within this experiment.
 

@@ -31,6 +31,9 @@ SCHEMA = {"type": "object", "additionalProperties": False,
               "evidence_quote": {"type": "string"}}}
 PROMPT_VERSION = "openrouter-evidence-v1"
 OUTPUT_LIMIT = 320
+# Extra output reserve for provider overrun; max_tokens is not a universal hard
+# billing ceiling. A route that exceeds this bound stops further admission.
+OUTPUT_RESERVE = 640
 
 
 def money_nusd(value):
@@ -113,12 +116,17 @@ def reserve(db, route, row, payload, source_hash):
     model, tag, input_rate, output_rate = ROUTES[route]
     # Conservative byte ceiling on prompt tokens, including envelope overhead.
     input_ceiling = len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) * 4 + 8192
-    amount = money_nusd(Decimal(input_ceiling) * input_rate + Decimal(OUTPUT_LIMIT) * output_rate)
-    with db:
+    amount = money_nusd(Decimal(input_ceiling) * input_rate + Decimal(OUTPUT_RESERVE) * output_rate)
+    db.execute("BEGIN IMMEDIATE")
+    try:
         if budget_used(db) + amount >= CAP_NUSD:
             raise ValueError("shared USD 1 cap would be reached; no call admitted")
         cur = db.execute("INSERT INTO calls(route,review_id,source_sha,status,reserved_nusd) VALUES (?,?,?,?,?)",
                          (route, row["review_id"], source_hash, "in_flight", amount))
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
     return cur.lastrowid
 
 
