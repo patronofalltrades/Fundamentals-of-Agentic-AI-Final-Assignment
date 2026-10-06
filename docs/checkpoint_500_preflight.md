@@ -1,10 +1,20 @@
 # Frozen v2 checkpoint 500 preflight
 
-**Decision:** The Jev label checkpoint is prepared offline, but no new review
-text may be sent yet. Direct task-user approval for sending the 400 new
-development rows to TypeSafe and the distinct new texts to ChatGPT-authenticated
-Codex is pending. No 500-row model call has started. This is not a completed
-end-to-end pipeline or grader export.
+**Decision:** The Jev label checkpoint is prepared offline. No 500-row model
+call has started. This is not a completed end-to-end pipeline or grader export.
+
+**October 6 launch update:** Hanif directly authorized both new-text routes.
+The [official TypeSafe model page](https://docs.typesafe.ai/models) still lists
+`jev-1.13.0` at USD 0.042 per million input tokens with free output. No
+TypeSafe key was available to the agent process. Computer control denied
+macOS Terminal access, and an `open` attempt could not launch Terminal. The
+secure launcher is ready at `tools/run_checkpoint500_user.zsh`. From this
+worktree root, Hanif can run `zsh tools/run_checkpoint500_user.zsh` in a
+visible Mac Terminal and enter the existing key at its hidden prompt. The
+launcher uses the key only in the child process environment, then clears it;
+it creates no credential file. A blank-input rehearsal exited before any
+call. The checkpoint ledger still has 100 attempts, 100 results, 100 evidence
+records, and zero checkpoint runs. No 400-row Jev or Codex call has started.
 
 The supplied `checkpoint_500.csv` passed its manifest hash and byte checks.
 It has 500 distinct source IDs, and its first 100 six-field rows match the
