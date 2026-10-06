@@ -1,0 +1,149 @@
+{
+  "base_label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+  "batching": {
+    "max_reviews_per_request": 50
+  },
+  "classification_input_fields": [
+    "review_text"
+  ],
+  "client": {
+    "model": "jev-latest",
+    "provider": "typesafe"
+  },
+  "config": {
+    "batching": {
+      "max_reviews_per_request": 50,
+      "size_by_tokens": true,
+      "token_budget": 32000
+    },
+    "chat": {
+      "alternatives": {
+        "openrouter": {
+          "api_key_env": "OPENROUTER_API_KEY",
+          "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+          "model": "deepseek/deepseek-v4.1-flash",
+          "provider": "openrouter"
+        }
+      },
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "effort": "none",
+      "max_output_tokens": {
+        "group": 1500,
+        "memo": 2500,
+        "verify": 1700
+      },
+      "model": "claude-haiku-4-5",
+      "provider": "anthropic",
+      "temperature": 0.0,
+      "timeout_seconds": 60
+    },
+    "client": {
+      "api_key_env": "TYPESAFE_API_KEY",
+      "endpoint": "https://api.typesafe.ai/v1/systemone",
+      "model": "jev-latest",
+      "needs_review_threshold": 0.5,
+      "provider": "typesafe",
+      "timeout_seconds": 60
+    },
+    "config_version": "a5-run-v1",
+    "full_run": false,
+    "group": {
+      "max_issues": 20,
+      "max_tokens": 1500,
+      "quotes_per_issue": 5
+    },
+    "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+    "limits": {
+      "backoff_base_seconds": 2.0,
+      "backoff_max_seconds": 60.0,
+      "est_output_tokens_per_review": 60,
+      "invalid_attempts": 2,
+      "max_consecutive_failed_batches": 3,
+      "max_transient_attempts": 8,
+      "missing_retry_rounds": 1,
+      "progress_every_batches": 1,
+      "requests_per_minute": 30,
+      "reserve_usd_per_enrich_request": 0.05,
+      "retry_quarantined": true,
+      "spend_cap_usd": 1.0,
+      "tokens_per_minute": null,
+      "workers": 1
+    },
+    "memo": {
+      "max_tokens": 2500,
+      "quotes_per_issue": 3,
+      "top_n": 10
+    },
+    "notes": "Real 100-review pilot (cost_100.csv). Mirrors src/labelling/pilot_config.json: Jev via TypeSafe for enrich, Claude Haiku 4.5 via the Anthropic API for verify/group/memo, 1 worker, $1.00 cap, <=50 reviews per request. Cold: --out runs/pilot-cold. Warm: same command with --out runs/pilot-warm --warm-from runs/pilot-cold. Needs TYPESAFE_API_KEY and ANTHROPIC_API_KEY; without them the run is refused (mock guard).",
+    "rates": {
+      "_note": "Reservation/ledger rates only (USD per 1M tokens). The cost calculator uses cost/rates.csv. Jev billing unit not set here, so enrich calls are charged at reserve_usd_per_enrich_request as an 'unpriced' estimate unless the provider reports cost_usd. Chat rates: Claude Haiku 4.5 list price (USD/1M tokens) for reservations only; recheck before use.",
+      "group": {
+        "cached_input_per_mtok": 0.1,
+        "input_per_mtok": 1.0,
+        "output_per_mtok": 5.0
+      },
+      "memo": {
+        "cached_input_per_mtok": 0.1,
+        "input_per_mtok": 1.0,
+        "output_per_mtok": 5.0
+      },
+      "verify": {
+        "cached_input_per_mtok": 0.1,
+        "input_per_mtok": 1.0,
+        "output_per_mtok": 5.0
+      }
+    },
+    "result_cache": {
+      "enabled": true
+    },
+    "verify": {
+      "max_items": 100,
+      "max_tokens": 1700,
+      "min_items": 20,
+      "sample_fraction": 0.2
+    }
+  },
+  "config_path": "configs/pilot_cost_100.json",
+  "created_at": "2026-10-06T00:03:49.382874Z",
+  "dry_run": false,
+  "input_csv": "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset/golden_50_to_label.csv",
+  "input_file_sha256": "1a125c3e509f58b0246ba16d0ea332675a53ffadb1928be4338a0bd7053a11c7",
+  "input_sha256": "1a125c3e509f58b0246ba16d0ea332675a53ffadb1928be4338a0bd7053a11c7",
+  "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+  "last_invocation_id": "20261006T000349Z-69fef2",
+  "limit": null,
+  "limited": false,
+  "limits": {
+    "spend_cap_usd": 1.0,
+    "workers": 1
+  },
+  "roles": {
+    "enrich": {
+      "effort": "none",
+      "max_tokens": null,
+      "model": "jev-latest",
+      "provider": "typesafe"
+    },
+    "group": {
+      "effort": "none",
+      "max_tokens": 1500,
+      "model": "claude-haiku-4-5",
+      "provider": "anthropic"
+    },
+    "memo": {
+      "effort": "none",
+      "max_tokens": 2500,
+      "model": "claude-haiku-4-5",
+      "provider": "anthropic"
+    },
+    "verify": {
+      "effort": "none",
+      "max_tokens": 1700,
+      "model": "claude-haiku-4-5",
+      "provider": "anthropic"
+    }
+  },
+  "rows": 50,
+  "run_id": "golden-jev-v2-r1",
+  "updated_at": "2026-10-06T00:03:49.382977Z"
+}
