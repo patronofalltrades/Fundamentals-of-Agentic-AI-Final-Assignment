@@ -6,6 +6,10 @@ The saved 500 classifications and their Codex evidence remain the comparison
 reference, not human truth. The [checkpoint report](../reports/checkpoint-500-readiness.md)
 and its readiness limits are unchanged.
 
+**Prototype follow-up:** An offline generator and a held-out development
+diagnostic are recorded in [the candidate prototype report](../reports/jev-evidence-candidate-prototype.md).
+Its current cap rejects too many reviews, so the paid pilot gate is closed.
+
 ## Why this route needs a pilot
 
 The current [`codex_evidence.py`](../spotify_pipeline/codex_evidence.py) starts
