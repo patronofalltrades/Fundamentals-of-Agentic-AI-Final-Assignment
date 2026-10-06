@@ -1,7 +1,9 @@
 """Prepare and finish v2 evidence in a separate, ignored ledger copy."""
 
 import argparse
+import collections
 import json
+import math
 import os
 import sqlite3
 import time
@@ -10,6 +12,9 @@ from decimal import Decimal
 from pathlib import Path
 
 from spotify_pipeline.codex_evidence import extract_with_codex, validate_evidence
+from spotify_pipeline.codex_evidence import MODEL as EVIDENCE_MODEL
+from spotify_pipeline.codex_evidence import PROMPT_VERSION as EVIDENCE_PROMPT
+from spotify_pipeline.db import Database
 from spotify_pipeline.jev_pilot import PilotLedger
 from tools.compare_jev_pilots import V1_CONFIG_HASH, V2_CONFIG_HASH, load_ledger, sample_rows
 from tools.jev_pilot import local_db_path
@@ -86,8 +91,72 @@ def status(ledger):
     return {"labels": sum(ledger.summary()["results"].values()),
             "evidence": evidence, "missing_evidence": sum(1 for _ in ledger.missing_evidence()),
             "origins": origins, "evidence_attempts": attempts,
-            "summed_success_seconds": ledger.conn.execute(
-                "SELECT COALESCE(SUM(elapsed_seconds),0) FROM evidence_attempts WHERE status='succeeded'").fetchone()[0]}
+            "summed_success_seconds": round(ledger.conn.execute(
+                "SELECT COALESCE(SUM(elapsed_seconds),0) FROM evidence_attempts WHERE status='succeeded'").fetchone()[0], 9)}
+
+
+def validate_complete(v1_path, v2_path, target_path, source_path, manifest_path):
+    """Check all source rows, saved Jev calls, evidence and direct provenance."""
+    source_hash = plan(source_path, manifest_path)["source_sha256"]
+    source = sample_rows(source_path)
+    v1 = load_ledger(v1_path, source_hash, V1_CONFIG_HASH, source)
+    original = load_ledger(v2_path, source_hash, V2_CONFIG_HASH, source)
+    working = load_ledger(target_path, source_hash, V2_CONFIG_HASH, source)
+    if original["labels"] != working["labels"] or len(working["evidence"]) != 100:
+        raise ValueError("v2 labels differ or evidence is incomplete")
+    with closing(read_only(v1_path)) as v1_db, closing(read_only(v2_path)) as v2_db, closing(read_only(target_path)) as db:
+        for table, order in (("meta", "key"), ("attempts", "id"), ("results", "review_id")):
+            before = [tuple(row) for row in v2_db.execute("SELECT * FROM %s ORDER BY %s" % (table, order))]
+            after = [tuple(row) for row in db.execute("SELECT * FROM %s ORDER BY %s" % (table, order))]
+            if before != after:
+                raise ValueError("original Jev labels, calls or metadata differ from working copy")
+        evidence = {row["review_id"]: row for row in db.execute("SELECT * FROM evidence")}
+        origins = {row["review_id"]: row for row in db.execute("SELECT * FROM evidence_origin")}
+        attempts = list(db.execute("SELECT * FROM evidence_attempts"))
+        if len(origins) != 100 or evidence.keys() != origins.keys() or len(attempts) != 76:
+            raise ValueError("evidence origin or attempt coverage differs")
+        calls_by_review = collections.Counter(row["review_id"] for row in attempts)
+        provenance = collections.Counter()
+        prompt_versions = collections.Counter()
+        entity_mentions = 0
+        for review_id, item in evidence.items():
+            origin = origins[review_id]
+            provenance[origin["origin"]] += 1
+            prompt_versions[item["prompt_version"]] += 1
+            entity_mentions += len(json.loads(item["entities_json"]))
+            if origin["origin"] == "reused_v1_exact_four_labels":
+                prior = v1_db.execute("SELECT * FROM evidence WHERE review_id=?", (review_id,)).fetchone()
+                if (prior is None or calls_by_review[review_id] != 0 or
+                        any(v1["labels"][review_id][field] != working["labels"][review_id][field]
+                            for field in ("topic", "intent", "severity", "sentiment")) or
+                        tuple(item[key] for key in ("entities_json", "evidence_quote", "model", "prompt_version")) !=
+                        tuple(prior[key] for key in ("entities_json", "evidence_quote", "model", "prompt_version")) or
+                        item["elapsed_seconds"] != 0.0 or
+                        (origin["prior_model"], origin["prior_prompt_version"], origin["prior_elapsed_seconds"]) !=
+                        (prior["model"], prior["prompt_version"], prior["elapsed_seconds"])):
+                    raise ValueError("reused evidence provenance differs")
+            elif origin["origin"] == "codex_new_v2":
+                if (calls_by_review[review_id] != 1 or item["model"] != EVIDENCE_MODEL or
+                        item["prompt_version"] != EVIDENCE_PROMPT or
+                        any(origin[key] is not None for key in
+                            ("prior_model", "prior_prompt_version", "prior_elapsed_seconds"))):
+                    raise ValueError("new v2 evidence provenance differs")
+            else:
+                raise ValueError("unknown evidence origin")
+        if any(row["status"] != "succeeded" or not isinstance(row["elapsed_seconds"], float)
+               or not math.isfinite(row["elapsed_seconds"]) or row["elapsed_seconds"] < 0
+               or row["error_class"] is not None or origins[row["review_id"]]["origin"] != "codex_new_v2"
+               for row in attempts):
+            raise ValueError("evidence attempts differ from successful new v2 calls")
+    return {"source_rows_validated": len(source), "labels_validated": len(working["labels"]),
+            "exact_evidence_validated": len(working["evidence"]),
+            "original_v2_jev_calls_unchanged": True,
+            "evidence_origins": dict(sorted(provenance.items())),
+            "evidence_prompt_versions": dict(sorted(prompt_versions.items())),
+            "entity_mentions": entity_mentions,
+            "new_codex_attempts": len(attempts), "failed_codex_attempts": 0,
+            "summed_new_codex_attempt_seconds": round(sum(row["elapsed_seconds"] for row in attempts), 9),
+            "codex_token_usage": None, "codex_incremental_cost_usd": None}
 
 
 def execute(ledger, max_new_calls):
@@ -141,6 +210,7 @@ def main():
     parser.add_argument("--v1-db", required=True)
     parser.add_argument("--v2-db", required=True)
     parser.add_argument("--db", default="local/jev_pilot_v2_evidence.db")
+    parser.add_argument("--foundation-db", help="optional separate offline classification database to verify")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true", help="copy labels and strictly compatible evidence")
     group.add_argument("--execute", action="store_true", help="run bounded ChatGPT-auth Codex extraction")
@@ -162,7 +232,21 @@ def main():
     cap = Decimal(meta["cap_nusd"]) / Decimal(10**9)
     with PilotLedger(target, source_hash, cap) as ledger:
         if args.status:
-            print(json.dumps(status(ledger), indent=2))
+            report = status(ledger)
+            if report["missing_evidence"] == 0:
+                report["validation"] = validate_complete(
+                    args.v1_db, args.v2_db, target, args.input, args.manifest)
+            if args.foundation_db:
+                with Database.open_existing(args.foundation_db) as foundation:
+                    if foundation.get_meta("file_sha256") != source_hash:
+                        raise ValueError("foundation source differs from cost sample")
+                    counts = foundation.status_counts(V2_CONFIG_HASH)
+                    report["foundation_completed_classifications"] = counts["completed"]
+                    report["foundation_pending_classifications"] = counts["pending"]
+            report["evidence_stage_wall_seconds"] = None
+            report["note"] = ("Summed monotonic attempt durations are measured; end-to-end "
+                              "evidence-stage wall time and Codex token usage were not captured.")
+            print(json.dumps(report, indent=2))
         else:
             if args.max_new_calls is None:
                 parser.error("execution requires --max-new-calls")

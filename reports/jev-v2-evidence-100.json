@@ -1,0 +1,37 @@
+{
+  "labels": 100,
+  "evidence": 100,
+  "missing_evidence": 0,
+  "origins": {
+    "codex_new_v2": 76,
+    "reused_v1_exact_four_labels": 24
+  },
+  "evidence_attempts": {
+    "succeeded": 76
+  },
+  "summed_success_seconds": 467.882031003,
+  "validation": {
+    "source_rows_validated": 100,
+    "labels_validated": 100,
+    "exact_evidence_validated": 100,
+    "original_v2_jev_calls_unchanged": true,
+    "evidence_origins": {
+      "codex_new_v2": 76,
+      "reused_v1_exact_four_labels": 24
+    },
+    "evidence_prompt_versions": {
+      "evidence-extract-v1": 21,
+      "evidence-extract-v2": 79
+    },
+    "entity_mentions": 93,
+    "new_codex_attempts": 76,
+    "failed_codex_attempts": 0,
+    "summed_new_codex_attempt_seconds": 467.882031003,
+    "codex_token_usage": null,
+    "codex_incremental_cost_usd": null
+  },
+  "foundation_completed_classifications": 100,
+  "foundation_pending_classifications": 0,
+  "evidence_stage_wall_seconds": null,
+  "note": "Summed monotonic attempt durations are measured; end-to-end evidence-stage wall time and Codex token usage were not captured."
+}

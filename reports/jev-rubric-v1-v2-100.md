@@ -33,7 +33,7 @@ The configuration hashes differ, so v1 results were not reused as v2 labels.
 | Sum of request durations, seconds | 42.076869542 | 37.275935833 |
 | `needs_review` true | 73 | 75 |
 | Topic `other` | 47 | 58 |
-| Saved evidence records | 100 | 0 |
+| Saved evidence records in original label ledger | 100 | 0 |
 
 V2 used 13,600 more input tokens and cost USD 0.000571200 more than v1, a
 15.47% increase in usage-derived cost. Combined usage-derived Jev cost is
@@ -110,27 +110,37 @@ source-span validation alone cannot establish that it supports the new tone.
 The strict predicate is conservative rather than proof that all 76 need a new
 model call.
 
-The no-call next step is to inspect the 44 sentiment-only cases for semantic
-quote support, then inspect the 32 topic-related cases against the new topic
-and written contract. Existing exact quotes and entities can be retained only
-with a recorded manual judgment and their original v1 evidence prompt/model
-provenance. A full original review can be a deterministic exact quote and an
-empty entity list is schema-valid, but these choices still need a semantic
-check; they must not be labeled as Codex extraction. Only unresolved cases
-would be sent to the already authorized ChatGPT-auth Codex route, at most
-**76** single-review calls, with v2 labels, the existing bounded evidence
-schema, and fresh v2 provenance. This is a plan, not an execution or a claim
-of zero provider cost. The first attempted new extraction was rejected by
-automatic approval review before its process started. The stated reason was
-that it would send a private Spotify review to an external ChatGPT-authenticated
-service and the authorization visible to the reviewer did not directly cover
-new extraction. No review was sent. The working copy still has **24 evidence
-records, 76 missing and zero new evidence attempts**. Do not rerun this action
-through another route; provide the direct authorization evidence to the
-approval reviewer first.
+The 76 changed-label cases were extracted only after the user directly
+authorized sending these same 76 development review texts to OpenAI through
+the ChatGPT-authenticated Codex CLI. Earlier delegated approval attempts were
+rejected before process start; no text was sent by those rejected actions.
+The completed run sent one review text plus its v2 predicted labels per call,
+never human answer labels. It made **76** new Codex calls, with 76 succeeded,
+zero failed and no retry. Each result was saved after validation. The
+separate v2 working ledger now has **100/100 evidence records** and retains
+the 24 reused records' original model and prompt provenance. A separate
+offline foundation database accepted 100/100 complete v2 classifications.
+See [the aggregate evidence validation](jev-v2-evidence-100.json).
+
+Summed monotonic duration for the 76 new Codex attempts was
+**467.882031003 seconds**. This is not an end-to-end wall measurement.
+Codex token usage and incremental account cost were not captured, so both
+remain unknown. No paid API fallback was used. The label ledger's original
+`evidence_records: 0` in the comparison JSON reflects its immutable state;
+the completed evidence is in the separate working copy and report.
 
 This comparison is a development check on 100 rows. It is not the required
 end-to-end cold/warm pilot, a verifier run, issue grouping, ranking, memo, or
-human golden evaluation. The golden source has known exact-text overlap with
+human golden evaluation. V2 label and evidence coverage is complete, but
+quality, true wall time and full stage cost remain unmeasured. Review these
+gates and the exact next scope before starting 500 reviews. The golden
+source has known exact-text overlap with
 development data, documented in `docs/topic_rubric_v2.md`; no human answer
 labels were accessed here. Do not scale to 500 reviews from these results.
+
+**500-review readiness: hold.** The 100-row v2 label/evidence stage is
+structurally complete and preserved. Before a 500-row decision, review the
+remaining topic-boundary concerns, measure the required end-to-end cold/warm
+100-row stages with verification, grouping, ranking and memo, and reconcile
+stage costs and wall time under an explicit new limit. No 500-row call was
+started or approved by this report.

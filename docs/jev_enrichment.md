@@ -44,6 +44,12 @@ rejects the historical v1 ledger; use its frozen aggregate report or the v1
 code for historical replay. A later, separate 100-review v2 run and its
 read-only comparison are documented in
 [`reports/jev-rubric-v1-v2-100.md`](../reports/jev-rubric-v1-v2-100.md).
+After direct user authorization, a separate ignored v2 evidence working copy
+saved 24 strict v1 reuses and 76 new ChatGPT-auth Codex results. All 100
+records passed source, quote, entity and provenance validation, and a separate
+offline foundation database accepted 100 complete classifications. See
+[`reports/jev-v2-evidence-100.json`](../reports/jev-v2-evidence-100.json).
+The original v1 and v2 Jev call ledgers were not overwritten.
 
 Entity and evidence extraction is a separate, opt-in Codex CLI stage. Its
 output is rejected unless every entity is an exact whole-word source span
