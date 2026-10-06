@@ -25,15 +25,18 @@ ROUTES = {
     "deepinfra": ("openai/gpt-oss-120b", "deepinfra/bf16", Decimal("0.000000037"), Decimal("0.00000017")),
     "groq": ("openai/gpt-oss-20b", "groq", Decimal("0.000000075"), Decimal("0.0000003")),
 }
+# Public endpoint bounds checked again before paid work. These are the
+# maximum billable token counts admitted per call, not typical usage.
+ENDPOINT_BOUNDS = {
+    "deepinfra": (131072, 117964),
+    "groq": (131072, 65536),
+}
 SCHEMA = {"type": "object", "additionalProperties": False,
           "required": ["entities", "evidence_quote"], "properties": {
               "entities": {"type": "array", "maxItems": 10, "items": {"type": "string"}},
               "evidence_quote": {"type": "string"}}}
 PROMPT_VERSION = "openrouter-evidence-v1"
 OUTPUT_LIMIT = 320
-# Extra output reserve for provider overrun; max_tokens is not a universal hard
-# billing ceiling. A route that exceeds this bound stops further admission.
-OUTPUT_RESERVE = 640
 
 
 def money_nusd(value):
@@ -66,6 +69,13 @@ def verify_route(name):
         raise ValueError("route price changed; update budget after review")
     if endpoint.get("status") != 0:
         raise ValueError("requested endpoint is not active")
+    context, completion = ENDPOINT_BOUNDS[name]
+    if (type(endpoint.get("context_length")) is not int or
+            type(endpoint.get("max_completion_tokens")) is not int or
+            endpoint["context_length"] > context or
+            endpoint["max_completion_tokens"] > completion or
+            endpoint["context_length"] <= 0 or endpoint["max_completion_tokens"] <= 0):
+        raise ValueError("published endpoint token bound missing or increased; no call admitted")
     return endpoint
 
 
@@ -109,14 +119,18 @@ def connect(path, source_sha):
 
 def budget_used(db):
     # Uncertain and invalid calls hold their full reservation indefinitely.
-    return db.execute("SELECT COALESCE(SUM(CASE WHEN charged_nusd IS NULL THEN reserved_nusd ELSE charged_nusd END),0) FROM calls").fetchone()[0]
+    return db.execute("""SELECT COALESCE(SUM(CASE
+      WHEN status='succeeded' AND charged_nusd IS NOT NULL THEN charged_nusd
+      WHEN charged_nusd IS NOT NULL AND charged_nusd > reserved_nusd THEN charged_nusd
+      ELSE reserved_nusd END),0) FROM calls""").fetchone()[0]
 
 
 def reserve(db, route, row, payload, source_hash):
     model, tag, input_rate, output_rate = ROUTES[route]
-    # Conservative byte ceiling on prompt tokens, including envelope overhead.
-    input_ceiling = len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) * 4 + 8192
-    amount = money_nusd(Decimal(input_ceiling) * input_rate + Decimal(OUTPUT_RESERVE) * output_rate)
+    # Reserve the full published endpoint limits, including possible billed
+    # reasoning output. The requested 320-token limit is not treated as hard.
+    context_limit, completion_limit = ENDPOINT_BOUNDS[route]
+    amount = money_nusd(Decimal(context_limit) * input_rate + Decimal(completion_limit) * output_rate)
     db.execute("BEGIN IMMEDIATE")
     try:
         if budget_used(db) + amount >= CAP_NUSD:

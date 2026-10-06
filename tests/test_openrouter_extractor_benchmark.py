@@ -40,11 +40,28 @@ class BenchmarkTest(unittest.TestCase):
             payload = benchmark.make_payload("groq", row, {
                 "topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5})
             benchmark.reserve(db, "groq", row, payload, "synthetic-row")
-            self.assertGreater(benchmark.budget_used(db), 0)
+            self.assertEqual(benchmark.budget_used(db), 29_491_200)
             with self.assertRaises(Exception):
                 benchmark.reserve(db, "groq", row, payload, "synthetic-row")
             with self.assertRaises(ValueError):
                 benchmark.connect(str(Path(folder) / "ledger.db"), "different-source")
+
+    def test_published_limit_is_required_before_paid_work(self):
+        original = benchmark.request_json
+        model, tag, input_rate, output_rate = benchmark.ROUTES["deepinfra"]
+        listing = {"data": {"endpoints": [{
+            "tag": tag, "model_id": model, "status": 0,
+            "context_length": 131072, "max_completion_tokens": 117964,
+            "pricing": {"prompt": str(input_rate), "completion": str(output_rate)},
+            "supported_parameters": ["response_format", "structured_outputs", "reasoning_effort", "max_tokens"]}]}}
+        try:
+            benchmark.request_json = lambda url: listing
+            benchmark.verify_route("deepinfra")
+            listing["data"]["endpoints"][0]["max_completion_tokens"] += 1
+            with self.assertRaises(ValueError):
+                benchmark.verify_route("deepinfra")
+        finally:
+            benchmark.request_json = original
 
 
 if __name__ == "__main__":

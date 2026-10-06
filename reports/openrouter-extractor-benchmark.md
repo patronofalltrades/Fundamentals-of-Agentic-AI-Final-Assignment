@@ -52,18 +52,31 @@ cannot reuse the ledger.
 The **total approved cap is USD 1**, shared across both routes. SQLite takes
 a write lock before checking settled charges and outstanding reservations,
 so concurrent launches cannot each spend the same remaining budget. No new
-call is admitted if its reservation would reach the cap. The local formula
-uses four times UTF-8 request bytes plus 8,192 tokens for input, plus 640
-output tokens for a requested 320-token limit. [OpenRouter says](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)
+call is admitted if its reservation would reach the cap. The reservation
+uses each pinned endpoint's full published context and maximum completion
+limits at its current token rates. It does not rely on the requested
+`max_tokens: 320` as a billing ceiling: [OpenRouter says](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)
 reasoning tokens are billed output and usually count against `max_tokens`,
-but documents occasional provider overrun. The 640-token allowance is a
-conservative margin, **not a provable provider-side maximum**. If billed
-tokens exceed it, the runner stops further admission; account-side spend
-controls would be needed for a hard provider guarantee. On the fixed 100
-rows, the offline sum of per-call reservations is **$0.057180024** for
-DeepInfra and **$0.1127214** for Groq, **$0.169901424** combined. These are
-exposure estimates, **not usage-derived charges**. The 100 rows have 100
+but documents occasional provider overrun. The published bounds are 131,072
+context plus 117,964 completion tokens for DeepInfra, and 131,072 plus
+65,536 for Groq. Their maximum reservations are **$0.024903544** and
+**$0.0294912 per call**, respectively. The runner checks these endpoint
+bounds before any paid call and fails closed if they are missing or increase.
+It runs serially, replacing a reservation with observed usage only after a
+settled response. Uncertain calls retain the full reservation. These are
+conservative exposure bounds, **not expected charges**. Across 100 calls per
+route, a hypothetical sum of all maximum reservations would be about $5.44;
+they are never in flight together. A hard guarantee still depends on the
+provider honoring its published limits and rates; an account-side key spend
+control would provide an independent backstop. The 100 rows have 100
 distinct exact texts. No cache reuse is expected within this experiment.
+
+For an independent account-side limit, the user would need to assign the
+OpenRouter key a [per-key guardrail budget](https://openrouter.ai/docs/guides/best-practices/spend-controls)
+below the remaining USD 1 authorization and verify its existing spend and
+reset interval. This changes provider settings, so the runner does not create
+or alter it. The local cap is built from the published endpoint token limits
+and prices; any missing, increased, or incompatible bound stops paid work.
 
 The local dry run validated the source and baseline hashes, then stopped at
 the absent-key gate before any route or paid call. The existing 182 tests plus
