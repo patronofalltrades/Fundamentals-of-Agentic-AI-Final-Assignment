@@ -57,6 +57,10 @@ class BenchmarkTest(unittest.TestCase):
         try:
             benchmark.request_json = lambda url: listing
             benchmark.verify_route("deepinfra")
+            listing["data"]["endpoints"][0]["status"] = -5
+            with self.assertRaisesRegex(ValueError, "deepinfra/bf16 has catalog status -5"):
+                benchmark.verify_route("deepinfra")
+            listing["data"]["endpoints"][0]["status"] = 0
             listing["data"]["endpoints"][0]["max_completion_tokens"] += 1
             with self.assertRaises(ValueError):
                 benchmark.verify_route("deepinfra")

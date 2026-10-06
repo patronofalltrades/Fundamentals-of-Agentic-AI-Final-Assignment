@@ -6,6 +6,17 @@ and direct OpenRouter access from this sandbox failed at DNS lookup. No paid
 OpenRouter call, benchmark output, or charge is claimed. The user can run the
 bounded smoke test from their own Terminal with hidden key input.
 
+**October 6 live preflight update:** Hanif's smoke command stopped on the
+public catalog check before sending a review. The pinned DeepInfra 120B
+entry currently has `status: -5`; the requested Groq 20B entry has
+`status: 0`. The endpoint tags and model IDs still match. The validator's
+`status != 0` hold is operating as written; there is no demonstrated parser
+bug and no basis to substitute another provider. A read-only ledger check
+found **zero call rows, zero reservations, and zero charges**. Retry the same
+command only after the approved DeepInfra entry reports active status, or
+obtain a new route decision. A regression fixture now checks this fail-closed
+status case.
+
 ## Fixed comparison
 
 The same manifest-verified `cost_100.csv` rows feed both routes. The frozen

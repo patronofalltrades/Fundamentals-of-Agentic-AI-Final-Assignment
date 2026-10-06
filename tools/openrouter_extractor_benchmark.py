@@ -68,7 +68,8 @@ def verify_route(name):
     if Decimal(prices["prompt"]) != input_rate or Decimal(prices["completion"]) != output_rate:
         raise ValueError("route price changed; update budget after review")
     if endpoint.get("status") != 0:
-        raise ValueError("requested endpoint is not active")
+        raise ValueError("pinned endpoint %s has catalog status %r; no calls made" %
+                         (tag, endpoint.get("status")))
     context, completion = ENDPOINT_BOUNDS[name]
     if (type(endpoint.get("context_length")) is not int or
             type(endpoint.get("max_completion_tokens")) is not int or
