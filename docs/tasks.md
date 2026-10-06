@@ -51,6 +51,13 @@ The Jev repair is integrated locally on `feat/offline-foundation` at `e24c3c6`. 
 
 ## Taking another task
 
+Hosted extractor benchmark owner: Codex, branch `feat/hosted-extractor-benchmark`
+in the isolated `spotify-extractor-benchmark` checkout. File scope:
+`tools/openrouter_extractor_benchmark.py`, its hidden-input launcher and
+synthetic tests, this tracker, and `reports/openrouter-extractor-benchmark.md`.
+No OpenRouter inference was run in this checkout. Live smoke and full
+100-review comparison are pending user-run key entry and route access.
+
 Agree on the task owner and file scope first. Record the branch and worktree.
 Use a separate worktree for each simultaneous coding agent.
 Do not edit another owner's files without a handoff.
