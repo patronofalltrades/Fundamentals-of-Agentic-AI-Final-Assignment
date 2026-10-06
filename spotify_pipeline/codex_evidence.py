@@ -24,6 +24,33 @@ OUTPUT_SCHEMA = {
 }
 
 
+def parse_codex_usage_events(stream: str):
+    """Keep only numeric usage from Codex JSONL; never retain event payloads."""
+    usage = None
+    for line in stream.splitlines():
+        try:
+            event = json.loads(line)
+        except (TypeError, ValueError) as error:
+            raise ValidationError("Codex JSON event stream is malformed") from error
+        if not isinstance(event, dict) or event.get("type") != "turn.completed":
+            continue
+        candidate = event.get("usage")
+        if candidate is None:
+            continue
+        if not isinstance(candidate, dict):
+            raise ValidationError("Codex usage event is malformed")
+        fields = ("input_tokens", "cached_input_tokens", "output_tokens")
+        if any(type(candidate.get(key)) is not int or candidate[key] < 0 for key in fields):
+            raise ValidationError("Codex usage counts are unavailable or malformed")
+        if candidate["cached_input_tokens"] > candidate["input_tokens"]:
+            raise ValidationError("Codex cached input exceeds total input")
+        parsed = {key: candidate[key] for key in fields}
+        if usage is not None and usage != parsed:
+            raise ValidationError("Codex emitted conflicting usage events")
+        usage = parsed
+    return usage
+
+
 def validate_evidence(review_text: str, evidence: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(evidence, dict) or set(evidence) != {"entities", "evidence_quote"}:
         raise ValidationError("evidence must contain only entities and evidence_quote")
@@ -101,15 +128,16 @@ def extract_with_codex(review_text: str, labels: Dict[str, Any], timeout: int = 
         started = time.monotonic()
         command = ["codex", "exec", "--ephemeral", "--ignore-user-config",
                    "--skip-git-repo-check", "--sandbox", "read-only", "-C", folder,
-                   "-m", MODEL, "--output-schema", schema, "-o", output, "-"]
+                   "-m", MODEL, "--json", "--output-schema", schema, "-o", output, "-"]
         try:
-            result = subprocess.run(command, input=prompt, text=True, stdout=subprocess.DEVNULL,
+            result = subprocess.run(command, input=prompt, text=True, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, timeout=timeout, check=False)
         except subprocess.TimeoutExpired as error:
             raise ValidationError("Codex evidence extraction timed out") from error
         if result.returncode != 0:
             # Do not echo stderr: it could include text supplied by the review.
             raise ValidationError("Codex evidence extraction failed with exit code %d" % result.returncode)
+        usage = parse_codex_usage_events(result.stdout)
         with open(output, encoding="utf-8") as file:
             evidence = json.load(file)
         if isinstance(evidence, dict) and isinstance(evidence.get("entities"), list):
@@ -120,4 +148,4 @@ def extract_with_codex(review_text: str, labels: Dict[str, Any], timeout: int = 
                 review_text, evidence.get("evidence_quote"))
         checked = validate_evidence(review_text, evidence)
         return {"evidence": checked, "model": MODEL, "prompt_version": PROMPT_VERSION,
-                "elapsed_seconds": time.monotonic() - started}
+                "elapsed_seconds": time.monotonic() - started, "usage": usage}

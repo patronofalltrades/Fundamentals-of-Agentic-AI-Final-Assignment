@@ -28,9 +28,28 @@ CREATE TABLE evidence_origin (
 );
 CREATE TABLE evidence_attempts (
   id INTEGER PRIMARY KEY, review_id TEXT NOT NULL, status TEXT NOT NULL,
-  elapsed_seconds REAL, error_class TEXT
+  elapsed_seconds REAL, error_class TEXT,
+  input_tokens INTEGER, cached_input_tokens INTEGER, output_tokens INTEGER
+);
+CREATE TABLE evidence_stage_runs (
+  id INTEGER PRIMARY KEY, status TEXT NOT NULL, elapsed_seconds REAL,
+  requested_calls INTEGER NOT NULL, completed_calls INTEGER NOT NULL,
+  error_class TEXT
 );
 """
+
+
+def ensure_metrics_schema(conn):
+    """Add future measurement slots without inferring data for old attempts."""
+    fields = {row[1] for row in conn.execute("PRAGMA table_info(evidence_attempts)")}
+    for name in ("input_tokens", "cached_input_tokens", "output_tokens"):
+        if name not in fields:
+            conn.execute("ALTER TABLE evidence_attempts ADD COLUMN %s INTEGER" % name)
+    conn.execute("CREATE TABLE IF NOT EXISTS evidence_stage_runs ("
+                 "id INTEGER PRIMARY KEY, status TEXT NOT NULL, elapsed_seconds REAL, "
+                 "requested_calls INTEGER NOT NULL, completed_calls INTEGER NOT NULL, "
+                 "error_class TEXT)")
+    conn.commit()
 
 
 def read_only(path):
@@ -88,11 +107,32 @@ def status(ledger):
     origin_count = ledger.conn.execute("SELECT COUNT(*) FROM evidence_origin").fetchone()[0]
     if evidence != origin_count:
         raise ValueError("evidence provenance is incomplete")
+    succeeded = attempts.get("succeeded", 0)
+    metrics = {"codex_usage_reported_attempts": 0,
+               "codex_usage_unknown_attempts": succeeded,
+               "codex_reported_token_subtotals": None}
+    columns = {row[1] for row in ledger.conn.execute("PRAGMA table_info(evidence_attempts)")}
+    if "input_tokens" in columns:
+        rows = list(ledger.conn.execute(
+            "SELECT input_tokens,cached_input_tokens,output_tokens FROM evidence_attempts "
+            "WHERE status='succeeded'"))
+        reported = [row for row in rows if all(value is not None for value in row)]
+        metrics = {"codex_usage_reported_attempts": len(reported),
+                   "codex_usage_unknown_attempts": len(rows) - len(reported),
+                   "codex_reported_token_subtotals":
+                       {key: sum(row[index] for row in reported) for index, key in enumerate(
+                           ("input_tokens", "cached_input_tokens", "output_tokens"))} if reported else None}
+    stage_runs = []
+    if ledger.conn.execute("SELECT 1 FROM sqlite_master WHERE name='evidence_stage_runs'").fetchone():
+        stage_runs = [dict(row) for row in ledger.conn.execute(
+            "SELECT status,elapsed_seconds,requested_calls,completed_calls,error_class "
+            "FROM evidence_stage_runs ORDER BY id")]
     return {"labels": sum(ledger.summary()["results"].values()),
             "evidence": evidence, "missing_evidence": sum(1 for _ in ledger.missing_evidence()),
             "origins": origins, "evidence_attempts": attempts,
             "summed_success_seconds": round(ledger.conn.execute(
-                "SELECT COALESCE(SUM(elapsed_seconds),0) FROM evidence_attempts WHERE status='succeeded'").fetchone()[0], 9)}
+                "SELECT COALESCE(SUM(elapsed_seconds),0) FROM evidence_attempts WHERE status='succeeded'").fetchone()[0], 9),
+            "evidence_stage_runs": stage_runs, **metrics}
 
 
 def validate_complete(v1_path, v2_path, target_path, source_path, manifest_path):
@@ -165,42 +205,69 @@ def execute(ledger, max_new_calls):
     current = status(ledger)
     if current["evidence_attempts"].get("started") or current["evidence_attempts"].get("failed"):
         raise ValueError("prior evidence attempt needs manual review before resume")
+    if any(run["status"] == "started" for run in current["evidence_stage_runs"]):
+        raise ValueError("prior evidence stage needs manual review before resume")
+    ensure_metrics_schema(ledger.conn)
     pending = list(ledger.missing_evidence())
     completed = 0
-    for item in pending[:max_new_calls]:
-        review_id = item["review_id"]
-        cursor = ledger.conn.execute(
-            "INSERT INTO evidence_attempts(review_id,status) VALUES (?,'started')", (review_id,))
-        attempt_id = cursor.lastrowid
+    stage_started = time.monotonic()
+    stage_cursor = ledger.conn.execute(
+        "INSERT INTO evidence_stage_runs(status,requested_calls,completed_calls) VALUES ('started',?,0)",
+        (min(len(pending), max_new_calls),))
+    stage_id = stage_cursor.lastrowid
+    ledger.conn.commit()
+    try:
+        for item in pending[:max_new_calls]:
+            _execute_one(ledger, item)
+            completed += 1
+    except Exception as error:
+        ledger.conn.execute("UPDATE evidence_stage_runs SET status='failed',elapsed_seconds=?,"
+                            "completed_calls=?,error_class=? WHERE id=?",
+                            (time.monotonic() - stage_started, completed, type(error).__name__, stage_id))
         ledger.conn.commit()
-        started = time.monotonic()
-        try:
-            result = extract_with_codex(item["review_text"], json.loads(item["label_json"]))
-            checked = validate_evidence(item["review_text"], result["evidence"])
-        except Exception as error:
-            ledger.conn.execute("UPDATE evidence_attempts SET status='failed',elapsed_seconds=?,"
-                                "error_class=? WHERE id=?", (time.monotonic() - started,
-                                                             type(error).__name__, attempt_id))
-            ledger.conn.commit()
-            raise
-        elapsed = time.monotonic() - started
-        ledger.conn.execute("BEGIN IMMEDIATE")
-        try:
-            ledger.conn.execute("INSERT INTO evidence VALUES (?,?,?,?,?,?,?)", (
-                review_id, json.dumps(checked["entities"]), checked["evidence_quote"],
-                result["model"], result["prompt_version"], result["elapsed_seconds"], None))
-            ledger.conn.execute("INSERT INTO evidence_origin VALUES (?,?,?,?,?)", (
-                review_id, "codex_new_v2", None, None, None))
-            ledger.conn.execute("UPDATE evidence_attempts SET status='succeeded',elapsed_seconds=? WHERE id=?",
-                                (elapsed, attempt_id))
-            ledger.conn.commit()
-        except Exception:
-            ledger.conn.rollback()
-            raise
-        completed += 1
+        raise
+    ledger.conn.execute("UPDATE evidence_stage_runs SET status='succeeded',elapsed_seconds=?,"
+                        "completed_calls=? WHERE id=?",
+                        (time.monotonic() - stage_started, completed, stage_id))
+    ledger.conn.commit()
     report = status(ledger)
     report["new_calls_this_invocation"] = completed
     return report
+
+
+def _execute_one(ledger, item):
+    review_id = item["review_id"]
+    cursor = ledger.conn.execute(
+        "INSERT INTO evidence_attempts(review_id,status) VALUES (?,'started')", (review_id,))
+    attempt_id = cursor.lastrowid
+    ledger.conn.commit()
+    started = time.monotonic()
+    try:
+        result = extract_with_codex(item["review_text"], json.loads(item["label_json"]))
+        checked = validate_evidence(item["review_text"], result["evidence"])
+    except Exception as error:
+        ledger.conn.execute("UPDATE evidence_attempts SET status='failed',elapsed_seconds=?,"
+                            "error_class=? WHERE id=?", (time.monotonic() - started,
+                                                         type(error).__name__, attempt_id))
+        ledger.conn.commit()
+        raise
+    elapsed = time.monotonic() - started
+    ledger.conn.execute("BEGIN IMMEDIATE")
+    try:
+        ledger.conn.execute("INSERT INTO evidence VALUES (?,?,?,?,?,?,?)", (
+            review_id, json.dumps(checked["entities"]), checked["evidence_quote"],
+            result["model"], result["prompt_version"], result["elapsed_seconds"], None))
+        ledger.conn.execute("INSERT INTO evidence_origin VALUES (?,?,?,?,?)", (
+            review_id, "codex_new_v2", None, None, None))
+        usage = result.get("usage") or {}
+        ledger.conn.execute("UPDATE evidence_attempts SET status='succeeded',elapsed_seconds=?,"
+                            "input_tokens=?,cached_input_tokens=?,output_tokens=? WHERE id=?",
+                            (elapsed, usage.get("input_tokens"), usage.get("cached_input_tokens"),
+                             usage.get("output_tokens"), attempt_id))
+        ledger.conn.commit()
+    except Exception:
+        ledger.conn.rollback()
+        raise
 
 
 def main():
@@ -243,9 +310,15 @@ def main():
                     counts = foundation.status_counts(V2_CONFIG_HASH)
                     report["foundation_completed_classifications"] = counts["completed"]
                     report["foundation_pending_classifications"] = counts["pending"]
-            report["evidence_stage_wall_seconds"] = None
-            report["note"] = ("Summed monotonic attempt durations are measured; end-to-end "
-                              "evidence-stage wall time and Codex token usage were not captured.")
+            completed_stages = [run for run in report["evidence_stage_runs"]
+                                if run["status"] == "succeeded"]
+            report["evidence_stage_wall_seconds"] = (
+                sum(run["elapsed_seconds"] for run in completed_stages)
+                if completed_stages and len(completed_stages) == len(report["evidence_stage_runs"])
+                else None)
+            report["note"] = ("Historical attempt durations are measured. Stage wall and token "
+                              "usage are reported only for runs that captured them; unknown "
+                              "historical values remain null.")
             print(json.dumps(report, indent=2))
         else:
             if args.max_new_calls is None:

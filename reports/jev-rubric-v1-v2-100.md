@@ -144,3 +144,14 @@ remaining topic-boundary concerns, measure the required end-to-end cold/warm
 100-row stages with verification, grouping, ranking and memo, and reconcile
 stage costs and wall time under an explicit new limit. No 500-row call was
 started or approved by this report.
+
+## Offline follow-up
+
+An [instrumentation and development review](../docs/jev_v2_instrumentation_review.md)
+added future Codex usage-event and whole-stage timing capture, plus a
+no-network synthetic cold/warm handoff harness. It made no new model calls and
+did not change these historical results. The 76 prior Codex calls still lack
+token and whole-stage timing records. The fixed-contract reading keeps a
+likely missed catalog complaint and a playback/usability boundary case open;
+these are manual development judgments, not scored accuracy. The next live
+gate is a small blinded verifier pass under a separately approved limit.
