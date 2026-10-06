@@ -39,10 +39,10 @@ accuracy. V1 to v2 changed topic on 32 rows and the review flag on 16.
 Selected development cases support several intended topic repairs: a crash
 and loading failure map to playback, missing lyrics to catalog, an ad
 interruption to usability, and generic praise to other. Two notable unresolved
-cases are a complaint about missing music in a genre mapped to `other` and a
-complaint about blocked playback controls mapped to `usability`. The first
-looks like a likely catalog miss under the fixed rubric. The second is a
-playback/usability boundary judgment requiring independent review. The large
+cases are a short complaint about sparse music in a genre mapped to `other`
+and a complaint about a strict skip limit mapped to `usability`. The first
+looks like a likely catalog miss under the fixed rubric. The second fits the
+contract's usability controls rule, so it is not a known routing bug. The large
 `other` bucket may include more missed specific issues; this pass did not
 score or exhaustively relabel it. These are unblinded manual development
 judgments, not human-gold evaluation or a quality estimate. The deterministic
@@ -53,15 +53,13 @@ retroactively.
 
 ## Next gate
 
-Keep the 500-review decision on hold. The smallest useful live experiment is
-a bounded, independently blinded verifier pass on roughly 12–20 development
-reviews, selected before seeing verifier answers to cover `other`/catalog,
-playback/usability, praise, and severity 3–4 boundaries. It should receive
-original text and the fixed rubric without Jev's first prediction, save
-disagreements and usage, and have its own explicit spend limit. The existing
-100-row labels and evidence can then support a real cold/warm orchestration
-pilot with grouping, ranking and memo once those roles and cost controls exist.
-Neither experiment was run here.
+The known model miss is a measurement target, not a deterministic block to a
+500-row checkpoint on frozen v2. A small independent blind verifier sample
+remains useful, but it need not precede that checkpoint if the new-text
+transfer, route, and budget are separately approved. Live end-to-end
+verification, grouping, ranking, memo, grader export, and full cost measurement
+remain separate unfinished stages. Neither a verifier call nor a 500-row call
+was made in this review.
 
 For scale context only, a linear extrapolation of v2 Jev label charge is
 USD 0.021312270 for 500 fresh direct calls, or USD 0.017049816 for 400 new

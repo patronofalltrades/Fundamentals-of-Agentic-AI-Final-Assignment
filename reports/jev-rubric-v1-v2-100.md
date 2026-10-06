@@ -155,3 +155,10 @@ token and whole-stage timing records. The fixed-contract reading keeps a
 likely missed catalog complaint and a playback/usability boundary case open;
 these are manual development judgments, not scored accuracy. The next live
 gate is a small blinded verifier pass under a separately approved limit.
+
+The later [500-row offline preflight](../docs/checkpoint_500_preflight.md)
+confirmed that the skip-limit case fits the fixed usability rule and the
+sparse-genre case is a likely model miss. It prepared an isolated frozen-v2
+ledger with 100 reusable records and 400 remaining source rows. The 500 Jev
+label route is now technically prepared; sending new texts still needs direct
+approval and a fresh route/rate check. Full runtime stages remain unfinished.
