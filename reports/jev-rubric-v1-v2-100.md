@@ -68,6 +68,11 @@ The unchanged intent counts do not prove intent accuracy. The 69 sentiment
 changes show that changing one question's rubric can affect other answers in
 the same model request; they are not evidence of improved sentiment quality.
 
+The v1/v2 topic distribution is: `access` 2/2, `billing` 6/7, `catalog`
+12/10, `downloads` 3/2, `other` 47/58, `playback` 19/7, `support` 1/0,
+and `usability` 10/14. The `needs_review` distribution is false 27/25
+and true 73/75. These are raw model outputs, not verified category rates.
+
 Manual reading of **development** rows found several intended boundary
 changes: a crash and a stuck loading screen moved to `playback`; missing
 offline lyrics moved to `catalog`; ad interruptions moved to `usability`;
@@ -84,14 +89,45 @@ accuracy, F1, or human agreement is made.
 ## Evidence provenance and next gate
 
 The v1 ledger has 100 saved Codex evidence records: 90 from evidence prompt
-v1 and 10 from evidence prompt v2. The extraction prompt included the four
-predicted labels. Exactly **24** rows have identical topic, intent, severity
-and sentiment between Jev runs and have structurally valid v1 evidence. Of
-these compatible rows, 21 carry evidence prompt v1 and three carry evidence
-prompt v2. The 24 records remain only in the v1 ledger; no evidence was copied
-or presented as newly extracted v2 output. The other 76 need a separate
-evidence decision if complete v2 classifications are required. No new OpenAI
-calls were made for this comparison.
+v1 and 10 from evidence prompt v2. The extraction prompt included **topic,
+intent, severity and sentiment**. Its quote was selected to support those
+predicted labels. Automatic reuse therefore requires exact source text and
+all four prompt-label values to match. Confidence and `needs_review` were
+not sent to extraction and are not part of this predicate. Exactly **24**
+rows meet it and have structurally valid v1 evidence. Of these, 21 carry
+evidence prompt v1 and three carry evidence prompt v2. The original v1 and v2
+Jev ledgers remain intact. A separate ignored v2 evidence working copy now
+contains these 24 exact-span records with explicit `reused_v1_exact_four_labels`
+provenance and zero new-call elapsed time. They are not presented as newly
+extracted v2 output.
+
+The other **76** are not automatically reusable: 44 changed sentiment only,
+seven changed topic only, 24 changed topic and sentiment, and one changed
+topic, severity and sentiment. Intent never changed. One of the 24
+label-identical rows changed its `needs_review` flag, which does not affect
+the extraction input. A changed sentiment may leave a quote useful, but exact
+source-span validation alone cannot establish that it supports the new tone.
+The strict predicate is conservative rather than proof that all 76 need a new
+model call.
+
+The no-call next step is to inspect the 44 sentiment-only cases for semantic
+quote support, then inspect the 32 topic-related cases against the new topic
+and written contract. Existing exact quotes and entities can be retained only
+with a recorded manual judgment and their original v1 evidence prompt/model
+provenance. A full original review can be a deterministic exact quote and an
+empty entity list is schema-valid, but these choices still need a semantic
+check; they must not be labeled as Codex extraction. Only unresolved cases
+would be sent to the already authorized ChatGPT-auth Codex route, at most
+**76** single-review calls, with v2 labels, the existing bounded evidence
+schema, and fresh v2 provenance. This is a plan, not an execution or a claim
+of zero provider cost. The first attempted new extraction was rejected by
+automatic approval review before its process started. The stated reason was
+that it would send a private Spotify review to an external ChatGPT-authenticated
+service and the authorization visible to the reviewer did not directly cover
+new extraction. No review was sent. The working copy still has **24 evidence
+records, 76 missing and zero new evidence attempts**. Do not rerun this action
+through another route; provide the direct authorization evidence to the
+approval reviewer first.
 
 This comparison is a development check on 100 rows. It is not the required
 end-to-end cold/warm pilot, a verifier run, issue grouping, ranking, memo, or

@@ -122,6 +122,11 @@ cold wall time remains unknown. Measure end-to-end warm behavior, and a fresh
 cold run only if separately approved, before proposing 500, 10,000, or
 full-corpus execution.
 
+The separate v2 comparison also has an invalid saved wall-time value; summed
+request durations were not substituted for wall time. The paid runner now
+measures access check and run with a single process-local monotonic clock,
+with offline regressions. Neither historical pilot was rerun to repair timing.
+
 ## Actual 100-review label pilot
 
 The user entered the already configured TypeSafe key privately in a visible

@@ -91,11 +91,19 @@
       "usability -> other": 5,
       "usability -> playback": 1
     },
+    "label_change_patterns": {
+      "none": 24,
+      "sentiment": 44,
+      "topic": 7,
+      "topic+sentiment": 24,
+      "topic+severity+sentiment": 1
+    },
     "review_flag_transitions": {
       "False -> True": 9,
       "True -> False": 7
     },
     "v1_evidence_label_compatible_rows": 24,
+    "v1_evidence_not_automatically_reusable_rows": 76,
     "compatible_evidence_prompt_versions": {
       "evidence-extract-v1": 21,
       "evidence-extract-v2": 3

@@ -3,7 +3,9 @@
 import argparse
 import csv
 import json
+import math
 import os
+import time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -30,6 +32,21 @@ def local_db_path(path: str) -> str:
     if candidate == local or local not in candidate.parents or candidate.suffix != ".db":
         raise ValueError("pilot ledger must be a .db file under this worktree's ignored local/ folder")
     return str(candidate)
+
+
+def execute_measured(rows, db_path, source_sha256, cap, key, *,
+                     access_check=check_model_access, ledger_factory=PilotLedger,
+                     run=run_reviews, clock=time.monotonic):
+    """Measure one paid command with one process-local monotonic clock."""
+    started = clock()
+    access_check(key)
+    with ledger_factory(db_path, source_sha256, cap) as ledger:
+        report = run(rows, ledger, key)
+    elapsed = clock() - started
+    if not math.isfinite(elapsed) or elapsed < 0:
+        raise ValueError("runner wall time is invalid")
+    report["runner_wall_seconds"] = elapsed
+    return report
 
 
 def main() -> None:
@@ -70,9 +87,7 @@ def main() -> None:
     rows = list(sample_rows(args.input))
     if len(rows) != 100 or file_sha256(args.input) != aggregate["source_sha256"]:
         parser.error("cost sample changed after preflight; no calls made")
-    check_model_access(key)
-    with PilotLedger(db_path, aggregate["source_sha256"], cap) as ledger:
-        print(json.dumps(run_reviews(rows, ledger, key), indent=2))
+    print(json.dumps(execute_measured(rows, db_path, aggregate["source_sha256"], cap, key), indent=2))
 
 
 if __name__ == "__main__":

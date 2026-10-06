@@ -37,7 +37,6 @@ if [[ -z "$pilot_key" ]]; then
 fi
 
 # v1 measured cost is USD 0.003691254. The remaining cumulative cap is USD 0.596308746.
-run_start_ns=$(python3 -c 'import time; print(time.time_ns())')
 if TYPESAFE_API_KEY="$pilot_key" python3 -m tools.jev_pilot \
     --input "$sample" --manifest "$manifest" --db "$ledger" \
     --execute --approved-cap-usd 0.596308746 > "${result}.tmp"; then
@@ -45,14 +44,17 @@ if TYPESAFE_API_KEY="$pilot_key" python3 -m tools.jev_pilot \
 else
   run_status=$?
 fi
-run_end_ns=$(python3 -c 'import time; print(time.time_ns())')
 unset pilot_key
-python3 - "$run_start_ns" "$run_end_ns" "$run_status" > "${timing}.tmp" <<'PY'
+python3 - "${result}.tmp" "$run_status" > "${timing}.tmp" <<'PY'
 import json
 import sys
-start, end, status = map(int, sys.argv[1:])
-print(json.dumps({"scope": "launcher runner process, including account access check",
-                  "wall_seconds": (end - start) / 1_000_000_000,
+result_path, status = sys.argv[1], int(sys.argv[2])
+wall = None
+if status == 0:
+    with open(result_path, encoding="utf-8") as stream:
+        wall = json.load(stream)["runner_wall_seconds"]
+print(json.dumps({"scope": "paid runner, including account access check",
+                  "wall_seconds": wall,
                   "runner_exit_code": status}, indent=2))
 PY
 mv "${timing}.tmp" "$timing"

@@ -71,8 +71,9 @@ compatibility and explicit v1 evidence provenance. This launch does not run
 evidence extraction, golden evaluation, grouping, ranking, or a memo.
 
 The first completed v2 launch saved an invalid negative wall duration because
-the original launcher used a monotonic value from two separate Python
-processes. The script now uses a cross-process wall clock for future use, but
-the saved first-run value is not repaired or presented as measured elapsed
-time. The launch guard remains in place; do not repeat this run to measure
-wall time.
+the original launcher used monotonic values from two separate Python
+processes. The runner now measures access check and paid work with one
+process-local monotonic clock. The launcher copies that value into its timing
+sidecar after success. The saved first-run value is not repaired or presented
+as measured elapsed time. The launch guard remains in place; do not repeat
+this run to measure wall time.

@@ -105,6 +105,10 @@ def compare(v1, v2, source_sha, timing):
     compatible = [rid for rid in ids if rid in v1["evidence"] and all(
         labels1[rid][field] == labels2[rid][field]
         for field in ("topic", "intent", "severity", "sentiment"))]
+    label_change_patterns = counts("+".join(field for field in
+                                           ("topic", "intent", "severity", "sentiment")
+                                           if labels1[rid][field] != labels2[rid][field]) or "none"
+                                   for rid in ids)
     wall = timing.get("wall_seconds")
     valid_wall = (timing.get("runner_exit_code") == 0 and type(wall) in (int, float)
                   and math.isfinite(wall) and wall >= 0)
@@ -133,8 +137,10 @@ def compare(v1, v2, source_sha, timing):
         "changes": {"field_changed_counts": {field: sum(labels1[rid][field] != labels2[rid][field]
                                                        for rid in ids) for field in fields},
                     "topic_transitions": topic_transitions,
+                    "label_change_patterns": label_change_patterns,
                     "review_flag_transitions": flags,
                     "v1_evidence_label_compatible_rows": len(compatible),
+                    "v1_evidence_not_automatically_reusable_rows": len(ids) - len(compatible),
                     "compatible_evidence_prompt_versions": counts(v1["evidence"][rid]["prompt_version"]
                                                                    for rid in compatible)},
         "cumulative_usage_derived_cost_usd": str(v1_cost + v2_cost),
