@@ -1,0 +1,77 @@
+{
+  "status": "development_checkpoint_complete_assignment_not_ready",
+  "source_file": "checkpoint_500.csv",
+  "source_sha256": "a94e31663ee7b7eaa77e23b7a8425b530cc0c866ed5e714953172a0afef6a12f",
+  "source_rows": 500,
+  "prompt_version": "jev-rubric-v2",
+  "schema_version": "jev-labels-v1",
+  "model": "jev-1.13.0",
+  "canonical_completed": 500,
+  "canonical_pending": 0,
+  "labels": {
+    "direct": 479,
+    "exact_text_cache": 21,
+    "new_settled_calls": 379,
+    "new_retries": 0,
+    "new_input_tokens": 384476,
+    "new_output_tokens": 74460,
+    "new_usage_derived_cost_usd": "0.016147992",
+    "new_label_stage_wall_seconds": 127.023306667,
+    "new_summed_attempt_seconds": 125.411129958,
+    "cumulative_jev_cost_including_v1_usd": "0.024101700",
+    "cumulative_jev_cap_usd": "0.60"
+  },
+  "evidence": {
+    "exact_source_records": 500,
+    "reused_v1_exact_four_labels": 24,
+    "new_codex_successful_calls": 379,
+    "new_exact_text_cache_reuses": 21,
+    "new_codex_reported_input_tokens": 6955138,
+    "new_codex_reported_cached_input_tokens": 5438848,
+    "new_codex_reported_output_tokens": 11953,
+    "new_codex_summed_successful_attempt_seconds": 2567.544425266,
+    "local_preflight_blocked_attempts": 1,
+    "interrupted_unknown_delivery_attempts": 1,
+    "interrupted_retry_saved_and_linked": true,
+    "previous_76_codex_attempts_token_usage": null,
+    "interrupted_attempt_token_usage": null,
+    "end_to_end_stage_wall_seconds": null,
+    "incremental_codex_dollars": null,
+    "synthetic_route_diagnostic_separate_from_review_calls": {
+      "successful_calls": 1,
+      "input_tokens": 18086,
+      "cached_input_tokens": 12288,
+      "output_tokens": 5
+    }
+  },
+  "saved_state_warm_replay": {
+    "records_validated": 500,
+    "new_enrichment_calls": 0,
+    "new_evidence_calls": 0,
+    "elapsed_seconds": 0.017149042,
+    "scope": "offline classification and evidence handoff only"
+  },
+  "raw_label_counts": {
+    "topics": {"access": 9, "billing": 40, "catalog": 34, "downloads": 12, "other": 289, "playback": 52, "support": 0, "usability": 64},
+    "needs_review_true": 387,
+    "severity": {"1": 258, "2": 108, "3": 72, "4": 59, "5": 3}
+  },
+  "first_100000_full_file_rows_candidate": {
+    "source_manifest_sha256_verified": true,
+    "nonempty_rows": 99999,
+    "empty_rows": 1,
+    "distinct_nonempty_texts": 75894,
+    "distinct_texts_already_seen_in_checkpoint": 134,
+    "new_distinct_texts_if_compatible_cache": 75760,
+    "jev_label_only_linear_estimate_usd": "3.227894126",
+    "jev_serial_label_stage_linear_estimate_hours": "7.0531",
+    "codex_serial_evidence_linear_estimate_hours": "142.5661",
+    "codex_linear_input_token_estimate": "1390293548",
+    "estimate_status": "illustrative_not_an_execution_approval"
+  },
+  "real_golden_evaluation": "not_run",
+  "independent_verifier": "not_run",
+  "issue_grouping_ranking_memo": "not_run",
+  "grading_export_and_full_self_check": "not_run",
+  "new_100000_review_inference": "not_run"
+}
