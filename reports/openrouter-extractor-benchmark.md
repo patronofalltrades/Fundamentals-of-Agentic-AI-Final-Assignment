@@ -1,7 +1,46 @@
 # Hosted evidence extractor benchmark: row-level skip ready
 
-**Latest continuation state:** DeepInfra has 36 accepted, 3 failed, and 61
-untouched source rows. Groq has 27 accepted, 2 failed, and 71 untouched.
+**Latest continuation state:** The user-started process has stopped. DeepInfra
+finished its 100 source rows with **91 accepted and 9 failed**. Groq has
+**66 accepted, 16 failed, and 18 untouched**. The last Groq response was a
+metered provider JSON-validation error with no usable content: 397 output
+tokens, all reported as reasoning, exceeded the requested 320 limit. It
+remains failed with its full reservation held. A narrow offline repair skips
+only this exact pinned, metered provider error when the output remains within
+the published endpoint bound; it does not accept evidence, retry, or weaken
+source-span checks. The read-only plan now shows 18 new Groq calls, 66 Groq
+reuses, 16 Groq failed rows, and no further DeepInfra calls. No paid request
+has run after this repair.
+
+Known usage-derived charges are **$0.006082951** across both routes; shared
+cap exposure is **$0.725867396** including all held reservations, leaving
+$0.274132604 before the strict $1 cap. DeepInfra's 101 historical attempts
+(including the old uncertain POST) used 219.583 summed request seconds; its
+91 accepted requests used 188.593 seconds. Groq's 82 attempts used 63.925
+summed request seconds; its 66 accepted requests used 50.136 seconds. These
+are request durations, not measured end-to-end wall time. At Groq's observed
+average, the 18 untouched rows would add about 14 seconds of request time
+and about $0.00086 of known charges, with substantial uncertainty from
+failures and held reservations. The local cap remains binding.
+
+**Partial comparison:** 63 source reviews have accepted evidence from both
+routes. Both routes chose the same exact quote on 52/63 and the same entity
+list on 43/63. Against saved Codex development evidence on these same rows,
+both matched the quote on 42/63; DeepInfra matched entities on 49/63 and
+Groq on 39/63. This is agreement with a development baseline, not human
+truth. In six reviewed complaint cases, both routes selected relevant exact
+source evidence; DeepInfra more often chose a focused excerpt while Groq
+sometimes returned the whole review. Each also missed an entity the other
+and Codex identified in a different case. The paired set is skewed toward
+`other` topics (45/63) and praise (34/63), so it is not a balanced quality
+sample. **Provisional extractor choice: DeepInfra**, because it completed
+91% of the source set versus Groq's 66% so far, with lower known charge and
+better paired entity agreement. Groq is faster, but its 11 provider JSON or
+schema errors among 82 attempted rows make completion less reliable. Revisit
+after the last 18 Groq rows and a harder paired sample.
+
+**Earlier continuation state:** DeepInfra had 36 accepted, 3 failed, and 61
+untouched source rows. Groq had 27 accepted, 2 failed, and 71 untouched.
 The second Groq failure was a metered upstream strict-schema rejection:
 `/entities` was an object instead of an array, `finish_reason` was `error`,
 and the response had no usable content. The specific Groq schema rejection

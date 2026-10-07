@@ -209,7 +209,7 @@ class BenchmarkTest(unittest.TestCase):
     def test_metered_groq_schema_error_skips_without_accepting_or_retrying(self):
         rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
                  "review_rating": "1", "review_likes": "0", "app_version": "",
-                 "review_timestamp": "2022-01-01"} for i in range(2)]
+                 "review_timestamp": "2022-01-01"} for i in range(3)]
         labels = {"topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5}
         schema_error = {"id": "synthetic-schema-error", "provider": "Groq",
             "choices": [{"finish_reason": "error", "error": {"code": 502,
@@ -217,6 +217,12 @@ class BenchmarkTest(unittest.TestCase):
                 "message": {"content": None}}],
             "usage": {"prompt_tokens": 115, "completion_tokens": 93,
                       "completion_tokens_details": {"reasoning_tokens": 93}}}
+        json_error = {"id": "synthetic-json-error", "provider": "Groq",
+            "choices": [{"finish_reason": "error", "error": {"code": 502,
+                "message": "Upstream error from Groq: Failed to validate JSON. Please adjust your prompt. See 'failed_generation'"},
+                "message": {"content": None}}],
+            "usage": {"prompt_tokens": 219, "completion_tokens": 397,
+                      "completion_tokens_details": {"reasoning_tokens": 397}}}
         success = {"id": "synthetic-success", "provider": "Groq",
             "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
                 "entities": [], "evidence_quote": "Playback fails"})}}],
@@ -235,21 +241,26 @@ class BenchmarkTest(unittest.TestCase):
                  mock.patch.object(benchmark, "load_rows", return_value=rows), \
                  mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
                  mock.patch.object(benchmark, "verify_route"), \
-                 mock.patch.object(benchmark, "request_json", side_effect=[schema_error, success]) as post, \
+                 mock.patch.object(benchmark, "request_json", side_effect=[schema_error, json_error, success]) as post, \
                  mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
-                benchmark.run("unused.csv", "unused.json", ledger, baseline, 2)
-                benchmark.run("unused.csv", "unused.json", ledger, baseline, 2)
-                self.assertEqual(post.call_count, 2)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 3)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 3)
+                self.assertEqual(post.call_count, 3)
             saved = sqlite3.connect(ledger)
             self.assertEqual(saved.execute("SELECT status FROM calls ORDER BY id").fetchall(),
-                             [("invalid_response",), ("succeeded",)])
-            self.assertEqual(benchmark.budget_used(saved), 29_491_200 + 186 * 75 + 80 * 300)
+                             [("invalid_response",), ("invalid_response",), ("succeeded",)])
+            self.assertEqual(benchmark.budget_used(saved), 2 * 29_491_200 + 186 * 75 + 80 * 300)
             bad = dict(schema_error)
             bad["choices"] = [dict(schema_error["choices"][0], error={"code": 502,
                 "message": "Upstream error from Groq: authentication failed"})]
             saved.execute("UPDATE calls SET invalid_response_json=? WHERE id=1", (json.dumps(bad),))
             saved.commit()
             self.assertFalse(benchmark.skippable_invalid(saved, 1, "groq"))
+            too_large = dict(json_error, usage=dict(json_error["usage"], completion_tokens=65537))
+            saved.execute("UPDATE calls SET output_tokens=?,invalid_response_json=? WHERE id=2",
+                          (65537, json.dumps(too_large)))
+            saved.commit()
+            self.assertFalse(benchmark.skippable_invalid(saved, 2, "groq"))
 
     def test_three_historical_isolated_failures_do_not_block_resume(self):
         rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,

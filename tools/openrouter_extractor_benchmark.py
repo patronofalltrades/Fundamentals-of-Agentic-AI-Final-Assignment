@@ -357,13 +357,14 @@ def skippable_invalid(db, call_id, route):
     status, error, charged, reserved, inp, out, provider, finish, response_id, request_sha, raw = call
     metered_pinned = (status == "invalid_response"
             and type(charged) is int and 0 <= charged <= reserved
-            and type(inp) is int and inp >= 0 and type(out) is int and 0 <= out <= OUTPUT_LIMIT
+            and type(inp) is int and 0 <= inp <= ENDPOINT_BOUNDS[route][0]
+            and type(out) is int and 0 <= out <= ENDPOINT_BOUNDS[route][1]
             and isinstance(provider, str)
             and provider.lower() == ("deepinfra" if route == "deepinfra" else "groq")
             and bool(response_id) and bool(request_sha))
     if not metered_pinned:
         return False
-    if error == "ValidationError" and finish == "stop":
+    if error == "ValidationError" and finish == "stop" and out <= OUTPUT_LIMIT:
         return True
     if route != "groq" or error != "ValueError" or finish != "error" or not raw:
         return False
@@ -377,8 +378,10 @@ def skippable_invalid(db, call_id, route):
                 and choice.get("message", {}).get("content") in (None, "")
                 and provider_error.get("code") == 502
                 and isinstance(message, str)
-                and message.startswith("Upstream error from Groq: Generated JSON does not match the expected schema.")
-                and "jsonschema:" in message)
+                and ((message.startswith("Upstream error from Groq: Generated JSON does not match the expected schema.")
+                      and "jsonschema:" in message)
+                     or (message.startswith("Upstream error from Groq: Failed to validate JSON.")
+                         and "failed_generation" in message)))
     except (KeyError, IndexError, TypeError, ValueError):
         return False
 
