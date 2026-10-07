@@ -12,6 +12,23 @@ The current dashboard is a local `ThreadingHTTPServer` reading an ignored SQLite
 - The public alias returns `404 NOT_FOUND`. `main` has no web output yet.
 - A push to any branch makes a preview deployment. A merge to `main` makes a production deployment.
 
+## Staging deployed, 7 October 2026
+
+- **Database:** Neon Postgres, plan `free_v3` (Free), region `iad1`, resource `spotify-dashboard-db`, Neon Auth off.
+  It was added through the Vercel Marketplace by `vercel integration add neon`. Its environment variables
+  (`DATABASE_URL` and others) are connected to the **preview** and **development** environments only.
+  Production has no database yet.
+- **Data:** the 500-row `checkpoint_500.csv` bundle (479 distinct texts, `rows_sha256` `814878e9…`).
+  The first load took 37 s from Indonesia; the second load returned `unchanged`. Ten API checks gave the same
+  JSON from Neon and from the local SQLite copy.
+- **Preview:** branch `feat/dashboard-vercel`. Vercel Authentication protects it. An anonymous request gets a
+  redirect to the Vercel login. Through `vercel curl`, every route returned 200 in 0.3–0.9 s, and POST
+  returned 405.
+- **To view:** open the latest preview URL for this branch in the Vercel dashboard while you are logged in to
+  team `haniframadhan-9680`.
+- **Before submission:** connect the database to production, load the 100,000-row bundle, merge to `main`,
+  and make the production URL public for the grader.
+
 ## Recommendation
 
 Use one protected Vercel **preview** project for the static dashboard and a read-only Python API. Put saved results in a separate managed Postgres database linked to that project. Neon through Vercel Marketplace is one concrete candidate. Keep offline ingestion, model runs, and analysis imports outside request handlers; they write to the database in controlled batches. Vercel request handlers only read saved rows and aggregates. Keep the existing SQLite app for local development and as the source for a one-time, validated migration.
