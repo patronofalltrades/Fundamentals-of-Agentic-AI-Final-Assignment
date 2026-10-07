@@ -57,6 +57,12 @@ class BatchTenTest(unittest.TestCase):
         args = lookup.call_args.args[0]
         self.assertEqual(args[:2], ["/usr/bin/security", "find-generic-password"])
         self.assertNotIn(dummy, args)
+        with mock.patch.object(batch.subprocess, "run", return_value=subprocess.CompletedProcess(
+                args=[], returncode=0, stdout=(dummy + "\n").encode(), stderr=b"")) as custom:
+            self.assertEqual(batch.keychain_secret(service="spotify-review-jev",
+                account="hanif-spotify-project"), dummy)
+            self.assertEqual(custom.call_args.args[0][2:6],
+                ["-s", "spotify-review-jev", "-a", "hanif-spotify-project"])
         with mock.patch.object(batch.subprocess, "run", side_effect=subprocess.TimeoutExpired(
                 cmd="security", timeout=90)):
             with self.assertRaisesRegex(ValueError, "foreground Terminal"):

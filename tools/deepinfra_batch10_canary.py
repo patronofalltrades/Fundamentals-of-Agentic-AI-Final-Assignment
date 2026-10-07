@@ -63,11 +63,12 @@ def cache_key(row, baseline):
                           "full_labels": labels, "label_config": label_config})
 
 
-def keychain_secret(timeout_seconds=15):
+def keychain_secret(timeout_seconds=15, service=KEYCHAIN_SERVICE,
+                    account=KEYCHAIN_ACCOUNT):
     """The user owns Keychain entry and the macOS access prompt; never print it."""
     try:
         result = subprocess.run(["/usr/bin/security", "find-generic-password",
-            "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT, "-w"],
+            "-s", service, "-a", account, "-w"],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, timeout=timeout_seconds, check=False)
     except subprocess.TimeoutExpired:
