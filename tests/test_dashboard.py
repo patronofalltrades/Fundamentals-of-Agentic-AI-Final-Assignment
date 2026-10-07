@@ -54,6 +54,9 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(issues(conn)["status"], "pending")
             self.assertEqual(recommendations(conn)["items"], [])
             self.assertEqual(reviews(conn, topic="billing")["total"], 1)
+            self.assertEqual(reviews(conn, topic="support")["total"], 0)
+            self.assertEqual(reviews(conn, query="stutters")["total"], 1)
+            self.assertEqual(reviews(conn, query="no-match")["total"], 0)
             self.assertEqual(self.base["coverage"]["distinct_nonempty_texts"], 3)
             self.assertNotIn("review_id", reviews(conn)["items"][0])
             self.assertNotIn("review_text", reviews(conn)["items"][0])
@@ -89,6 +92,10 @@ class DashboardTests(unittest.TestCase):
             self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
         with urlopen(base + "/") as response:
             self.assertIn(b"Supporting review evidence", response.read())
+        with urlopen(base + "/api/reviews/0") as response:
+            detail = json.load(response)
+            self.assertEqual(detail["evidence_quote"], "Playback stutters")
+            self.assertNotIn("review_id", detail)
         with self.assertRaises(HTTPError) as denied:
             urlopen(Request(base + "/api/summary", data=b"{}", method="POST"))
         self.assertEqual(denied.exception.code, 405)

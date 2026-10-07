@@ -44,7 +44,7 @@ def summary(conn):
     }
 
 
-def reviews(conn, topic=None, limit=20, offset=0, issue_id=None):
+def reviews(conn, topic=None, limit=20, offset=0, issue_id=None, query=None):
     limit = min(max(int(limit), 1), 50)
     offset = max(int(offset), 0)
     args = []
@@ -53,6 +53,9 @@ def reviews(conn, topic=None, limit=20, offset=0, issue_id=None):
     if topic:
         where.append("c.topic=?")
         args.append(topic)
+    if query:
+        where.append("instr(lower(c.evidence_quote),lower(?))>0")
+        args.append(query)
     if issue_id:
         run = _run(conn)
         if not run:
@@ -124,7 +127,10 @@ def make_handler(db_path):
                             topic = q.get("topic", [None])[0]
                             if topic and topic not in ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other"):
                                 return self._json(400, {"error": "invalid topic"})
-                            result = reviews(conn, topic, q.get("limit", [20])[0], q.get("offset", [0])[0], q.get("issue_id", [None])[0])
+                            query = q.get("q", [None])[0]
+                            if query and len(query) > 100:
+                                return self._json(400, {"error": "query too long"})
+                            result = reviews(conn, topic, q.get("limit", [20])[0], q.get("offset", [0])[0], q.get("issue_id", [None])[0], query)
                         elif path == "/api/issues":
                             result = issues(conn)
                         elif path == "/api/recommendations":

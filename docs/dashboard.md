@@ -4,14 +4,14 @@ This branch adds a local, read-only dashboard and API for saved pipeline results
 
 ## Import and start
 
-Run from the repository root. Replace `SOURCE_DB` with the saved, complete canonical checkpoint database. The source is opened read-only. The import copies it with SQLite backup into the ignored `local/` folder. It keeps original IDs, source fields and hashes in the database. Repeating the same import reports `unchanged`; a different source cannot overwrite the target.
+Run from the dashboard worktree root. The saved 500-row canonical checkpoint in the nearby comparison checkout is at `../../../2026-10-06/task-2/spotify-v2-comparison/local/jev_checkpoint500_complete.db`. The path is local to this workspace; replace it if the worktrees move. The source is opened read-only. The import copies it with SQLite backup into the ignored `local/` folder. It keeps original IDs, source fields and hashes in the database. Repeating the same import reports `unchanged`; a different source cannot overwrite the target.
 
 ```sh
-python3 -m dashboard import-checkpoint --source SOURCE_DB --db local/dashboard.db
+python3 -m dashboard import-checkpoint --source ../../../2026-10-06/task-2/spotify-v2-comparison/local/jev_checkpoint500_complete.db --db local/dashboard.db
 python3 -m dashboard serve --db local/dashboard.db
 ```
 
-Open `http://127.0.0.1:8765`. The default bind is local only. The browser sends no credentials. The API rejects POST. The database, raw text and original IDs stay in `local/dashboard.db`; the API shows only row indices, source row hashes, labels and short source-exact evidence quotes. Quotes may still contain personal details. Review and redact them before any public deployment.
+Open `http://127.0.0.1:8765`. The default bind is local only. The browser sends no credentials. The API rejects POST. The database, raw text and original IDs stay in `local/dashboard.db`; the API shows only row indices, source row hashes, labels and source-exact evidence quotes. Quotes may still contain personal details. Review and redact them before any public deployment.
 
 The saved 500-review Jev v2/Codex checkpoint is a development input. Its observed dashboard coverage is 500 source rows, 500 completed rows, and 479 distinct nonempty texts. This is not 100,000 source reviews. The raw topic counts are classifier outputs, not verified issues or population prevalence.
 
@@ -22,7 +22,7 @@ All API routes are GET and return JSON.
 | Route | Result |
 | --- | --- |
 | `/api/summary` | Source identity, source-row and distinct-text coverage, raw label counts, and pending quality/analysis status. |
-| `/api/reviews?topic=playback&limit=20&offset=0` | At most 50 evidence rows per page. `topic` is optional. |
+| `/api/reviews?topic=playback&q=music&limit=20&offset=0` | At most 50 evidence rows per page. `topic` and quote search `q` are optional. |
 | `/api/reviews/{row_index}` | One saved label and evidence quote, without the original ID or full text. |
 | `/api/issues` | Accepted issue ranking, or an explicit pending state. |
 | `/api/issues/{issue_id}` | Ranked issue and up to 20 linked evidence rows. |

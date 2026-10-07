@@ -5,6 +5,7 @@ const el = (name, className, value) => { const node = document.createElement(nam
 const link = (href, label) => { const a = el('a', '', label); a.href = href; return a; };
 let offset = 0;
 let topic = '';
+let query = '';
 
 function showCoverage(summary) {
   const values = [
@@ -29,6 +30,8 @@ function showTopics(summary) {
   const max = Math.max(1, ...entries.map(x => x[1]));
   for (const [name, count] of entries) {
     const row = el('div', 'bar-row'); const track = el('div', 'bar-track'); const fill = el('div', 'bar-fill'); fill.style.width = `${100 * count / max}%`; track.append(fill); row.append(el('span', '', name), track, el('strong', '', count)); $('topics').append(row);
+  }
+  for (const name of ['access','usability','playback','downloads','catalog','billing','support','other']) {
     const option = el('option', '', name); option.value = name; $('topic-filter').append(option);
   }
 }
@@ -49,20 +52,31 @@ async function showRecommendations() {
 function reviewCard(item) {
   const card = el('article', 'review'); card.append(el('span', 'tag', item.topic), el('span', 'tag', item.intent), el('span', 'tag', `Severity ${item.severity}`));
   card.append(el('blockquote', '', `“${item.evidence_quote}”`), el('small', '', `Source row ${item.row_index} · ${item.is_cached ? 'exact-text reuse' : 'direct result'} · ${item.needs_review ? 'needs review' : 'no review flag'}`));
+  const button = el('button', '', 'View saved record');
+  button.addEventListener('click', async () => {
+    try {
+      const detail = await api(`/api/reviews/${item.row_index}`);
+      const panel = el('div', 'record-detail');
+      panel.append(el('p', '', `Saved label: ${detail.topic} · ${detail.intent} · severity ${detail.severity} · sentiment ${detail.sentiment}`), el('p', '', `Source row hash: ${detail.source_sha256}`), el('p', '', `Label configuration: ${detail.label_config} · model: ${detail.model || 'unknown'} · prompt: ${detail.prompt_version || 'unknown'}`));
+      card.append(panel); button.remove();
+    } catch (error) { text($('error'), `Could not load record: ${error.message}`); }
+  });
+  card.append(button);
   return card;
 }
 async function loadReviews(reset=false) {
   if (reset) { offset = 0; $('reviews').replaceChildren(); }
-  const data = await api(`/api/reviews?limit=20&offset=${offset}&topic=${encodeURIComponent(topic)}`);
+  const data = await api(`/api/reviews?limit=20&offset=${offset}&topic=${encodeURIComponent(topic)}&q=${encodeURIComponent(query)}`);
   for (const item of data.items) $('reviews').append(reviewCard(item));
   offset += data.items.length; $('more').hidden = offset >= data.total;
-  if (!data.total) $('reviews').append(el('p', 'note', 'No saved reviews for this topic.'));
+  if (!data.total) $('reviews').append(el('p', 'note', 'No saved reviews match these filters.'));
 }
 async function main() {
   try {
     const summary = await api('/api/summary'); showCoverage(summary); showStatus(summary); showTopics(summary);
     await Promise.all([showIssues(), showRecommendations(), loadReviews()]);
     $('topic-filter').addEventListener('change', (event) => { topic = event.target.value; loadReviews(true).catch(error => text($('error'), error.message)); });
+    $('search-form').addEventListener('submit', (event) => { event.preventDefault(); query = $('quote-search').value.trim(); loadReviews(true).catch(error => text($('error'), error.message)); });
     $('more').addEventListener('click', () => loadReviews().catch(error => text($('error'), error.message)));
   } catch (error) { text($('error'), `Could not load saved results: ${error.message}`); }
 }
