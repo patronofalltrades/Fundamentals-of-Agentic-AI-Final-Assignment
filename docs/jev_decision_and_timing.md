@@ -1,6 +1,6 @@
 # Decision record: keep Jev, and fix the timing risk
 
-Date: 2026-10-06. Decision owner: Hanif. Written by Claude (Line A infrastructure) at Hanif's request.
+Date: 2026-10-06, updated 2026-10-07 for the instructor clarification. Decision owner: Hanif. Written by Claude (Line A infrastructure) at Hanif's request.
 This file adds a decision and a plan. It does not change code, ledgers, or earlier reports.
 Numbers marked **measured** come from saved files in this repository or from saved Line A runs.
 Numbers marked **projection** are linear estimates, not reservations or approvals.
@@ -11,9 +11,9 @@ Numbers marked **projection** are linear estimates, not reservations or approval
    `jev-rubric-v2` with schema `jev-labels-v1`.
 2. **No switch to a hosted open-weight model or a local model.** Section 5 records the measured
    alternatives and why they were not chosen.
-3. **Scope is the full corpus.** `GRADING_CONTRACT.md` requires all 660,622 IDs: 660,609 nonempty
-   classifications and 13 `empty_review_text` quarantines. A 100,000-row slice can be a planning
-   step only. It does not replace the full run.
+3. **Scope (updated 7 October 2026).** The instructor clarification sets the minimum at 100,000 source
+   reviews; the full corpus is a stretch goal. `GRADING_CONTRACT.md` still describes all 660,622 IDs, so
+   disclose the gap. See `AGENTS.md` and the README, section 2.
 4. **The deadline is 13 October 2026, 23:59 PT.**
 
 ## 2. Why Jev stays
@@ -43,8 +43,8 @@ cannot finish in time even with heavy parallelism. Its ChatGPT-plan cost is unkn
 
 ### 4.1 Batch Jev requests
 
-- `GRADING_CONTRACT.md` allows **up to 50 reviews per request**. Validate every returned ID. Save after
-  each batch.
+- The instructor clarification asks for **10 reviews per request**. `GRADING_CONTRACT.md` allows up to 50.
+  Validate every returned ID. Save after each batch.
 - Size each batch by a token budget. Line A uses a 32,000-token budget, which gave 36, 36 and 28
   reviews for `cost_100.csv`.
 - **Line A measured, same 100 reviews, same Jev model:** 3 requests, 2.69 s enrich-stage wall time,
@@ -84,12 +84,13 @@ cannot finish in time even with heavy parallelism. Its ChatGPT-plan cost is unkn
 |---|---|---|
 | 6–7 Oct | Batched Jev and code evidence on development rows; true end-to-end cold/warm 100-row pilot | Batching keeps label agreement with the frozen v2 labels |
 | 7 Oct | Verify, issue mapping, `severity_sum` ranking, memo, grading export work end to end | Mechanical self-check passes on the pilot |
-| 8 Oct | 10,000-row development run; refresh the projection | **Go/no-go:** start the full run only if the projection is under about 24 hours |
-| 8–10 Oct | Full run, resumable, in the background | Leaves 2 to 3 days for outages and resumes |
+| 8 Oct | 10,000-row development run; refresh the projection | **Go/no-go:** start the 100,000-review run only if the projection is under about 24 hours |
+| 9 Oct | 100,000-review run, resumable, in the background | Leaves time for outages and resumes |
+| 10–11 Oct | Full corpus, only if measured time and cost allow | Stretch goal only |
 | 11–12 Oct | Export, self-check, human memo review, recording | — |
 | 13 Oct | Buffer only | — |
 
-**Start the full run by 9 October at the latest.**
+**Start the 100,000-review run by 9 October at the latest.**
 
 ## 5. Alternatives measured or considered (not chosen)
 
