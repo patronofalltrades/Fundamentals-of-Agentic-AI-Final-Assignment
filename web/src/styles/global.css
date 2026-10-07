@@ -59,45 +59,46 @@
 
 :root,
 .dark {
+  /* Spotify-style palette: near-black scale, silver text, one green accent. */
   --radius: 1.5rem;              /* 24px cards; tiles use rounded-2xl (~16px) */
-  --ambient-1: #24384f;           /* blue glow behind the app frame */
-  --ambient-2: #0b0f15;
-  --background: #0b0f15;          /* page around the frame */
-  --canvas: #060508;              /* app canvas between cards */
+  --ambient-1: rgba(30, 215, 96, 0.16); /* green glow behind the app frame */
+  --ambient-2: #000000;
+  --background: #000000;          /* page around the frame */
+  --canvas: #121212;              /* app canvas between cards */
   --foreground: #ffffff;
-  --card: #18171a;
+  --card: #181818;
   --card-foreground: #ffffff;
-  --popover: #232226;
+  --popover: #282828;
   --popover-foreground: #ffffff;
-  --primary: #aac5fa;             /* the single accent */
-  --primary-foreground: #000010;
-  --secondary: #2e2d30;
+  --primary: #1ed760;             /* Spotify Green: the single accent */
+  --primary-foreground: #000000;
+  --secondary: #282828;
   --secondary-foreground: #ffffff;
-  --tile: #2e2d30;
-  --muted: #2e2d30;
-  --muted-foreground: #adacaf;
-  --accent: #2e2d30;
+  --tile: #282828;
+  --muted: #282828;
+  --muted-foreground: #b3b3b3;
+  --accent: #282828;
   --accent-foreground: #ffffff;
-  --destructive: #f4d2d1;
-  --border: #242326;
-  --input: #2e2d30;
-  --ring: #aac5fa;
-  --track: #5a595c;
-  --positive: #d7f8c8;
-  --negative: #f4d2d1;
-  --chart-1: #bdcde7;             /* lavender */
-  --chart-2: #fdf9d4;             /* butter */
-  --chart-3: #d2f6f5;             /* mint */
-  --chart-4: #d7f8c8;
-  --chart-5: #f4d2d1;
-  --sidebar: #18171a;
-  --sidebar-foreground: #adacaf;
-  --sidebar-primary: #aac5fa;
-  --sidebar-primary-foreground: #000010;
-  --sidebar-accent: #2e2d30;
+  --destructive: #f15e6c;
+  --border: #2a2a2a;
+  --input: #282828;
+  --ring: #1ed760;
+  --track: #4d4d4d;
+  --positive: #1ed760;
+  --negative: #f15e6c;
+  --chart-1: #1ed760;             /* green */
+  --chart-2: #f59b23;             /* amber (Spotify cover palette) */
+  --chart-3: #509bf5;             /* blue (Spotify cover palette) */
+  --chart-4: #1ed760;
+  --chart-5: #f15e6c;
+  --sidebar: #000000;
+  --sidebar-foreground: #b3b3b3;
+  --sidebar-primary: #1ed760;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #282828;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #242326;
-  --sidebar-ring: #aac5fa;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #1ed760;
 }
 
 @layer base {
@@ -130,13 +131,13 @@
   aspect-ratio: 1;
   border-radius: 46% 54% 52% 48% / 50% 44% 56% 50%;
   background:
-    radial-gradient(circle at 32% 28%, #e4efff 0 6%, transparent 18%),
-    radial-gradient(circle at 70% 70%, #0b1d6b 0 18%, transparent 46%),
-    conic-gradient(from 210deg, #1638b8, #5c86ff, #0a1a63, #3f6dff, #c9dbff, #1638b8);
+    radial-gradient(circle at 32% 28%, #eafff1 0 6%, transparent 18%),
+    radial-gradient(circle at 70% 70%, #03260f 0 18%, transparent 46%),
+    conic-gradient(from 210deg, #128a40, #1ed760, #04381a, #19b452, #b8f5cd, #128a40);
   box-shadow:
-    inset -18px -22px 40px rgba(2, 8, 40, 0.85),
-    inset 14px 12px 30px rgba(190, 215, 255, 0.55),
-    0 30px 80px -20px rgba(64, 110, 255, 0.55);
+    inset -18px -22px 40px rgba(0, 20, 8, 0.85),
+    inset 14px 12px 30px rgba(190, 255, 215, 0.5),
+    0 30px 80px -20px rgba(30, 215, 96, 0.45);
   filter: saturate(1.15);
   animation: orb-turn 18s linear infinite;
 }

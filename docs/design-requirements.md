@@ -25,20 +25,31 @@ language, not its assets. Colours were sampled from the 1600 × 1200 original on
 
 ## Tokens (`web/src/styles/global.css`)
 
+On 8 October 2026 Hanif asked for Spotify's colour code. The layout and type stay from the reference; the colours
+follow Spotify. Spotify Green `#1ED760` is Spotify's brand green. The near-black scale and silver text follow public
+breakdowns of the Spotify web player ([open-design.ai](https://open-design.ai/systems/spotify/),
+[shadcn.io](https://www.shadcn.io/design/spotify/raw)); they are not an official Spotify specification. Amber `#F59B23`
+and blue `#509BF5` come from Spotify's playlist-cover palette.
+
 | Token | Value | Use |
 | --- | --- | --- |
-| ambient | `#24384F` → `#0B0F15` | Glow behind the app frame |
-| `--canvas` | `#060508` | App canvas between cards |
-| `--card`, `--sidebar` | `#18171A` | Cards and rail |
-| `--tile`, `--secondary` | `#2E2D30` | Tiles inside cards, table header, chips |
-| `--track` | `#5A595C` | Empty part of bars and gauges |
-| `--primary` | `#AAC5FA` | The accent |
-| `--primary-foreground` | `#000010` | Text on the accent |
+| ambient | green glow `rgba(30,215,96,.16)` on `#000000` | Behind the app frame |
+| `--canvas` | `#121212` | App canvas between cards |
+| `--card` | `#181818` | Cards |
+| `--sidebar` | `#000000` | Rail |
+| `--tile`, `--secondary` | `#282828` | Tiles inside cards, table header, chips |
+| `--track` | `#4D4D4D` | Empty part of bars and gauges |
+| `--primary` | `#1ED760` | Spotify Green: the single accent |
+| `--primary-foreground` | `#000000` | Text on the accent |
 | `--foreground` | `#FFFFFF` | Titles, numbers |
-| `--muted-foreground` | `#ADACAF` | Labels |
-| `--chart-1/2/3` | `#BDCDE7` / `#FDF9D4` / `#D2F6F5` | Lavender, butter, mint lines |
-| `--positive` / `--negative` | `#D7F8C8` / `#F4D2D1` | Up / down and warnings |
+| `--muted-foreground` | `#B3B3B3` | Labels |
+| `--chart-1/2/3` | `#1ED760` / `#F59B23` / `#509BF5` | Reviews, complaints, mean severity lines |
+| `--positive` / `--negative` | `#1ED760` / `#F15E6C` | Good / warning |
+| hero gradient | `#0A0A0A` → `#0F1D15` → `#145A30` → `#1C8A47` | Hero card |
 | `--radius` | `1.5rem` | Cards 24 px; tiles about 16 px |
+
+**Brand safety:** the page uses our own logo, never Spotify's. The hero and the footer say "Independent course
+project. Not affiliated with or endorsed by Spotify."
 
 Type scale: card titles 20 px, KPI numbers 32 px light, body and table 15 px, labels 13 px. No bold weights.
 

@@ -74,7 +74,7 @@ export default function IssueTable() {
                 <TableCell className="text-right"><ClaimValue value={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
                 <TableCell className="text-right"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
                 <TableCell className="text-right">
-                  <Badge variant="secondary" className="rounded-full bg-transparent px-0 font-normal text-positive">
+                  <Badge variant="secondary" className="rounded-full bg-transparent px-0 font-normal text-foreground">
                     {fmt.pct(totalComplaints ? issue.review_count / totalComplaints : 0)}
                   </Badge>
                 </TableCell>

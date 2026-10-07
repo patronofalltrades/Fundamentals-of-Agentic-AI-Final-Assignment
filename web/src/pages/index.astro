@@ -43,11 +43,12 @@ const nav = [
       <main class="min-w-0 flex-1 space-y-6 p-4 pb-28 sm:p-6 md:pb-6">
         <!-- Overview -->
         <section id="overview" aria-label="Overview" class="grid scroll-mt-6 gap-6 xl:grid-cols-[minmax(0,0.43fr)_minmax(0,1fr)]">
-          <div class="relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#090a11_0%,#101520_45%,#314966_85%,#64819f_100%)] px-6 pt-10 pb-8 text-center">
+          <div class="relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#0a0a0a_0%,#0f1d15_45%,#145a30_85%,#1c8a47_100%)] px-6 pt-10 pb-8 text-center">
             <div class="orb mb-8" aria-hidden="true"></div>
             <p class="text-[13px] tracking-[0.18em] text-primary uppercase">Product question</p>
             <h1 class="mt-3 text-[1.65rem] leading-tight font-normal tracking-tight text-balance">Where should Spotify invest next quarter?</h1>
             <p class="mt-3 max-w-[38ch] text-[15px] text-white/80">Access, usability, playback, or billing and support — ranked from saved review labels, with every number traced to its evidence.</p>
+            <p class="mt-2 text-[12px] text-white/60">Independent course project · not affiliated with Spotify</p>
             <div class="mt-5"><HeroStatus client:load /></div>
             <a href="#memo" class="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-[15px] text-primary-foreground transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none">
               Read the memo <ArrowRight className="size-4" aria-hidden="true" />
@@ -93,7 +94,10 @@ const nav = [
           </div>
         </section>
 
-        <footer class="px-2 pb-2 text-[13px] text-muted-foreground">Read-only view of saved results. Opening this page makes no model request.</footer>
+        <footer class="flex flex-col gap-1 px-2 pb-2 text-[13px] text-muted-foreground sm:flex-row sm:justify-between">
+          <span>Read-only view of saved results. Opening this page makes no model request.</span>
+          <span>Independent course project. Not affiliated with or endorsed by Spotify.</span>
+        </footer>
       </main>
     </div>
   </div>
