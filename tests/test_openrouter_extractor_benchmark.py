@@ -201,6 +201,51 @@ class BenchmarkTest(unittest.TestCase):
             self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='deepinfra' AND status='succeeded'").fetchone()[0], 0)
             self.assertEqual(benchmark.budget_used(saved), 3 * 24_903_544 + 4 * (186 * 75 + 80 * 300))
 
+    def test_metered_groq_schema_error_skips_without_accepting_or_retrying(self):
+        rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
+                 "review_rating": "1", "review_likes": "0", "app_version": "",
+                 "review_timestamp": "2022-01-01"} for i in range(2)]
+        labels = {"topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5}
+        schema_error = {"id": "synthetic-schema-error", "provider": "Groq",
+            "choices": [{"finish_reason": "error", "error": {"code": 502,
+                "message": "Upstream error from Groq: Generated JSON does not match the expected schema. jsonschema: synthetic"},
+                "message": {"content": None}}],
+            "usage": {"prompt_tokens": 115, "completion_tokens": 93,
+                      "completion_tokens_details": {"reasoning_tokens": 93}}}
+        success = {"id": "synthetic-success", "provider": "Groq",
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                "entities": [], "evidence_quote": "Playback fails"})}}],
+            "usage": {"prompt_tokens": 186, "completion_tokens": 80}}
+        with tempfile.TemporaryDirectory() as folder:
+            baseline, ledger = (str(Path(folder) / name) for name in ("baseline.db", "ledger.db"))
+            db = sqlite3.connect(baseline)
+            db.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            db.executemany("INSERT INTO results VALUES (?,?,?,?)", [
+                (row["review_id"], json.dumps(labels),
+                 benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS]), "synthetic-config")
+                for row in rows])
+            db.commit()
+            db.close()
+            with mock.patch.dict(benchmark.ROUTES, {"groq": benchmark.ROUTES["groq"]}, clear=True), \
+                 mock.patch.object(benchmark, "load_rows", return_value=rows), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
+                 mock.patch.object(benchmark, "verify_route"), \
+                 mock.patch.object(benchmark, "request_json", side_effect=[schema_error, success]) as post, \
+                 mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 2)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 2)
+                self.assertEqual(post.call_count, 2)
+            saved = sqlite3.connect(ledger)
+            self.assertEqual(saved.execute("SELECT status FROM calls ORDER BY id").fetchall(),
+                             [("invalid_response",), ("succeeded",)])
+            self.assertEqual(benchmark.budget_used(saved), 29_491_200 + 186 * 75 + 80 * 300)
+            bad = dict(schema_error)
+            bad["choices"] = [dict(schema_error["choices"][0], error={"code": 502,
+                "message": "Upstream error from Groq: authentication failed"})]
+            saved.execute("UPDATE calls SET invalid_response_json=? WHERE id=1", (json.dumps(bad),))
+            saved.commit()
+            self.assertFalse(benchmark.skippable_invalid(saved, 1, "groq"))
+
     def test_reconciliation_keeps_exposure_and_requires_explicit_retry(self):
         with tempfile.TemporaryDirectory() as folder:
             ledger = str(Path(folder) / "ledger.db")
