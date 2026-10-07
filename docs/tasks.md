@@ -55,8 +55,12 @@ Hosted extractor benchmark owner: Codex, branch `feat/hosted-extractor-benchmark
 in the isolated `spotify-extractor-benchmark` checkout. File scope:
 `tools/openrouter_extractor_benchmark.py`, its hidden-input launcher and
 synthetic tests, this tracker, and `reports/openrouter-extractor-benchmark.md`.
-No OpenRouter inference was run in this checkout. Live smoke and full
-100-review comparison are pending user-run key entry and route access.
+One DeepInfra inference succeeded. A second POST lost its connection and has
+unknown delivery. The authenticated account check on October 7 found no
+visible second bill on the benchmark key; attempt 2 now records that check
+while retaining its full reservation. The explicit retry path is prepared.
+Live smoke and the full 100-review comparison await hidden key entry and
+fresh pinned-route checks. See `reports/openrouter-extractor-benchmark.md`.
 
 Agree on the task owner and file scope first. Record the branch and worktree.
 Use a separate worktree for each simultaneous coding agent.

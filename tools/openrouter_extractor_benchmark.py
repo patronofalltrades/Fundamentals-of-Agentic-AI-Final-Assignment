@@ -119,19 +119,42 @@ def connect(path, source_sha):
     db = sqlite3.connect(path)
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-    db.execute("""CREATE TABLE IF NOT EXISTS calls (
-      id INTEGER PRIMARY KEY, route TEXT NOT NULL, review_id TEXT NOT NULL,
-      source_sha TEXT NOT NULL, status TEXT NOT NULL, reserved_nusd INTEGER NOT NULL,
-      charged_nusd INTEGER, input_tokens INTEGER, output_tokens INTEGER,
-      reasoning_tokens INTEGER, provider TEXT, finish_reason TEXT,
-      elapsed_seconds REAL, error_class TEXT, response_id TEXT,
-      evidence_json TEXT, UNIQUE(route,review_id))""")
     identity = {"source_sha": source_sha, "prompt_version": PROMPT_VERSION,
                 "schema_sha": hashlib.sha256(json.dumps(SCHEMA, sort_keys=True).encode()).hexdigest(),
                 "output_limit": str(OUTPUT_LIMIT), "cap_nusd": str(CAP_NUSD)}
     saved = dict(db.execute("SELECT key,value FROM meta"))
     if saved and saved != identity:
         raise ValueError("ledger configuration/source differs; refuse cache reuse")
+    db.execute("""CREATE TABLE IF NOT EXISTS calls (
+      id INTEGER PRIMARY KEY, route TEXT NOT NULL, review_id TEXT NOT NULL,
+      source_sha TEXT NOT NULL, status TEXT NOT NULL, reserved_nusd INTEGER NOT NULL,
+      charged_nusd INTEGER, input_tokens INTEGER, output_tokens INTEGER,
+      reasoning_tokens INTEGER, provider TEXT, finish_reason TEXT,
+      elapsed_seconds REAL, error_class TEXT, response_id TEXT,
+      evidence_json TEXT)""")
+    # Older ledgers used UNIQUE(route,review_id). Preserve every attempt while
+    # allowing a separately authorized retry after account reconciliation.
+    schema = db.execute("SELECT sql FROM sqlite_master WHERE name='calls'").fetchone()[0]
+    if "UNIQUE(route,review_id)" in schema.replace(" ", ""):
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            db.execute("ALTER TABLE calls RENAME TO calls_before_retry_migration")
+            db.execute("""CREATE TABLE calls (
+              id INTEGER PRIMARY KEY, route TEXT NOT NULL, review_id TEXT NOT NULL,
+              source_sha TEXT NOT NULL, status TEXT NOT NULL, reserved_nusd INTEGER NOT NULL,
+              charged_nusd INTEGER, input_tokens INTEGER, output_tokens INTEGER,
+              reasoning_tokens INTEGER, provider TEXT, finish_reason TEXT,
+              elapsed_seconds REAL, error_class TEXT, response_id TEXT,
+              evidence_json TEXT)""")
+            db.execute("INSERT INTO calls SELECT * FROM calls_before_retry_migration")
+            db.execute("DROP TABLE calls_before_retry_migration")
+            db.commit()
+        except BaseException:
+            db.rollback()
+            raise
+    db.execute("""CREATE TABLE IF NOT EXISTS reconciliations (
+      call_id INTEGER PRIMARY KEY, checked_utc TEXT NOT NULL,
+      evidence TEXT NOT NULL, FOREIGN KEY(call_id) REFERENCES calls(id))""")
     if not saved:
         with db:
             db.executemany("INSERT INTO meta VALUES (?,?)", identity.items())
@@ -154,6 +177,10 @@ def reserve(db, route, row, payload, source_hash):
     amount = money_nusd(Decimal(context_limit) * input_rate + Decimal(completion_limit) * output_rate)
     db.execute("BEGIN IMMEDIATE")
     try:
+        latest = db.execute("SELECT status FROM calls WHERE route=? AND review_id=? ORDER BY id DESC LIMIT 1",
+                            (route, row["review_id"])).fetchone()
+        if latest and latest[0] != "reconciled_no_visible_bill":
+            raise ValueError("review has a settled or unresolved attempt; no duplicate call admitted")
         if budget_used(db) + amount >= CAP_NUSD:
             raise ValueError("shared USD 1 cap would be reached; no call admitted")
         cur = db.execute("INSERT INTO calls(route,review_id,source_sha,status,reserved_nusd) VALUES (?,?,?,?,?)",
@@ -201,7 +228,29 @@ def parse_response(response, row, route):
     return evidence, input_tokens, output_tokens, reasoning, provider, choice["finish_reason"], charge
 
 
-def run(source, manifest, ledger, baseline, limit):
+def reconcile_no_visible_bill(ledger, call_id, checked_utc, evidence):
+    """Record a human-checked account observation; keep the full exposure."""
+    if not checked_utc or not evidence:
+        raise ValueError("reconciliation time and account evidence are required")
+    if not os.path.isfile(ledger):
+        raise ValueError("existing ledger required; no new ledger created")
+    with sqlite3.connect("file:" + ledger + "?mode=ro", uri=True) as prior:
+        source_sha = dict(prior.execute("SELECT key,value FROM meta"))["source_sha"]
+    db = connect(ledger, source_sha)
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        call = db.execute("SELECT status FROM calls WHERE id=?", (call_id,)).fetchone()
+        if call != ("uncertain",):
+            raise ValueError("only an uncertain attempt can be reconciled")
+        db.execute("INSERT INTO reconciliations VALUES (?,?,?)", (call_id, checked_utc, evidence))
+        db.execute("UPDATE calls SET status='reconciled_no_visible_bill' WHERE id=?", (call_id,))
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+
+
+def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None):
     rows = load_rows(source, manifest)
     source_sha = file_sha256(source)
     db = connect(ledger, source_sha)
@@ -212,9 +261,18 @@ def run(source, manifest, ledger, baseline, limit):
         raise ValueError("baseline labels missing for source")
     if any(saved_labels[row["review_id"]][1] != row_sha256([row[k] for k in SOURCE_FIELDS]) for row in rows):
         raise ValueError("baseline source row identity differs")
-    unresolved = db.execute("SELECT COUNT(*) FROM calls WHERE status!='succeeded'").fetchone()[0]
+    unresolved = db.execute("""SELECT COUNT(*) FROM calls
+        WHERE status NOT IN ('succeeded','reconciled_no_visible_bill')""").fetchone()[0]
     if unresolved:
         raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
+    if retry_reconciled_id is None and db.execute("""SELECT COUNT(*) FROM calls
+        WHERE status='reconciled_no_visible_bill' AND NOT EXISTS (
+          SELECT 1 FROM calls later WHERE later.route=calls.route
+          AND later.review_id=calls.review_id AND later.id>calls.id)""").fetchone()[0]:
+        raise ValueError("reconciled call needs explicit retry ID; no calls made")
+    if retry_reconciled_id is not None and db.execute("""SELECT COUNT(*) FROM calls
+        WHERE id=? AND status='reconciled_no_visible_bill'""", (retry_reconciled_id,)).fetchone()[0] != 1:
+        raise ValueError("explicit retry ID is not a reconciled attempt; no calls made")
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise ValueError("OPENROUTER_API_KEY absent; no calls made")
@@ -225,8 +283,10 @@ def run(source, manifest, ledger, baseline, limit):
     for route in ROUTES:
         for row in rows[:limit]:
             rid = row["review_id"]
-            if db.execute("SELECT 1 FROM calls WHERE route=? AND review_id=?", (route, rid)).fetchone():
-                continue  # Includes uncertain attempts. No implicit retry.
+            latest = db.execute("SELECT id,status FROM calls WHERE route=? AND review_id=? ORDER BY id DESC LIMIT 1",
+                                (route, rid)).fetchone()
+            if latest and not (latest == (retry_reconciled_id, "reconciled_no_visible_bill")):
+                continue  # Explicit retry only; never replay a failed POST by default.
             payload = make_payload(route, row, saved_labels[rid][0])
             call_id = reserve(db, route, row, payload, row_sha256([row[k] for k in SOURCE_FIELDS]))
             start = time.monotonic()
@@ -288,12 +348,13 @@ def report(ledger, baseline):
         matches = [c for c in success if c[0] in codex]
         result["routes"][route] = {
             "attempts": len(calls), "successes": len(success),
-            "uncertain_or_invalid": len(calls)-len(success),
+            "unresolved_attempts": sum(c[1] not in ("succeeded", "reconciled_no_visible_bill") for c in calls),
+            "reconciled_no_visible_bill_attempts": sum(c[1] == "reconciled_no_visible_bill" for c in calls),
             "input_tokens": sum(c[4] for c in success),
             "output_tokens_including_reasoning": sum(c[5] for c in success),
             "reported_reasoning_tokens": (sum(c[6] for c in success) if all(c[6] is not None for c in success) else None),
             "charged_usd_known": str(Decimal(sum(c[3] for c in success))/1_000_000_000),
-            "reserved_usd_uncertain": str(Decimal(sum(c[2] for c in calls if c[1] != "succeeded"))/1_000_000_000),
+            "held_reservation_usd": str(Decimal(sum(c[2] for c in calls if c[1] != "succeeded"))/1_000_000_000),
             "summed_request_seconds": sum(c[7] for c in success),
             "exact_quote_agreement_with_codex": sum(json.loads(c[9])["evidence_quote"] == codex[c[0]][1] for c in matches),
             "exact_entity_list_agreement_with_codex": sum(json.loads(c[9])["entities"] == codex[c[0]][0] for c in matches),
@@ -305,14 +366,25 @@ def report(ledger, baseline):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--source", required=True)
-    p.add_argument("--manifest", required=True)
-    p.add_argument("--baseline", required=True, help="ignored Jev v2 ledger")
+    p.add_argument("--source")
+    p.add_argument("--manifest")
+    p.add_argument("--baseline", help="ignored Jev v2 ledger")
     p.add_argument("--ledger", default="local/openrouter_extractor_benchmark.db")
     p.add_argument("--limit", type=int, choices=range(1, 101), default=3)
     p.add_argument("--report", action="store_true", help="read only, no network or key")
+    p.add_argument("--retry-reconciled-id", type=int, help="explicitly retry one account-reconciled attempt")
+    p.add_argument("--reconcile-no-visible-bill", type=int, help="record account check for an uncertain attempt")
+    p.add_argument("--checked-utc", help="UTC time of authenticated account check")
+    p.add_argument("--reconciliation-evidence", help="brief account observation, without keys or review text")
     a = p.parse_args()
     if a.report:
+        if not a.baseline:
+            p.error("--report requires --baseline")
         report(a.ledger, a.baseline)
+    elif a.reconcile_no_visible_bill is not None:
+        reconcile_no_visible_bill(a.ledger, a.reconcile_no_visible_bill,
+                                  a.checked_utc, a.reconciliation_evidence)
     else:
-        run(a.source, a.manifest, a.ledger, a.baseline, a.limit)
+        if not all((a.source, a.manifest, a.baseline)):
+            p.error("inference requires --source, --manifest, and --baseline")
+        run(a.source, a.manifest, a.ledger, a.baseline, a.limit, a.retry_reconciled_id)

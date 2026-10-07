@@ -121,6 +121,55 @@ class BenchmarkTest(unittest.TestCase):
             self.assertEqual(saved.execute("SELECT status FROM calls").fetchone()[0], "uncertain")
             self.assertEqual(benchmark.budget_used(saved), 24_903_544)
 
+    def test_reconciliation_keeps_exposure_and_requires_explicit_retry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = str(Path(folder) / "ledger.db")
+            # Model the schema already saved by the first live benchmark run.
+            db = sqlite3.connect(ledger)
+            db.execute("""CREATE TABLE calls (
+              id INTEGER PRIMARY KEY, route TEXT NOT NULL, review_id TEXT NOT NULL,
+              source_sha TEXT NOT NULL, status TEXT NOT NULL, reserved_nusd INTEGER NOT NULL,
+              charged_nusd INTEGER, input_tokens INTEGER, output_tokens INTEGER,
+              reasoning_tokens INTEGER, provider TEXT, finish_reason TEXT,
+              elapsed_seconds REAL, error_class TEXT, response_id TEXT,
+              evidence_json TEXT, UNIQUE(route,review_id))""")
+            db.execute("INSERT INTO calls(route,review_id,source_sha,status,reserved_nusd) VALUES (?,?,?,?,?)",
+                       ("deepinfra", "synthetic", "synthetic-row", "uncertain", 24_903_544))
+            db.commit()
+            db.close()
+            db = benchmark.connect(ledger, "synthetic-source")
+            with self.assertRaises(ValueError):
+                benchmark.reconcile_no_visible_bill(ledger, 1, "", "")
+            benchmark.reconcile_no_visible_bill(
+                ledger, 1, "2026-10-07T10:18:00Z", "Synthetic account observation")
+            self.assertEqual(benchmark.budget_used(db), 24_903_544)
+            self.assertEqual(db.execute("SELECT status FROM calls WHERE id=1").fetchone()[0],
+                             "reconciled_no_visible_bill")
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM reconciliations").fetchone()[0], 1)
+            row = {"review_id": "synthetic", "review_text": "Synthetic playback fails"}
+            source_row = dict(row, review_rating="1", review_likes="0", app_version="",
+                              review_timestamp="2022-01-01")
+            baseline = str(Path(folder) / "baseline.db")
+            labels = sqlite3.connect(baseline)
+            labels.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT)")
+            labels.execute("INSERT INTO results VALUES (?,?,?)", ("synthetic", "{}",
+                benchmark.row_sha256([source_row[k] for k in benchmark.SOURCE_FIELDS])))
+            labels.commit()
+            labels.close()
+            with mock.patch.object(benchmark, "load_rows", return_value=[source_row]), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
+                 mock.patch.object(benchmark, "request_json") as post:
+                with self.assertRaisesRegex(ValueError, "needs explicit retry ID"):
+                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
+                post.assert_not_called()
+            with self.assertRaises(ValueError):
+                benchmark.reconcile_no_visible_bill(ledger, 1, "2026-10-07T10:18:00Z", "again")
+            benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row")
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM calls").fetchone()[0], 2)
+            self.assertEqual(benchmark.budget_used(db), 49_807_088)
+            with self.assertRaises(ValueError):
+                benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row")
+
 
 if __name__ == "__main__":
     unittest.main()

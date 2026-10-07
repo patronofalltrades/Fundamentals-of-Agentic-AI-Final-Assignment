@@ -1,8 +1,25 @@
-# Hosted evidence extractor benchmark: prepared, live run blocked
+# Hosted evidence extractor benchmark: account check saved, live run pending
 
-**Decision:** Do not start the 100,000-row inference run or resume the smoke
-launcher yet. One hosted inference succeeded and the next has uncertain
-delivery. The two-route comparison is incomplete. This workspace sandbox
+**October 7 account reconciliation check (10:18 UTC):** The authenticated
+OpenRouter Personal account showed only one billed generation on the
+"Berkeley Haas AI Class" benchmark key over the past month: the saved
+DeepInfra generation `gen-1791335333-SQKkJa6OK6BXhV9Bdb10`, with 156 input
+and 49 output tokens and a displayed rounded charge of $0.0000141. The
+account activity summary for that key showed 205 tokens, exactly that one
+request's total. The account's 24-hour upstream request table showed only
+the same DeepInfra request, status 200. There was no matching billed second
+generation visible about nine hours after the reported connection loss.
+The UI displayed times in GMT+7; its 08:08 Oct 7 first call is 01:08 UTC.
+The uncertain attempt lacks a saved provider ID and exact dispatch time,
+so this is evidence of no **visible settled bill**, not proof that its POST
+never arrived. Ledger attempt 2 now has an explicit account-check record and
+status `reconciled_no_visible_bill`. Its full $0.024903544 reservation remains
+held. A retry requires an explicit attempt ID and is saved as a new attempt.
+No new inference was sent during this check.
+
+**Decision:** Do not start the 100,000-row inference run. The 3-row smoke can
+resume only with explicit retry ID 2, the existing key supplied at the hidden
+prompt, and fresh route checks. The two-route comparison is incomplete. This workspace sandbox
 cannot resolve OpenRouter's domain, so local public-catalog checks cannot
 confirm the connected Mac's route availability.
 
@@ -32,10 +49,8 @@ Public catalog GETs now retry at most three times for connection errors,
 timeouts, or HTTP 502/503/504, with short delays. Other HTTP errors fail
 immediately. Inference POSTs never retry automatically. A launch now stops
 before any new call while the ledger contains an uncertain, invalid, or
-in-flight inference. **Do not rerun the smoke launcher yet.** Hanif must
-check OpenRouter activity/billing for the uncertain DeepInfra request around
-the connection loss and share only the outcome and any charged usage, not
-the key or review text. Reconcile the saved attempt before resuming. Privacy
+in-flight inference. The account check above found no visible second bill;
+the saved attempt and full reservation remain in the ledger. Privacy
 compatibility and Groq behavior remain unmeasured.
 
 ### Reconcile the uncertain request
@@ -59,8 +74,9 @@ tokens, with a $0.000014102 usage-derived charge; that can help identify it.
 Its response passed strict JSON, exact source-row hash, quote-substring, and
 whole-boundary entity checks when saved and on read-only revalidation. This
 is mechanical validity for one row, not evidence-quality or accuracy proof.
-Keep attempt 2's full reservation and inference block until its billing and
-delivery outcome is established and documented.
+The account check found no visible settled bill for attempt 2; no response
+was saved, so its delivery outcome remains unknown. The full reservation
+stays held. Only an explicit retry can resume that row.
 
 ## Fixed comparison
 
@@ -141,11 +157,11 @@ privacy acceptance, provider-side budget enforcement, or throughput.
 
 ## User-run handoff and next gate
 
-**Hold this command until the uncertain POST is reconciled.** After that,
-from this branch's repository root Hanif can run:
+From this branch's repository root, Hanif can resume the 3-row smoke with an
+explicit retry of reconciled attempt 2:
 
 ```sh
-zsh tools/run_openrouter_benchmark_user.zsh 3
+zsh tools/run_openrouter_benchmark_user.zsh 3 2
 ```
 
 The script prompts for the existing OpenRouter key with hidden input. It
@@ -161,8 +177,8 @@ python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
 If both routes pass privacy, schema, source-evidence, usage, and cap checks,
 run `zsh tools/run_openrouter_benchmark_user.zsh 100` to finish the same rows.
 The ledger skips successful calls and blocks a new launch while any call is
-uncertain or invalid. Reconcile that attempt before a new experiment; this
-runner deliberately has no automatic replay of that row. The user should
+uncertain or invalid. The saved retry is a separate attempt, and the earlier
+full reservation remains in total exposure. The user should
 share only the aggregate report, not a key or raw ledger.
 
 After a live run, report observed failures, semantic spot checks, exact
