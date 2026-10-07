@@ -55,5 +55,7 @@ not a guarantee that delayed provider billing can never overshoot. The local
 runner reserves the full published endpoint bound before a request and stops
 admitting work at or above the project cap. A v2 prompt is prepared in a
 separate ignored ledger because the first canary's entity semantics need
-review. The `check` command sends no inference; do not run another paid batch
-until the v2 quality trial is approved.
+review. The `check` command sends no inference. Hanif subsequently approved
+and completed the single v2 ten-review trial. Its measured result and the
+remaining cross-ledger accounting gap are recorded in
+`reports/deepinfra-batch10-canary.md`; no larger run is authorized.
