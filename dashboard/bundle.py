@@ -60,6 +60,10 @@ DDL = {
         "text TEXT NOT NULL, PRIMARY KEY (run_id, recommendation_id))",
         "CREATE TABLE IF NOT EXISTS recommendation_issue (run_id TEXT NOT NULL, recommendation_id TEXT NOT NULL, "
         "issue_id TEXT NOT NULL, PRIMARY KEY (run_id, recommendation_id, issue_id))",
+        "CREATE TABLE IF NOT EXISTS claim (run_id TEXT NOT NULL, claim_id TEXT NOT NULL, issue_id TEXT NOT NULL, "
+        "metric TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (run_id, claim_id))",
+        "CREATE TABLE IF NOT EXISTS memo (run_id TEXT PRIMARY KEY, text TEXT NOT NULL, sha256 TEXT NOT NULL, "
+        "claim_check TEXT NOT NULL)",
         "CREATE INDEX IF NOT EXISTS idx_classifications_topic ON classifications(topic)",
         "CREATE INDEX IF NOT EXISTS idx_membership_row ON issue_membership(row_index)",
     ],

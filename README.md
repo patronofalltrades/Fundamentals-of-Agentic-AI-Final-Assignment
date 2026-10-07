@@ -113,7 +113,7 @@ Use Python 3.9 or newer. Use the standard library only. No installation is neede
 Run all commands from the repository root.
 
 ```sh
-python3 -m unittest discover -s tests -t . -v      # 202 offline tests
+python3 -m unittest discover -s tests -t . -v      # 207 offline tests
 python3 -m spotify_pipeline --help
 ```
 
@@ -166,6 +166,7 @@ approval and a flag such as `--execute`.
 | `/api/reviews/{row_index}` | One saved record |
 | `/api/issues`, `/api/issues/{issue_id}` | Accepted issue ranking by `severity_sum`, or pending |
 | `/api/recommendations` | Saved draft recommendations with their issue links, or pending |
+| `/api/claims`, `/api/memo` | Claims from `claims.csv` and the decision memo with its claim check, or pending |
 
 Run the same dashboard on your computer:
 
@@ -180,6 +181,7 @@ Load saved results into the deployed database (needs the project's `DATABASE_URL
 python3 -m dashboard export-bundle --db local/dashboard.db --out local/bundle
 python3 -m dashboard load-bundle --bundle local/bundle --postgres-env DATABASE_URL
 python3 -m dashboard import-analysis --input local/accepted-analysis.json --postgres-env DATABASE_URL
+python3 -m dashboard import-grading --folder <grading-folder> --postgres-env DATABASE_URL
 ```
 
 - Hosting: Vercel project `fundamentals-of-agentic-ai-final-assignment`. A merge to `main` deploys production.

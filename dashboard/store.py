@@ -41,6 +41,13 @@ CREATE TABLE IF NOT EXISTS recommendation_issue (
     FOREIGN KEY (run_id, recommendation_id) REFERENCES recommendation(run_id, recommendation_id),
     FOREIGN KEY (run_id, issue_id) REFERENCES issue(run_id, issue_id)
 );
+CREATE TABLE IF NOT EXISTS claim (
+    run_id TEXT NOT NULL, claim_id TEXT NOT NULL, issue_id TEXT NOT NULL, metric TEXT NOT NULL, value TEXT NOT NULL,
+    PRIMARY KEY (run_id, claim_id)
+);
+CREATE TABLE IF NOT EXISTS memo (
+    run_id TEXT PRIMARY KEY, text TEXT NOT NULL, sha256 TEXT NOT NULL, claim_check TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_membership_row ON issue_membership(row_index);
 """
 

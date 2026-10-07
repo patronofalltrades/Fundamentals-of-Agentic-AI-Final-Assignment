@@ -45,9 +45,16 @@ async function showIssues() {
   const data = await api('/api/issues');
   if (!data.items.length) { $('issues').append(el('p', 'note', 'Pending accepted issue membership. No issue ranking has been produced.')); return; }
   for (const item of data.items) {
-    const card = el('article', 'issue'); card.append(el('h3', '', `${item.issue_id} · ${item.title}`), el('p', '', `Priority score ${item.priority_score} · ${item.review_count} supporting reviews · mean severity ${item.mean_severity}`), link(`/api/issues/${encodeURIComponent(item.issue_id)}`, 'Inspect saved issue data'));
-    const button = el('button', '', 'Show evidence'); button.addEventListener('click', async () => { const detail = await api(`/api/issues/${encodeURIComponent(item.issue_id)}`); const list = el('div', 'review-list'); for (const r of detail.reviews.items) list.append(reviewCard(r)); card.append(list); button.remove(); }); card.append(button); $('issues').append(card);
+    const card = el('article', 'issue'); card.append(el('h3', '', item.title && item.title !== item.issue_id ? `${item.issue_id} · ${item.title}` : item.issue_id), el('p', '', `Priority score ${item.priority_score} · ${item.review_count} supporting reviews · mean severity ${item.mean_severity}`), link(`/api/issues/${encodeURIComponent(item.issue_id)}`, 'Inspect saved issue data'));
+    const button = el('button', '', 'Show evidence'); button.addEventListener('click', async () => { const detail = await api(`/api/issues/${encodeURIComponent(item.issue_id)}`); if (detail.claims && detail.claims.length) { const c = el('p', 'claims'); c.append(el('small', '', 'Claims: ' + detail.claims.map(x => `${x.claim_id} = ${x.value}`).join(' · '))); card.append(c); } const list = el('div', 'review-list'); for (const r of detail.reviews.items) list.append(reviewCard(r)); card.append(list); button.remove(); }); card.append(button); $('issues').append(card);
   }
+}
+async function showMemo() {
+  const data = await api('/api/memo');
+  if (!data.text) { $('memo').append(el('p', 'note', 'Pending saved memo. The memo comes from the pipeline export and cites claim IDs.')); return; }
+  const checked = data.status === 'claims_checked';
+  $('memo').append(el('p', checked ? 'note' : 'note warn', checked ? 'Every claim ID in the memo matches its saved value.' : `Claim check: ${data.status.replaceAll('_', ' ')}. Do not rely on this memo yet.`));
+  $('memo').append(el('pre', 'memo-text', data.text));
 }
 async function showRecommendations() {
   const data = await api('/api/recommendations');
@@ -80,7 +87,7 @@ async function loadReviews(reset=false) {
 async function main() {
   try {
     const summary = await api('/api/summary'); showBanner(summary); showCoverage(summary); showStatus(summary); showTopics(summary);
-    await Promise.all([showIssues(), showRecommendations(), loadReviews()]);
+    await Promise.all([showIssues(), showMemo(), showRecommendations(), loadReviews()]);
     $('topic-filter').addEventListener('change', (event) => { topic = event.target.value; loadReviews(true).catch(error => text($('error'), error.message)); });
     $('search-form').addEventListener('submit', (event) => { event.preventDefault(); query = $('quote-search').value.trim(); loadReviews(true).catch(error => text($('error'), error.message)); });
     $('more').addEventListener('click', () => loadReviews().catch(error => text($('error'), error.message)));
