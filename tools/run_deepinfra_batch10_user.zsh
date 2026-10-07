@@ -1,7 +1,12 @@
 #!/bin/zsh
-# One authorized ten-review DeepInfra canary. Hidden key, no key file.
+# One authorized ten-review DeepInfra canary. Key is read from macOS Keychain.
 set -euo pipefail
 cd "${0:A:h:h}"
+mode="${1:-run}"
+if [[ "$mode" != "run" && "$mode" != "check" ]]; then
+  print -u2 'Use check to verify Keychain and provider limit, or run for a pending approved canary.'
+  exit 2
+fi
 dataset='/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset'
 baseline='/Users/haniframadhan/Documents/Codex/2026-10-06/task-3/spotify-extractor-benchmark/local/openrouter_corrected_100.db'
 prior_ledger='/Users/haniframadhan/Documents/Codex/2026-10-06/task-3/spotify-extractor-benchmark/local/openrouter_extractor_benchmark.db'
@@ -17,13 +22,10 @@ fi
 args=(--source "$dataset/cost_100.csv" --manifest "$dataset/manifest.json"
       --baseline "$baseline" --prior-ledger "$prior_ledger")
 PYTHONPYCACHEPREFIX=/tmp/spotify-pycache python3 tools/deepinfra_batch10_canary.py "${args[@]}"
-print 'Enter your existing OpenRouter key for one ten-review DeepInfra request.'
-read -rs 'canary_key?Existing OpenRouter API key: '
-print
-if [[ -z "$canary_key" ]]; then
-  print -u2 'No key entered. No call made.'
-  exit 2
+if [[ "$mode" == "check" ]]; then
+  PYTHONPYCACHEPREFIX=/tmp/spotify-pycache \
+    python3 tools/deepinfra_batch10_canary.py "${args[@]}" --check-key
+  exit 0
 fi
-OPENROUTER_API_KEY="$canary_key" PYTHONPYCACHEPREFIX=/tmp/spotify-pycache \
+PYTHONPYCACHEPREFIX=/tmp/spotify-pycache \
   python3 tools/deepinfra_batch10_canary.py "${args[@]}" --run
-unset canary_key

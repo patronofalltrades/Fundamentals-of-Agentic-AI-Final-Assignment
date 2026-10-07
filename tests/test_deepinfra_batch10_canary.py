@@ -1,8 +1,11 @@
 import importlib.util
 from concurrent.futures import ThreadPoolExecutor
+import contextlib
+import io
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -43,6 +46,33 @@ def response(rows, quotes=None):
 
 
 class BatchTenTest(unittest.TestCase):
+    def test_keychain_lookup_and_provider_limit_do_not_leak_secret(self):
+        dummy = "synthetic-secret-only"
+        stream = io.StringIO()
+        with mock.patch.object(batch.subprocess, "run", return_value=subprocess.CompletedProcess(
+                args=[], returncode=0, stdout=(dummy + "\n").encode(), stderr=b"")) as lookup, \
+             contextlib.redirect_stdout(stream):
+            self.assertEqual(batch.keychain_secret(), dummy)
+        self.assertNotIn(dummy, stream.getvalue())
+        args = lookup.call_args.args[0]
+        self.assertEqual(args[:2], ["/usr/bin/security", "find-generic-password"])
+        self.assertNotIn(dummy, args)
+        data = {"data": {"limit": 5, "limit_remaining": 5,
+                         "limit_reset": None, "is_management_key": False,
+                         "is_provisioning_key": False}}
+        with mock.patch.object(batch.single, "request_json", return_value=data) as get:
+            result = batch.verify_project_key(dummy, batch.reservation_nusd())
+            self.assertEqual(result["limit_usd"], "5")
+            self.assertNotIn(dummy, json.dumps(result))
+            self.assertEqual(get.call_args.args[0], "https://openrouter.ai/api/v1/key")
+            data["data"]["limit_reset"] = "monthly"
+            with self.assertRaisesRegex(ValueError, "non-resetting"):
+                batch.verify_project_key(dummy, batch.reservation_nusd())
+            data["data"]["limit_reset"] = None
+            data["data"]["limit_remaining"] = 0.001
+            with self.assertRaisesRegex(ValueError, "full reservation"):
+                batch.verify_project_key(dummy, batch.reservation_nusd())
+
     def test_selection_payload_and_exact_id_validation(self):
         rows, labels = fixture()
         chosen = batch.select_canary(rows, labels)
@@ -89,6 +119,7 @@ class BatchTenTest(unittest.TestCase):
             db = batch.connect(ledger, "source-sha", "baseline-sha", prior_sha)
             batch.initialize(db, rows, labels)
             with mock.patch.object(batch.single, "verify_route"), \
+                 mock.patch.object(batch, "verify_project_key"), \
                  mock.patch.object(batch.single, "request_json", return_value=response(rows)) as post:
                 with ThreadPoolExecutor(max_workers=1) as pool:
                     outcome = pool.submit(batch.execute, db, rows, labels,
@@ -97,6 +128,15 @@ class BatchTenTest(unittest.TestCase):
                 post.assert_called_once()
             self.assertEqual(db.execute("SELECT COUNT(*) FROM results").fetchone()[0], 10)
             self.assertEqual(db.execute("SELECT status FROM batches").fetchone()[0], "succeeded")
+            original_charge = db.execute("SELECT charged_nusd FROM batches").fetchone()[0]
+            with db:
+                db.execute("UPDATE meta SET value=? WHERE key='cap_nusd'", (str(batch.single.CAP_NUSD),))
+            upgraded = batch.connect(ledger, "source-sha", "baseline-sha", prior_sha)
+            self.assertEqual(upgraded.execute("SELECT charged_nusd FROM batches").fetchone()[0], original_charge)
+            self.assertEqual(upgraded.execute("SELECT COUNT(*) FROM results").fetchone()[0], 10)
+            self.assertEqual(upgraded.execute("SELECT prior_cap_nusd,new_cap_nusd FROM cap_history").fetchone(),
+                             (batch.single.CAP_NUSD, batch.CAP_NUSD))
+            upgraded.close()
             duplicate = dict(rows[0], review_id="synthetic-copy")
             cached_labels = dict(labels, **{duplicate["review_id"]: labels[rows[0]["review_id"]]})
             self.assertEqual(batch.materialize_exact_text_cache(db, [duplicate], cached_labels), 1)
@@ -128,6 +168,7 @@ class BatchTenTest(unittest.TestCase):
             content["results"][7]["evidence_quote"] = "invented quote"
             malformed["choices"][0]["message"]["content"] = json.dumps(content)
             with mock.patch.object(batch.single, "verify_route"), \
+                 mock.patch.object(batch, "verify_project_key"), \
                  mock.patch.object(batch.single, "request_json", return_value=malformed) as post:
                 with self.assertRaisesRegex(RuntimeError, "quarantined"):
                     batch.execute(bad, rows, labels, prior_path, prior_sha, "synthetic-key")
@@ -143,6 +184,7 @@ class BatchTenTest(unittest.TestCase):
             no_usage = response(rows)
             no_usage.pop("usage")
             with mock.patch.object(batch.single, "verify_route"), \
+                 mock.patch.object(batch, "verify_project_key"), \
                  mock.patch.object(batch.single, "request_json", return_value=no_usage):
                 with self.assertRaisesRegex(RuntimeError, "quarantined"):
                     batch.execute(unknown, rows, labels, prior_path, prior_sha, "synthetic-key")
@@ -157,7 +199,7 @@ class BatchTenTest(unittest.TestCase):
             prior_path = str(Path(folder) / "prior.db")
             prior = sqlite3.connect(prior_path)
             prior.execute("CREATE TABLE calls(id INTEGER PRIMARY KEY,status TEXT,reserved_nusd INTEGER,charged_nusd INTEGER)")
-            prior.execute("INSERT INTO calls VALUES (1,'uncertain',975100000,NULL)")
+            prior.execute("INSERT INTO calls VALUES (1,'uncertain',4975100000,NULL)")
             prior.commit()
             prior.close()
             _, prior_sha = batch.prior_exposure(prior_path)
@@ -182,6 +224,7 @@ class BatchTenTest(unittest.TestCase):
                                       "source-sha", "baseline-sha", fresh_sha)
             batch.initialize(uncertain, rows, labels)
             with mock.patch.object(batch.single, "verify_route"), \
+                 mock.patch.object(batch, "verify_project_key"), \
                  mock.patch.object(batch.single, "request_json", side_effect=URLError("synthetic reset")) as post:
                 with self.assertRaisesRegex(RuntimeError, "delivery uncertain"):
                     batch.execute(uncertain, rows, labels, prior_path, fresh_sha, "synthetic-key")

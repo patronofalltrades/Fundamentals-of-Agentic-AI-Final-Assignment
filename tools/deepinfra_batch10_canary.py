@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
 import time
 
@@ -24,7 +25,9 @@ MODEL, PROVIDER_TAG, INPUT_RATE, OUTPUT_RATE = single.ROUTES["deepinfra"]
 BATCH_SIZE = 10
 OUTPUT_LIMIT = 4096  # Measured single-row reasoning can exceed 300 tokens.
 CANARY_WORKERS = 1
-CAP_NUSD = single.CAP_NUSD
+CAP_NUSD = 5_000_000_000  # Approved project total; historical exposure is included.
+KEYCHAIN_SERVICE = "spotify-review-openrouter"
+KEYCHAIN_ACCOUNT = "hanif-spotify-project"
 PROMPT_VERSION = "deepinfra-batch10-evidence-v1"
 ITEM_SCHEMA = {"type": "object", "additionalProperties": False,
                "required": ["review_id", "entities", "evidence_quote"],
@@ -58,6 +61,46 @@ def cache_key(row, baseline):
     labels, _, label_config = baseline[row["review_id"]]
     return canonical_sha({"config_sha": config_sha(), "text_sha": text_sha(row["review_text"]),
                           "full_labels": labels, "label_config": label_config})
+
+
+def keychain_secret():
+    """The user owns Keychain entry and the macOS access prompt; never print it."""
+    try:
+        result = subprocess.run(["/usr/bin/security", "find-generic-password",
+            "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT, "-w"],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, timeout=15, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        raise ValueError("project Keychain item unavailable; no call made") from None
+    if result.returncode != 0 or not result.stdout:
+        raise ValueError("project Keychain item unavailable or access declined; no call made")
+    try:
+        key = result.stdout.decode("utf-8").rstrip("\r\n")
+    except UnicodeDecodeError:
+        raise ValueError("project Keychain item is not valid UTF-8; no call made") from None
+    if not key or any(char.isspace() for char in key):
+        raise ValueError("project Keychain item format invalid; no call made")
+    return key
+
+
+def verify_project_key(key, reservation_nusd):
+    """Check normal-key status and non-resetting USD 5 provider limit."""
+    try:
+        data = single.request_json("https://openrouter.ai/api/v1/key", key=key)["data"]
+        limit = Decimal(str(data["limit"]))
+        remaining = Decimal(str(data["limit_remaining"]))
+        reset = data["limit_reset"]
+    except Exception:
+        raise ValueError("OpenRouter key limit details unavailable; no paid call") from None
+    if data.get("is_management_key") is not False or data.get("is_provisioning_key") is not False:
+        raise ValueError("a normal inference key is required; no paid call")
+    if not limit.is_finite() or limit != Decimal("5") or reset is not None:
+        raise ValueError("key must have a non-resetting USD 5 limit; no paid call")
+    needed = Decimal(reservation_nusd) / Decimal(1_000_000_000)
+    if not remaining.is_finite() or remaining < needed:
+        raise ValueError("key remaining limit cannot cover full reservation; no paid call")
+    return {"authorized": True, "limit_usd": "5", "limit_reset": None,
+            "remaining_usd": str(remaining)}
 
 
 def select_canary(rows, baseline):
@@ -163,7 +206,20 @@ def connect(path, source_sha, baseline_sha, prior_sha):
                 "cap_nusd": str(CAP_NUSD)}
     existing = dict(db.execute("SELECT key,value FROM meta"))
     if existing and existing != identity:
-        raise ValueError("canary source, baseline, settings or prior ledger changed")
+        old_cap_only = (existing.get("cap_nusd") == str(single.CAP_NUSD)
+            and dict(existing, cap_nusd=str(CAP_NUSD)) == identity)
+        old_batches = db.execute("SELECT status,reserved_nusd FROM batches").fetchall() \
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='batches'").fetchone() else []
+        if not (old_cap_only and
+                all(status != "in_flight" for status, _ in old_batches)):
+            raise ValueError("canary source, baseline, settings or prior ledger changed")
+        with db:
+            db.execute("""CREATE TABLE IF NOT EXISTS cap_history(
+                changed_utc TEXT NOT NULL, prior_cap_nusd INTEGER NOT NULL,
+                new_cap_nusd INTEGER NOT NULL, reason TEXT NOT NULL)""")
+            db.execute("INSERT INTO cap_history VALUES (datetime('now'),?,?,?)",
+                (single.CAP_NUSD, CAP_NUSD, "user-approved project cap increase; historical reservations retained"))
+            db.execute("UPDATE meta SET value=? WHERE key='cap_nusd'", (str(CAP_NUSD),))
     db.execute("""CREATE TABLE IF NOT EXISTS batches(
         id INTEGER PRIMARY KEY, status TEXT NOT NULL, request_sha TEXT NOT NULL,
         reserved_nusd INTEGER NOT NULL DEFAULT 0, charged_nusd INTEGER,
@@ -242,10 +298,14 @@ def canary_exposure(db):
         ELSE reserved_nusd END),0) FROM batches""").fetchone()[0]
 
 
+def reservation_nusd():
+    context, completion = single.ENDPOINT_BOUNDS["deepinfra"]
+    return single.money_nusd(Decimal(context) * INPUT_RATE + Decimal(completion) * OUTPUT_RATE)
+
+
 def reserve(db, prior_ledger, prior_sha):
     # Full published endpoint context/completion bounds, including reasoning.
-    context, completion = single.ENDPOINT_BOUNDS["deepinfra"]
-    amount = single.money_nusd(Decimal(context) * INPUT_RATE + Decimal(completion) * OUTPUT_RATE)
+    amount = reservation_nusd()
     db.execute("BEGIN IMMEDIATE")
     try:
         prior, current_sha = prior_exposure(prior_ledger)
@@ -269,6 +329,7 @@ def execute(db, rows, baseline, prior_ledger, prior_sha, key):
     if db.execute("SELECT status FROM batches WHERE id=1").fetchone() != ("pending",):
         raise ValueError("only a pending batch may be dispatched")
     single.verify_route("deepinfra")
+    verify_project_key(key, reservation_nusd())
     request = payload(rows, baseline)
     reserved = reserve(db, prior_ledger, prior_sha)
     started = time.monotonic()
@@ -316,7 +377,9 @@ def main():
     parser.add_argument("--baseline", required=True)
     parser.add_argument("--prior-ledger", required=True)
     parser.add_argument("--ledger", default="local/deepinfra_batch10_canary.db")
-    parser.add_argument("--run", action="store_true", help="explicitly dispatch one ten-review request")
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument("--run", action="store_true", help="explicitly dispatch one ten-review request")
+    action.add_argument("--check-key", action="store_true", help="check Keychain key limit; no inference")
     args = parser.parse_args()
     rows = single.load_rows(args.source, args.manifest)
     baseline = single.load_baseline(args.baseline, rows)
@@ -326,13 +389,20 @@ def main():
     initialize(db, chosen, baseline)
     cached_rows = materialize_exact_text_cache(db, rows, baseline)
     status = db.execute("SELECT status FROM batches WHERE id=1").fetchone()[0]
+    if args.check_key:
+        key = keychain_secret()
+        try:
+            print(json.dumps(verify_project_key(key, reservation_nusd()), sort_keys=True))
+        finally:
+            key = None
+        return
     if not args.run:
-        amount = single.money_nusd(Decimal(single.ENDPOINT_BOUNDS["deepinfra"][0])*INPUT_RATE +
-                Decimal(single.ENDPOINT_BOUNDS["deepinfra"][1])*OUTPUT_RATE)
+        amount = reservation_nusd()
         print(json.dumps({"source_rows": 10, "model_requests_if_run": int(status == "pending"),
             "status": status, "prior_exposure_usd": str(Decimal(prior)/1_000_000_000),
             "canary_exposure_usd": str(Decimal(canary_exposure(db))/1_000_000_000),
-            "worst_case_new_reservation_usd": str(Decimal(amount)/1_000_000_000),
+            "worst_case_new_reservation_usd": str(Decimal(
+                amount if status == "pending" else 0)/1_000_000_000),
             "combined_worst_case_usd": str(Decimal(prior+canary_exposure(db)+
                 (amount if status == "pending" else 0))/1_000_000_000),
             "output_limit_including_reasoning": OUTPUT_LIMIT,
@@ -342,9 +412,13 @@ def main():
     if status != "pending":
         raise ValueError("batch not pending; no paid retry")
     # One batch and one bounded worker. Multi-batch concurrency needs a later gate.
-    with ThreadPoolExecutor(max_workers=CANARY_WORKERS) as pool:
-        result = pool.submit(execute, db, chosen, baseline, args.prior_ledger,
-                             prior_sha, os.environ.get("OPENROUTER_API_KEY")).result()
+    key = keychain_secret()
+    try:
+        with ThreadPoolExecutor(max_workers=CANARY_WORKERS) as pool:
+            result = pool.submit(execute, db, chosen, baseline, args.prior_ledger,
+                                 prior_sha, key).result()
+    finally:
+        key = None  # Best effort; Python cannot guarantee memory erasure.
     print(json.dumps(result, sort_keys=True))
 
 
