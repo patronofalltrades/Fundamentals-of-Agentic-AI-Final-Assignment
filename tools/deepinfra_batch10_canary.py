@@ -63,14 +63,16 @@ def cache_key(row, baseline):
                           "full_labels": labels, "label_config": label_config})
 
 
-def keychain_secret():
+def keychain_secret(timeout_seconds=15):
     """The user owns Keychain entry and the macOS access prompt; never print it."""
     try:
         result = subprocess.run(["/usr/bin/security", "find-generic-password",
             "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT, "-w"],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, timeout=15, check=False)
-    except (OSError, subprocess.TimeoutExpired):
+            stderr=subprocess.PIPE, timeout=timeout_seconds, check=False)
+    except subprocess.TimeoutExpired:
+        raise ValueError("project Keychain read timed out; no call made. Run the check in a foreground Terminal and handle any macOS access prompt there") from None
+    except OSError:
         raise ValueError("project Keychain item unavailable; no call made") from None
     if result.returncode != 0 or not result.stdout:
         raise ValueError("project Keychain item unavailable or access declined; no call made")
@@ -393,7 +395,7 @@ def main():
     cached_rows = materialize_exact_text_cache(db, rows, baseline)
     status = db.execute("SELECT status FROM batches WHERE id=1").fetchone()[0]
     if args.check_key:
-        key = keychain_secret()
+        key = keychain_secret(timeout_seconds=90)
         try:
             print(json.dumps(verify_project_key(key, reservation_nusd()), sort_keys=True))
         finally:

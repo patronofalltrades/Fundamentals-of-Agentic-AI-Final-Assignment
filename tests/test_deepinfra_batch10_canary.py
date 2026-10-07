@@ -57,6 +57,10 @@ class BatchTenTest(unittest.TestCase):
         args = lookup.call_args.args[0]
         self.assertEqual(args[:2], ["/usr/bin/security", "find-generic-password"])
         self.assertNotIn(dummy, args)
+        with mock.patch.object(batch.subprocess, "run", side_effect=subprocess.TimeoutExpired(
+                cmd="security", timeout=90)):
+            with self.assertRaisesRegex(ValueError, "foreground Terminal"):
+                batch.keychain_secret(timeout_seconds=90)
         data = {"data": {"limit": 5, "limit_remaining": 5,
                          "limit_reset": None, "is_management_key": False,
                          "is_provisioning_key": False}}

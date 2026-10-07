@@ -21,15 +21,24 @@ approved runs easier to launch.
    the new key in its Password field and save it yourself. If an item with
    that service and account already exists, stop and identify the conflict;
    do not overwrite it. Do not put the key in `.env`, Git, a document, or chat.
-3. From the `spotify-batch10-canary` worktree, run
-   `zsh tools/run_deepinfra_batch10_user.zsh check`. This retrieves the item
+3. In a foreground Terminal window, change to the `spotify-batch10-canary`
+   worktree and run `zsh tools/run_deepinfra_batch10_user.zsh check`.
+   This retrieves the item
    inside the local Python process, calls OpenRouter's read-only
    [`GET /api/v1/key`](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key),
    and prints only whether the normal key is authorized, its USD limit,
    remaining limit, and reset setting. It sends **no inference request**.
-   If macOS asks whether `/usr/bin/security` may access the item, choose
+   The check waits up to 90 seconds for Keychain access. If macOS asks whether
+   `/usr/bin/security` may access the item, choose
    **Allow Once**. Do not choose **Always Allow**: that grants broader
    continuing access to the shared system binary.
+
+The login Keychain item is visible in Keychain Access, but a background
+workspace-sandbox lookup reported it missing. A lookup outside that sandbox
+found the item; the background password read then timed out without a visible
+prompt. A foreground Terminal check is the next diagnostic step. It prints
+only sanitized key-limit status and sends no model request. If it still fails,
+stop and report the exact error; do not expose the key or change access rules.
 
 The batch runner calls `/usr/bin/security find-generic-password` with fixed
 service and account arguments, captures its output privately, and never logs
