@@ -5,6 +5,13 @@ OpenRouter extractor comparison. **State:** six accepted results from three
 reviews on each route; one received DeepInfra response rejected; no new paid
 calls during this investigation. The comparison remains incomplete.
 
+**Later control update:** This report explains the first incident. Subsequent
+continuations exposed two more DeepInfra row failures and two Groq row
+failures, including a provider-side strict-schema rejection. The current
+runner skips confirmed metered row-output failures and pauses only a route
+with **five consecutive** such failures. For current counts and cap exposure,
+see `openrouter-extractor-benchmark.md`.
+
 ## What happened
 
 1. The runner reused three accepted DeepInfra results from the earlier smoke
@@ -70,10 +77,9 @@ provider, normal finish, token bound, and charge are present and valid, and
 the failure is `ValidationError`. It is never counted as accepted evidence
 and never retried automatically. Uncertain delivery, missing usage, route
 mismatch, truncation, catalog/privacy incompatibility, and budget failure
-still stop. A third validation failure on either route opens a circuit before
-more requests. This threshold counts the historical failure as DeepInfra's
-first. The read-only plan now shows three accepted and one failed DeepInfra
-row with 96 untouched, plus three accepted Groq rows with 97 untouched.
+still stop. The original three-total-failure circuit was replaced by a
+durable five-consecutive-failure circuit for each route. The historical
+first failure remains in the ledger; its full reservation is held.
 Reports disclose the 100-source denominator, accepted and failed counts per
 route, metered charges including failures, and the number accepted by both
 routes. Model comparison must use that paired subset and show coverage loss.
@@ -106,8 +112,8 @@ zero automatic retry, and the circuit. They do not prove live quality.
    diagnostic segment, require exact-source validation for every accepted
    row, full response/usage recording for any failure, no provider or privacy
    drift, no unknown charge, and exposure strictly below $1. Inspect failures
-   by route and difficulty. A third validation failure on either route stops
-   for review. Compare only paired accepted rows against the saved Jev/Codex
+   by route and difficulty. Five consecutive row-output failures on one route
+   pause that route for review. Compare only paired accepted rows against the saved Jev/Codex
    development baseline, and report the attempted, accepted, failed, and
    paired denominators. Do not infer semantic accuracy from agreement alone.
 
