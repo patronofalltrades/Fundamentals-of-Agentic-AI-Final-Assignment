@@ -158,7 +158,7 @@ class BenchmarkTest(unittest.TestCase):
             self.assertEqual(benchmark.plan_calls(saved, [row],
                 benchmark.load_baseline(baseline, [row]), 1)[0][4], "validation_failed")
 
-    def test_validation_failure_skips_row_then_circuit_stops_third_failure(self):
+    def test_validation_circuit_pauses_only_failed_route(self):
         rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
                  "review_rating": "1", "review_likes": "0", "app_version": "",
                  "review_timestamp": "2022-01-01"} for i in range(4)]
@@ -177,23 +177,29 @@ class BenchmarkTest(unittest.TestCase):
                 "content": json.dumps({"entities": [], "evidence_quote": "not in source"})}}],
                 "usage": {"prompt_tokens": 186, "completion_tokens": 185}}
             counter = []
-            def response(*args):
-                counter.append(len(counter))
-                return dict(invalid, id="synthetic-generation-%d" % len(counter))
+            def response(_url, payload, _key):
+                route = "groq" if payload["model"] == benchmark.ROUTES["groq"][0] else "deepinfra"
+                counter.append(route)
+                if route == "deepinfra":
+                    return dict(invalid, id="synthetic-generation-%d" % len(counter))
+                return {"id": "synthetic-generation-%d" % len(counter), "provider": "Groq",
+                    "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                        "entities": [], "evidence_quote": "Playback fails"})}}],
+                    "usage": {"prompt_tokens": 186, "completion_tokens": 80}}
             with mock.patch.object(benchmark, "load_rows", return_value=rows), \
                  mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
                  mock.patch.object(benchmark, "verify_route"), \
                  mock.patch.object(benchmark, "request_json", side_effect=response), \
                  mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
-                with self.assertRaisesRegex(RuntimeError, "row-validation circuit open after 3"):
-                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
-                self.assertEqual(len(counter), 3)
-                with self.assertRaisesRegex(ValueError, "row-validation circuit open"):
-                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
-                self.assertEqual(len(counter), 3)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
+                self.assertEqual(counter, ["deepinfra"] * 3 + ["groq"] * 4)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
+                self.assertEqual(counter, ["deepinfra"] * 3 + ["groq"] * 4)
             saved = sqlite3.connect(ledger)
             self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE status='invalid_response'").fetchone()[0], 3)
-            self.assertEqual(benchmark.budget_used(saved), 3 * 24_903_544)
+            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='groq' AND status='succeeded'").fetchone()[0], 4)
+            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='deepinfra' AND status='succeeded'").fetchone()[0], 0)
+            self.assertEqual(benchmark.budget_used(saved), 3 * 24_903_544 + 4 * (186 * 75 + 80 * 300))
 
     def test_reconciliation_keeps_exposure_and_requires_explicit_retry(self):
         with tempfile.TemporaryDirectory() as folder:

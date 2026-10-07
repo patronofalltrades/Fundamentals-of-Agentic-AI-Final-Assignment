@@ -372,7 +372,9 @@ def invalid_count(db, route):
 
 def summarize_plan(db, planned):
     result = {"budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
-              "routes": {route: {} for route in ROUTES}}
+              "routes": {route: {} for route in ROUTES},
+              "paused_validation_routes": [route for route in ROUTES
+                   if invalid_count(db, route) >= MAX_INVALID_PER_ROUTE]}
     for route, _, _, _, kind in planned:
         route_counts = result["routes"][route]
         route_counts[kind] = route_counts.get(kind, 0) + 1
@@ -423,8 +425,10 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
     if unresolved:
         raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
     failures = {route: invalid_count(db, route) for route in ROUTES}
-    if any(count >= MAX_INVALID_PER_ROUTE for count in failures.values()):
-        raise ValueError("row-validation circuit open; no new calls made")
+    paused_routes = {route for route, count in failures.items()
+                     if count >= MAX_INVALID_PER_ROUTE}
+    if len(paused_routes) == len(ROUTES):
+        raise ValueError("all row-validation circuits open; no new calls made")
     planned = plan_calls(db, rows, saved_labels, limit, retry_reconciled_id)
     kinds = [item[4] for item in planned]
     if "legacy_unknown" in kinds:
@@ -440,10 +444,11 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
         raise ValueError("OPENROUTER_API_KEY absent; no calls made")
     # Check both pinned endpoint listings before any paid call.
     for route in ROUTES:
-        verify_route(route)
+        if route not in paused_routes:
+            verify_route(route)
     completed_this_run = 0
     for route, row, labels, fingerprint, kind in planned:
-            if kind in ("reuse", "validation_failed"):
+            if route in paused_routes or kind in ("reuse", "validation_failed"):
                 continue
             payload = make_payload(route, row, labels)
             call_id = reserve(db, route, row, payload,
@@ -496,11 +501,12 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
                     failures[route] += 1
                     if failures[route] < MAX_INVALID_PER_ROUTE:
                         continue
-                    raise RuntimeError("row-validation circuit open after %d %s failures; saved reservations retained" %
-                                       (failures[route], route)) from None
+                    paused_routes.add(route)
+                    continue
                 raise RuntimeError("%s (%s); saved reservation retained, no automatic retry" %
                                    (stage, type(exc).__name__)) from None
     print(json.dumps({"new_successful_calls": completed_this_run, "validation_failed_by_route": failures,
+                      "paused_validation_routes": sorted(paused_routes),
                       "budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
                       "saved_successful_calls": db.execute("SELECT COUNT(*) FROM calls WHERE status='succeeded'").fetchone()[0]}))
 
