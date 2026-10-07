@@ -1,0 +1,1 @@
+# The dashboard Function uses the Python standard library only (Postgres via Neon's HTTPS endpoint).

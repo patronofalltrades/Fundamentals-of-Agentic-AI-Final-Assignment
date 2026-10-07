@@ -1,0 +1,20 @@
+# Never upload private source, ledgers, snapshots, or local credentials.
+local/
+data/
+state/
+runs/
+evals/
+human-evaluation/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.csv
+.env
+.env.*
+.vercel/
+
+# Not required by the dashboard runtime.
+tests/
+reports/
+docs/

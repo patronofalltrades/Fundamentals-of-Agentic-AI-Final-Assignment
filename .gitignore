@@ -27,5 +27,8 @@ __pycache__/
 *.log
 logs/
 
+# Local Vercel project link and downloaded settings
+.vercel/
+
 # OS noise
 .DS_Store
