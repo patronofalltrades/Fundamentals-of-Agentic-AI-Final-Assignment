@@ -14,6 +14,7 @@ import sqlite3
 import sys
 import time
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from spotify_pipeline.codex_evidence import validate_evidence
@@ -37,6 +38,7 @@ SCHEMA = {"type": "object", "additionalProperties": False,
               "evidence_quote": {"type": "string"}}}
 PROMPT_VERSION = "openrouter-evidence-v1"
 OUTPUT_LIMIT = 320
+CATALOG_RETRIES = 3
 
 
 def money_nusd(value):
@@ -54,9 +56,27 @@ def request_json(url, payload=None, key=None):
         return json.load(response)
 
 
+def public_catalog_json(route, url):
+    """Retry only anonymous, read-only catalog GETs; never inference POSTs."""
+    for attempt in range(CATALOG_RETRIES):
+        try:
+            return request_json(url)
+        except HTTPError as exc:
+            if exc.code not in (502, 503, 504):
+                raise ConnectionError("public catalog GET for %s returned HTTP %d; no inference dispatched" %
+                                      (route, exc.code)) from None
+            reason = "HTTP %d" % exc.code
+        except (URLError, TimeoutError) as exc:
+            reason = type(exc).__name__
+        if attempt + 1 < CATALOG_RETRIES:
+            time.sleep((0.25, 0.75)[attempt])
+    raise ConnectionError("public catalog GET for %s failed after %d attempts (%s); no inference dispatched" %
+                          (route, CATALOG_RETRIES, reason))
+
+
 def verify_route(name):
     model, tag, input_rate, output_rate = ROUTES[name]
-    data = request_json("https://openrouter.ai/api/v1/models/" + model + "/endpoints")["data"]
+    data = public_catalog_json(name, "https://openrouter.ai/api/v1/models/" + model + "/endpoints")["data"]
     matches = [e for e in data["endpoints"] if e.get("tag") == tag and e.get("model_id") == model]
     if len(matches) != 1:
         raise ValueError("requested endpoint unavailable or ambiguous")
@@ -192,6 +212,9 @@ def run(source, manifest, ledger, baseline, limit):
         raise ValueError("baseline labels missing for source")
     if any(saved_labels[row["review_id"]][1] != row_sha256([row[k] for k in SOURCE_FIELDS]) for row in rows):
         raise ValueError("baseline source row identity differs")
+    unresolved = db.execute("SELECT COUNT(*) FROM calls WHERE status!='succeeded'").fetchone()[0]
+    if unresolved:
+        raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise ValueError("OPENROUTER_API_KEY absent; no calls made")
@@ -244,8 +267,9 @@ def run(source, manifest, ledger, baseline, limit):
                        type(exc).__name__, observed.get("charged_nusd"), observed.get("input_tokens"),
                        observed.get("output_tokens"), observed.get("reasoning_tokens"),
                        observed.get("finish_reason"), observed.get("provider"), observed.get("response_id"), call_id))
-                print("Stopped after uncertain/invalid call. Inspect ledger; no automatic retry.", file=sys.stderr)
-                raise
+                stage = "inference POST delivery/charge uncertain" if response is None else "inference POST response invalid"
+                raise RuntimeError("%s (%s); saved reservation retained, no automatic retry" %
+                                   (stage, type(exc).__name__)) from None
     print(json.dumps({"new_successful_calls": completed_this_run, "budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
                       "saved_successful_calls": db.execute("SELECT COUNT(*) FROM calls WHERE status='succeeded'").fetchone()[0]}))
 

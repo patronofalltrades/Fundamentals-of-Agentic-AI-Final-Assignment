@@ -1,21 +1,42 @@
 # Hosted evidence extractor benchmark: prepared, live run blocked
 
-**Decision:** Do not start the 100,000-row inference run. The two requested
-hosted routes have not produced a result. This process has no OpenRouter key,
-and direct OpenRouter access from this sandbox failed at DNS lookup. No paid
-OpenRouter call, benchmark output, or charge is claimed. The user can run the
-bounded smoke test from their own Terminal with hidden key input.
+**Decision:** Do not start the 100,000-row inference run or resume the smoke
+launcher yet. One hosted inference succeeded and the next has uncertain
+delivery. The two-route comparison is incomplete. This workspace sandbox
+cannot resolve OpenRouter's domain, so local public-catalog checks cannot
+confirm the connected Mac's route availability.
 
 **October 6 live preflight update:** Hanif's smoke command stopped on the
 public catalog check before sending a review. The pinned DeepInfra 120B
-entry currently has `status: -5`; the requested Groq 20B entry has
+entry then had `status: -5`; the requested Groq 20B entry had
 `status: 0`. The endpoint tags and model IDs still match. The validator's
 `status != 0` hold is operating as written; there is no demonstrated parser
 bug and no basis to substitute another provider. A read-only ledger check
-found **zero call rows, zero reservations, and zero charges**. Retry the same
-command only after the approved DeepInfra entry reports active status, or
-obtain a new route decision. A regression fixture now checks this fail-closed
-status case.
+found **zero call rows, zero reservations, and zero charges at that time**.
+A regression fixture checks this fail-closed status case.
+
+**October 7 connection-loss update:** The ignored ledger now contains one
+successful DeepInfra inference and one DeepInfra inference with uncertain
+delivery after a `URLError`. The latter was reserved before dispatch, so
+its POST may have reached OpenRouter and may have been billed. Known settled
+usage charge is **$0.000014102**; the uncertain reservation is
+**$0.024903544**; combined cap exposure is **$0.024917646**. No Groq
+inference is recorded. The runner cannot identify a provider request ID for
+the uncertain call. The supplied connection-reset traceback lacks its
+preceding frames, but the ledger's `URLError` on an `uncertain` call places
+the failure in the inference POST path. The workspace shell still cannot
+resolve the public catalog domain; this separate sandbox DNS failure does
+not establish the user's Mac connection state.
+
+Public catalog GETs now retry at most three times for connection errors,
+timeouts, or HTTP 502/503/504, with short delays. Other HTTP errors fail
+immediately. Inference POSTs never retry automatically. A launch now stops
+before any new call while the ledger contains an uncertain, invalid, or
+in-flight inference. **Do not rerun the smoke launcher yet.** Hanif must
+check OpenRouter activity/billing for the uncertain DeepInfra request around
+the connection loss and share only the outcome and any charged usage, not
+the key or review text. Reconcile the saved attempt before resuming. Privacy
+compatibility and Groq behavior remain unmeasured.
 
 ## Fixed comparison
 
@@ -89,14 +110,15 @@ reset interval. This changes provider settings, so the runner does not create
 or alter it. The local cap is built from the published endpoint token limits
 and prices; any missing, increased, or incompatible bound stops paid work.
 
-The local dry run validated the source and baseline hashes, then stopped at
-the absent-key gate before any route or paid call. The existing 182 tests plus
-two new synthetic controls passed; this does not establish live route quality,
-privacy acceptance, budget enforcement at the provider, or throughput.
+The original local dry run validated source and baseline hashes, then stopped
+at the absent-key gate. The October 7 ledger results supersede that earlier
+zero-call state. Offline synthetic tests do not establish live route quality,
+privacy acceptance, provider-side budget enforcement, or throughput.
 
 ## User-run handoff and next gate
 
-From this branch's repository root, Hanif can run:
+**Hold this command until the uncertain POST is reconciled.** After that,
+from this branch's repository root Hanif can run:
 
 ```sh
 zsh tools/run_openrouter_benchmark_user.zsh 3
@@ -114,8 +136,8 @@ python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
 
 If both routes pass privacy, schema, source-evidence, usage, and cap checks,
 run `zsh tools/run_openrouter_benchmark_user.zsh 100` to finish the same rows.
-The ledger skips successful and uncertain calls. If a smoke call is uncertain
-or invalid, stop and inspect or reconcile it before a new experiment; this
+The ledger skips successful calls and blocks a new launch while any call is
+uncertain or invalid. Reconcile that attempt before a new experiment; this
 runner deliberately has no automatic replay of that row. The user should
 share only the aggregate report, not a key or raw ledger.
 
