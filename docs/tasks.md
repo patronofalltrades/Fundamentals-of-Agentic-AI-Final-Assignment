@@ -59,8 +59,14 @@ One DeepInfra inference succeeded. A second POST lost its connection and has
 unknown delivery. The authenticated account check on October 7 found no
 visible second bill on the benchmark key; attempt 2 now records that check
 while retaining its full reservation. The explicit retry path is prepared.
-Live smoke and the full 100-review comparison await hidden key entry and
-fresh pinned-route checks. See `reports/openrouter-extractor-benchmark.md`.
+The live smoke saved three valid results per route. Hanif launched the
+100-review continuation; DeepInfra attempt 8 received a billed response but
+failed local evidence validation. Its exact validation detail was not saved,
+and provider I/O logging was disabled. The runner stopped, kept the full
+reservation, and made no automatic retry. The benchmark owner added local
+forensic capture for future invalid responses and a synthetic regression.
+The unresolved attempt blocks further inference. See
+`reports/openrouter-extractor-benchmark.md`.
 
 Agree on the task owner and file scope first. Record the branch and worktree.
 Use a separate worktree for each simultaneous coding agent.

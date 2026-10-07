@@ -1,4 +1,40 @@
-# Hosted evidence extractor benchmark: 3-row smoke complete
+# Hosted evidence extractor benchmark: 100-row continuation blocked
+
+**October 7 incident, after the smoke:** Hanif launched the approved
+100-development-review continuation. It saved no further accepted evidence.
+DeepInfra attempt 8 returned a response, then local evidence validation raised
+`ValidationError`. The runner stopped without an automatic retry. An
+authenticated OpenRouter generation log confirms generation
+`gen-1791346049-zjFNXPVSGXeCPpv4ydkv` on pinned DeepInfra
+`openai/gpt-oss-120b`, HTTP 200, finish reason `stop`, one upstream attempt,
+no fallback, 186 input tokens, 185 output tokens including 118 reasoning
+tokens, and a displayed rounded charge of $0.0000383. The local ledger's
+usage-derived charge is **$0.000038332** and its measured request duration is
+4.365 seconds. OpenRouter displayed 3.9 seconds of generation time. These
+durations describe this request, not the whole benchmark stage.
+
+The exact validation failure is **unknown**. The prior ledger saved only the
+exception class and usage, and OpenRouter reports that I/O logging was not
+enabled for this generation. The response content cannot be reconstructed
+from the available records. A bounded offline repair now saves the validator
+detail and received response in the ignored local ledger on any *future*
+invalid response. It does not change evidence validity, privacy routing,
+budget accounting, or retry policy. A synthetic regression verifies retained
+usage, the response, the diagnostic, the full reservation, and zero automatic
+retries. It cannot diagnose the already completed attempt 8.
+
+The six successful calls still cover only three distinct source reviews on
+each route: **3 DeepInfra and 3 Groq successes**, plus DeepInfra attempt 8
+invalid and attempt 2 reconciled as no visible bill. Known usage-derived
+charges across the ledger total **$0.000205352**. The two held DeepInfra
+reservations total **$0.049807088**, giving **$0.049974108** aggregate cap
+exposure under the $1 authorization. The read-only 100-row plan now shows
+DeepInfra 3 reuses, 96 untouched rows, and 1 unresolved row; Groq has 3
+reuses and 97 untouched rows. The unresolved attempt blocks further
+inference. Neither its observed small charge nor its normal finish reason
+justifies releasing the reserved exposure or accepting unvalidated evidence.
+No larger inference run or human golden evaluation occurred. The semantic
+comparison and scale recommendation remain pending.
 
 **Current gate:** The 3-row smoke saved three successful results per pinned
 route. The validated development overlay has been applied to a separate,
@@ -10,7 +46,7 @@ Exactly one of four explicit human topic corrections intersects the supplied
 `cost_100.csv`; 285 other checkpoint review rows are unreviewed. The
 original Jev database and overlay remain unchanged. This is a development
 comparison baseline, not a revised rubric or human golden evaluation. The
-100-review inference awaits hidden key entry.
+100-review continuation is blocked on the invalid response described above.
 
 | Route | Successful calls | Known charge | Input / output tokens | Reasoning tokens | Summed request time |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -63,9 +99,8 @@ status `reconciled_no_visible_bill`. Its full $0.024903544 reservation remains
 held. A retry requires an explicit attempt ID and is saved as a new attempt.
 No new inference was sent during this check.
 
-**Decision:** Do not start the 100,000-row inference run. The next approved
-scope is the same 100 development reviews, using the corrected baseline and
-the existing hidden-key handoff. Fresh route checks run before paid calls.
+**Decision:** Do not start the 100,000-row inference run. The approved
+100-review scope remains incomplete and paused at the invalid response.
 The two-route quality comparison is incomplete.
 
 **October 6 live preflight update:** Hanif's smoke command stopped on the

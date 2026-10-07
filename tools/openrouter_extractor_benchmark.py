@@ -160,6 +160,12 @@ def connect(path, source_sha):
         db.execute("ALTER TABLE calls ADD COLUMN request_sha TEXT")
     if "input_binding" not in columns:
         db.execute("ALTER TABLE calls ADD COLUMN input_binding TEXT")
+    # Keep the provider reply locally when a received response fails validation.
+    # The ignored ledger may contain review text; never put it in reports.
+    if "error_detail" not in columns:
+        db.execute("ALTER TABLE calls ADD COLUMN error_detail TEXT")
+    if "invalid_response_json" not in columns:
+        db.execute("ALTER TABLE calls ADD COLUMN invalid_response_json TEXT")
     if not saved:
         with db:
             db.executemany("INSERT INTO meta VALUES (?,?)", identity.items())
@@ -442,11 +448,14 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
                     observed["response_id"] = response.get("id")
                 with db:
                     db.execute("""UPDATE calls SET status=?,elapsed_seconds=?,error_class=?,charged_nusd=?,
-                      input_tokens=?,output_tokens=?,reasoning_tokens=?,finish_reason=?,provider=?,response_id=? WHERE id=?""",
+                      input_tokens=?,output_tokens=?,reasoning_tokens=?,finish_reason=?,provider=?,response_id=?,
+                      error_detail=?,invalid_response_json=? WHERE id=?""",
                       ("invalid_response" if response is not None else "uncertain", time.monotonic()-start,
                        type(exc).__name__, observed.get("charged_nusd"), observed.get("input_tokens"),
                        observed.get("output_tokens"), observed.get("reasoning_tokens"),
-                       observed.get("finish_reason"), observed.get("provider"), observed.get("response_id"), call_id))
+                       observed.get("finish_reason"), observed.get("provider"), observed.get("response_id"),
+                       str(exc), json.dumps(response, ensure_ascii=False) if response is not None else None,
+                       call_id))
                 stage = "inference POST delivery/charge uncertain" if response is None else "inference POST response invalid"
                 raise RuntimeError("%s (%s); saved reservation retained, no automatic retry" %
                                    (stage, type(exc).__name__)) from None
