@@ -248,8 +248,8 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
                     stop, halt_reason = True, "unknown DeepInfra delivery"
                     continue
                 try:
-                    accepted, inp, out, reasoning, charge = \
-                        deepinfra_batch.validate_response(response, rows, batch_limit)
+                    accepted, invalid, inp, out, reasoning, charge = \
+                        deepinfra_batch.inspect_response(response, rows, batch_limit)
                 except Exception as error:
                     charge = _metered_deepinfra(response)
                     queue.fail(request_key, metered_charge=charge,
@@ -261,19 +261,50 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
                     continue
                 try:
                     queue.save_evidence(request_key, rows, accepted, config, charge,
-                        inp, out, reasoning, response["id"], elapsed)
+                        inp, out, reasoning, response["id"], elapsed, invalid=invalid)
                 except Exception as error:
                     queue.fail(request_key, metered_charge=charge,
                                error_class=type(error).__name__, response=response,
                                elapsed_seconds=elapsed)
                     stop, halt_reason = True, "DeepInfra result persistence failed"
                     continue
-                failures = 0
+                failures = failures + 1 if invalid else 0
+                if failures >= 5 or not accepted:
+                    stop, halt_reason = True, "DeepInfra row validation failure streak"
                 emit_progress(queue, "complete", reported)
             if stop:
                 continue
     return {"admitted": admitted, "paused": stop, "halt_reason": halt_reason,
             **queue.summary()}
+
+
+def recover_metered_evidence(queue):
+    """Accept valid rows and quarantine bad spans from one saved response."""
+    saved = queue.db.execute("""SELECT request_key,batch_limit,config_sha,response_json
+        FROM checkpoint_requests WHERE stage='evidence' AND status='quarantined_metered'
+        ORDER BY rowid LIMIT 1""").fetchone()
+    if saved is None:
+        raise ValueError("no metered evidence response awaits recovery")
+    key, batch_limit, config, raw = saved
+    if not raw:
+        raise ValueError("metered response body missing; no recovery")
+    rows = []
+    for rid, in queue.db.execute("SELECT review_id FROM checkpoint_request_members "
+            "WHERE request_key=? ORDER BY rowid", (key,)):
+        result = queue.db.execute("SELECT position,review_text,source_sha,text_sha "
+            "FROM checkpoint_rows WHERE review_id=?", (rid,)).fetchone()
+        rows.append({"source_position": result[0], "review_id": rid,
+            "review_text": result[1], "source_sha256": result[2],
+            "text_sha256": result[3]})
+    response = json.loads(raw)
+    accepted, invalid, inp, out, reasoning, charge = \
+        deepinfra_batch.inspect_response(response, rows, batch_limit)
+    if not accepted or not invalid:
+        raise ValueError("saved response is not an isolated partial-evidence failure")
+    queue.recover_metered_evidence(key, rows, accepted, invalid, config, charge,
+                                   inp, out, reasoning, response["id"])
+    return {"status": "recovered_offline", "accepted_direct_rows": len(accepted),
+            "quarantined_direct_rows": len(invalid), **queue.summary()}
 
 
 def main():
@@ -285,6 +316,7 @@ def main():
     mode.add_argument("--status", action="store_true")
     mode.add_argument("--run-labels", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
+    mode.add_argument("--recover-metered-evidence", action="store_true")
     parser.add_argument("--first-100", action="store_true")
     parser.add_argument("--batch-limit", type=int, choices=(25, 50))
     parser.add_argument("--max-new-requests", type=int)
@@ -308,6 +340,8 @@ def main():
                                       args.max_new_requests)
             finally:
                 key = None
+        elif args.recover_metered_evidence:
+            result = recover_metered_evidence(queue)
         else:
             result = {"status": "prepared_offline" if args.prepare else "offline_status",
                       **queue.summary()}

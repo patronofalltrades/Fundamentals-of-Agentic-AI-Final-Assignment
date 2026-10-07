@@ -9,7 +9,7 @@ from spotify_pipeline.project_budget import ProjectBudget
 from tests.test_checkpoint5000_queue import rows5000
 from tests.test_project_budget import fixtures
 from tests.test_jev import fixture_response
-from tools.checkpoint5000_dispatch import run_evidence, run_labels
+from tools.checkpoint5000_dispatch import recover_metered_evidence, run_evidence, run_labels
 
 
 class DispatcherTest(unittest.TestCase):
@@ -82,6 +82,38 @@ class DispatcherTest(unittest.TestCase):
                         run_labels(queue, "synthetic-key", first_100=True,
                                    max_new_requests=1)
                     access.assert_not_called()
+
+    def test_offline_partial_recovery_keeps_charge_and_quarantines_one_row(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            path = str(Path(folder) / "project.db")
+            rows = rows5000()
+            label = json.dumps({"topic": "billing", "intent": "complaint",
+                "severity": 3, "sentiment": -0.5, "needs_review": False})
+            seed = {r["review_text"]: (label, "external-" + str(i))
+                    for i, r in enumerate(rows[:100])}
+            with ProjectBudget(path, paths) as budget:
+                queue = CheckpointQueue(budget, rows, "source", "prefix", seed)
+                chosen = queue.next_evidence(25, first_100=True)
+                key = queue.reserve("evidence", chosen, "config", 24_903_544, 25)
+                response = {"id": "synthetic-generation", "provider": "DeepInfra",
+                    "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                        "results": [{"review_id": r["review_id"], "entities": ["premium"],
+                            "evidence_quote": "invented quote" if i == 20 else "premium problem"}
+                            for i, r in enumerate(chosen)]})}}],
+                    "usage": {"prompt_tokens": 2000, "completion_tokens": 1000,
+                              "completion_tokens_details": {"reasoning_tokens": 50}}}
+                queue.fail(key, metered_charge=244_000, error_class="ValidationError",
+                           response=response, elapsed_seconds=1.2)
+                exposure_before = budget.exposure("openrouter")
+                outcome = recover_metered_evidence(queue)
+                self.assertEqual(outcome["accepted_direct_rows"], 24)
+                self.assertEqual(outcome["quarantined_direct_rows"], 1)
+                self.assertEqual(outcome["evidence"], 48)
+                self.assertEqual(outcome["quarantined_rows"], 2)
+                self.assertEqual(budget.exposure("openrouter"), exposure_before)
+                with self.assertRaisesRegex(ValueError, "no metered"):
+                    recover_metered_evidence(queue)
 
 
 if __name__ == "__main__":

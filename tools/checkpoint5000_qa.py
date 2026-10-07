@@ -25,7 +25,8 @@ from spotify_pipeline.jev import PROMPT_VERSION as LABEL_PROMPT, SCHEMA_VERSION 
 from spotify_pipeline.schema import (validate_cache_reuse, validate_completed,
                                      validate_direct, validate_quarantine)
 
-STATUSES = {"pending", "in_flight", "uncertain", "quarantined", "succeeded"}
+STATUSES = {"pending", "in_flight", "uncertain", "quarantined", "succeeded",
+            "partial_succeeded"}
 
 
 def _issue(counter, code):
@@ -126,7 +127,7 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
             invalid_rows.add(rid)
         batch = batches.get(membership.get(rid), {})
         if rec.get("status") == "completed":
-            if not rec.get("is_cached") and batch.get("status") != "succeeded":
+            if not rec.get("is_cached") and batch.get("status") not in ("succeeded", "partial_succeeded"):
                 _issue(problems, "completed_in_unsettled_batch")
                 invalid_rows.add(rid)
             for error in validate_completed(rec, expected):

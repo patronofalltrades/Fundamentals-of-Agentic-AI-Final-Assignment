@@ -6,6 +6,7 @@ import json
 
 from spotify_pipeline.codex_evidence import validate_evidence
 from spotify_pipeline.contract import SOURCE_FIELDS, row_sha256
+from spotify_pipeline.errors import ValidationError
 from tools import openrouter_extractor_benchmark as benchmark
 
 MODEL, PROVIDER, INPUT_RATE, OUTPUT_RATE = benchmark.ROUTES["deepinfra"]
@@ -72,7 +73,8 @@ def payload(rows, labels, batch_limit):
     return body
 
 
-def validate_response(response, rows, batch_limit):
+def inspect_response(response, rows, batch_limit):
+    """Validate batch structure, then separate valid evidence from bad spans."""
     if response.get("provider") != "DeepInfra" or not response.get("id"):
         raise ValueError("response route or generation ID differs")
     choice = response["choices"][0]
@@ -91,17 +93,31 @@ def validate_response(response, rows, batch_limit):
         raise ValueError("batch result shape or count differs")
     expected = {row["review_id"]: row for row in rows}
     accepted = {}
+    invalid = {}
+    seen = set()
     for item in body["results"]:
         if not isinstance(item, dict) or set(item) != {"review_id", "entities", "evidence_quote"}:
             raise ValueError("row result has missing or extra fields")
         rid = item["review_id"]
-        if not isinstance(rid, str) or rid not in expected or rid in accepted:
+        if not isinstance(rid, str) or rid not in expected or rid in seen:
             raise ValueError("unknown or repeated source ID")
-        accepted[rid] = validate_evidence(expected[rid]["review_text"],
-            {"entities": item["entities"], "evidence_quote": item["evidence_quote"]})
-    if set(accepted) != set(expected):
+        seen.add(rid)
+        try:
+            accepted[rid] = validate_evidence(expected[rid]["review_text"],
+                {"entities": item["entities"], "evidence_quote": item["evidence_quote"]})
+        except ValidationError as error:
+            invalid[rid] = type(error).__name__ + ": " + str(error)
+    if seen != set(expected):
         raise ValueError("batch omitted source ID")
     charge = benchmark.money_nusd(Decimal(inp) * INPUT_RATE + Decimal(out) * OUTPUT_RATE)
+    return accepted, invalid, inp, out, reasoning, charge
+
+
+def validate_response(response, rows, batch_limit):
+    accepted, invalid, inp, out, reasoning, charge = inspect_response(
+        response, rows, batch_limit)
+    if invalid:
+        raise ValueError("batch contains %d invalid exact-source evidence rows" % len(invalid))
     return accepted, inp, out, reasoning, charge
 
 

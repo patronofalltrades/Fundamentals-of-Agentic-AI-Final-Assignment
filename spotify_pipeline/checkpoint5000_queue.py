@@ -35,6 +35,9 @@ class CheckpointQueue:
             review_id TEXT PRIMARY KEY,entities_json TEXT NOT NULL,evidence_quote TEXT NOT NULL,
             config_sha TEXT NOT NULL,provenance TEXT NOT NULL,cache_source_id TEXT,
             request_key TEXT)""")
+        self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_quarantines(
+            review_id TEXT PRIMARY KEY,source_sha TEXT NOT NULL,
+            reason TEXT NOT NULL,request_key TEXT NOT NULL)""")
         self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_requests(
             request_key TEXT PRIMARY KEY,stage TEXT NOT NULL,status TEXT NOT NULL,
             batch_limit INTEGER,config_sha TEXT NOT NULL,response_id TEXT,
@@ -190,30 +193,71 @@ class CheckpointQueue:
                 (input_tokens, output_tokens, elapsed_seconds, request_key))
         self.budget.settle(request_key, "succeeded", charge_nusd, record=record)
 
+    def _write_evidence_rows(self, db, request_key, rows, accepted, invalid, config_sha):
+        if set(accepted) & set(invalid) or set(accepted) | set(invalid) != \
+                {r["review_id"] for r in rows}:
+            raise ValueError("batch result coverage differs")
+        by_id = {row["review_id"]: row for row in rows}
+        for rid, value in accepted.items():
+            text = by_id[rid]["review_text"]
+            evidence = validate_evidence(text, value)
+            for alias_id, in db.execute("SELECT review_id FROM checkpoint_rows WHERE review_text=?",
+                                        (text,)).fetchall():
+                if db.execute("SELECT 1 FROM checkpoint_evidence WHERE review_id=?", (alias_id,)).fetchone():
+                    raise ValueError("evidence already saved for exact text")
+                db.execute("INSERT INTO checkpoint_evidence VALUES (?,?,?,?,?,?,?)",
+                    (alias_id, json.dumps(evidence["entities"], ensure_ascii=False),
+                     evidence["evidence_quote"], config_sha,
+                     "deepinfra_direct" if alias_id == rid else "deepinfra_exact_text_cache",
+                     None if alias_id == rid else rid, request_key if alias_id == rid else None))
+        for rid, reason in invalid.items():
+            text = by_id[rid]["review_text"]
+            for alias_id, source_sha in db.execute("SELECT review_id,source_sha FROM checkpoint_rows "
+                    "WHERE review_text=?", (text,)).fetchall():
+                db.execute("INSERT INTO checkpoint_quarantines VALUES (?,?,?,?)",
+                    (alias_id, source_sha, reason, request_key))
+
     def save_evidence(self, request_key, rows, accepted, config_sha, charge_nusd,
                       input_tokens, output_tokens, reasoning_tokens, response_id,
-                      elapsed_seconds):
-        if set(accepted) != {r["review_id"] for r in rows}:
-            raise ValueError("batch result coverage differs")
+                      elapsed_seconds, invalid=None):
+        invalid = invalid or {}
         def record(db):
-            for row in rows:
-                rid, text = row["review_id"], row["review_text"]
-                evidence = validate_evidence(text, accepted[rid])
-                for alias_id, in db.execute("SELECT review_id FROM checkpoint_rows WHERE review_text=?",
-                                            (text,)).fetchall():
-                    if db.execute("SELECT 1 FROM checkpoint_evidence WHERE review_id=?", (alias_id,)).fetchone():
-                        raise ValueError("evidence already saved for exact text")
-                    db.execute("INSERT INTO checkpoint_evidence VALUES (?,?,?,?,?,?,?)",
-                        (alias_id, json.dumps(evidence["entities"], ensure_ascii=False),
-                         evidence["evidence_quote"], config_sha,
-                         "deepinfra_direct" if alias_id == rid else "deepinfra_exact_text_cache",
-                         None if alias_id == rid else rid, request_key if alias_id == rid else None))
-            db.execute("UPDATE checkpoint_requests SET status='succeeded',response_id=?,"
+            self._write_evidence_rows(db, request_key, rows, accepted, invalid, config_sha)
+            changed = db.execute("UPDATE checkpoint_requests SET status=?,response_id=?,"
                 "input_tokens=?,output_tokens=?,reasoning_tokens=?,elapsed_seconds=?"
                 " WHERE request_key=? AND status='reserved'",
-                (response_id, input_tokens, output_tokens, reasoning_tokens,
-                 elapsed_seconds, request_key))
+                ("partial_succeeded" if invalid else "succeeded", response_id,
+                 input_tokens, output_tokens, reasoning_tokens, elapsed_seconds,
+                 request_key)).rowcount
+            if changed != 1:
+                raise ValueError("evidence request is not reserved")
         self.budget.settle(request_key, "succeeded", charge_nusd, record=record)
+
+    def recover_metered_evidence(self, request_key, rows, accepted, invalid,
+                                 config_sha, charge_nusd, input_tokens, output_tokens,
+                                 reasoning_tokens, response_id):
+        """Offline salvage of a fully identified metered response; no POST."""
+        if not accepted or not invalid:
+            raise ValueError("partial recovery needs both accepted and invalid rows")
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            saved = self.db.execute("""SELECT q.stage,q.status,q.config_sha,b.status,b.charged_nusd,
+                q.response_json FROM checkpoint_requests q JOIN reservations b USING(request_key)
+                WHERE q.request_key=?""", (request_key,)).fetchone()
+            if saved is None or saved[:5] != ("evidence", "quarantined_metered",
+                    config_sha, "quarantined_metered", charge_nusd) or not saved[5]:
+                raise ValueError("metered response is not eligible for offline recovery")
+            self._write_evidence_rows(self.db, request_key, rows, accepted, invalid, config_sha)
+            self.db.execute("UPDATE checkpoint_requests SET status='partial_succeeded',"
+                "response_id=?,input_tokens=?,output_tokens=?,reasoning_tokens=?"
+                " WHERE request_key=?", (response_id, input_tokens, output_tokens,
+                 reasoning_tokens, request_key))
+            self.db.execute("UPDATE reservations SET status='succeeded' WHERE request_key=?",
+                            (request_key,))
+            self.db.commit()
+        except BaseException:
+            self.db.rollback()
+            raise
 
     def fail(self, request_key, metered_charge=None, error_class=None,
              response=None, elapsed_seconds=None):
@@ -234,13 +278,15 @@ class CheckpointQueue:
         total = self.db.execute("SELECT COUNT(*) FROM checkpoint_rows").fetchone()[0]
         labels = self.db.execute("SELECT COUNT(*) FROM checkpoint_labels").fetchone()[0]
         evidence = self.db.execute("SELECT COUNT(*) FROM checkpoint_evidence").fetchone()[0]
+        quarantined = self.db.execute("SELECT COUNT(*) FROM checkpoint_quarantines").fetchone()[0]
         attempts = dict(self.db.execute("SELECT status,COUNT(*) FROM checkpoint_requests GROUP BY status"))
         usage = {}
         for stage in ("jev", "evidence"):
             observed = self.db.execute("""SELECT COUNT(*),COALESCE(SUM(input_tokens),0),
                 COALESCE(SUM(output_tokens),0),COALESCE(SUM(reasoning_tokens),0),
                 COALESCE(SUM(elapsed_seconds),0) FROM checkpoint_requests
-                WHERE stage=? AND status='succeeded'""", (stage,)).fetchone()
+                WHERE stage=? AND status IN ('succeeded','partial_succeeded')""",
+                (stage,)).fetchone()
             charged = self.db.execute("""SELECT COALESCE(SUM(b.charged_nusd),0)
                 FROM checkpoint_requests q JOIN reservations b USING(request_key)
                 WHERE q.stage=? AND b.charged_nusd IS NOT NULL""", (stage,)).fetchone()[0]
@@ -248,6 +294,7 @@ class CheckpointQueue:
                 "output_tokens": observed[2], "reasoning_tokens": observed[3],
                 "summed_request_seconds": observed[4], "measured_charge_nusd": charged}
         return {"source_rows": total, "labels": labels, "evidence": evidence,
+                "quarantined_rows": quarantined,
                 "complete": self.db.execute("""SELECT COUNT(*) FROM checkpoint_rows r
                     JOIN checkpoint_labels l USING(review_id)
                     JOIN checkpoint_evidence e USING(review_id)""").fetchone()[0],
@@ -263,7 +310,7 @@ class CheckpointQueue:
         streak = 0
         for status, in self.db.execute("SELECT status FROM checkpoint_requests "
                                        "WHERE stage=? ORDER BY rowid DESC", (stage,)):
-            if status == "succeeded":
+            if status in ("succeeded", "partial_succeeded"):
                 break
             if status == "quarantined_metered":
                 streak += 1

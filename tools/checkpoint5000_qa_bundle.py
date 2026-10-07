@@ -33,6 +33,8 @@ def make_bundle(manifest_path, budget_path):
         evidence = {rid: (json.loads(entities), quote, config, provenance, origin, request_key)
             for rid, entities, quote, config, provenance, origin, request_key in db.execute(
                 "SELECT review_id,entities_json,evidence_quote,config_sha,provenance,cache_source_id,request_key FROM checkpoint_evidence")}
+        quarantines = {rid: (source_sha, reason, request_key) for rid, source_sha, reason, request_key
+            in db.execute("SELECT review_id,source_sha,reason,request_key FROM checkpoint_quarantines")}
         requests = {key: (stage, status, response_id) for key, stage, status, response_id in db.execute(
             "SELECT request_key,stage,status,response_id FROM checkpoint_requests")}
         batches = []
@@ -46,12 +48,19 @@ def make_bundle(manifest_path, budget_path):
         results = []
         for row in source_rows:
             rid = row["review_id"]
+            if rid in quarantines:
+                source_sha, reason, request_key = quarantines[rid]
+                results.append({"review_id": rid, "review_text": row["review_text"],
+                    "source_sha256": source_sha, "batch_id": request_key,
+                    "status": "quarantined", "reason": reason})
+                continue
             if rid not in labels or rid not in evidence:
                 continue
             label, label_config, label_provenance = labels[rid]
             entities, quote, evidence_config, evidence_provenance, origin, request_key = evidence[rid]
             cached = evidence_provenance == "deepinfra_exact_text_cache"
-            if not cached and (not request_key or requests.get(request_key, (None, None))[1] != "succeeded"):
+            if not cached and (not request_key or requests.get(request_key, (None, None))[1]
+                    not in ("succeeded", "partial_succeeded")):
                 raise ValueError("direct evidence lacks a settled request")
             combined_config = hashlib.sha256(json.dumps([label_config, evidence_config],
                 separators=(",", ":")).encode("utf-8")).hexdigest()
