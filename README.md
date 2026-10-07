@@ -10,8 +10,8 @@ playback, or billing/support? No recommendation exists yet.
 | --- | --- |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Class 7 is on the same day; the time is not known. |
 | Submission | This public repository. Final submission through the course portal is pending. |
-| Scope | All 660,622 review IDs: classify 660,609 nonempty reviews and quarantine 13 empty texts. |
-| Budget | Strictly below US$50. The ceiling is US$49.99. The ceiling is not permission to spend. |
+| Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
+| Budget | Strictly below US$50. The ceiling is US$49.99. The ceiling is not permission to spend. The instructor expects about US$10 for 100,000 reviews. |
 | Status date | 7 October 2026 |
 
 ## 1. Status
@@ -31,16 +31,30 @@ playback, or billing/support? No recommendation exists yet.
 | Grading export and self-check | Not started. | — |
 | Cost calculator with measured cold and warm runs | Partial. Only offline replay scaffolding exists. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Scoring has not run in this pipeline. | Section 7 |
-| Full-corpus run | Not started. | — |
+| Dashboard, backend, database, live URL | Local foundation only, on branch `feat/dashboard-local-foundation`. No live URL. | — |
+| 100,000-review run | Not started. | — |
+| Full-corpus run (stretch) | Not started. | — |
 
 ## 2. Decisions
 
 1. **Jev classifies `topic`, `intent` and `severity`.** Hanif made this decision on 6 October 2026.
 2. **The topic rubric is frozen** at `jev-rubric-v2`. Any change needs a new configuration and a new pilot.
-3. **The scope is the full corpus.** Some passages of the brief say "or at least 100,000". The grading
-   contract requires full coverage. A 100,000-row run can be a planning step only.
-4. **No switch to a hosted open-weight model or a local model.** The reasons are in the
+3. **The minimum scope is 100,000 source reviews.** Hanif reports that the instructor confirmed this in
+   class on 6 October 2026 (Pacific). The full corpus is a stretch goal.
+   - Keep every selected original ID and its source hash, also when exact-text reuse saves a call.
+   - The supplied `GRADING_CONTRACT.md` and checker still describe full-corpus outputs. Disclose this gap.
+   - Do not claim that the unchanged checker accepts a 100,000-row export until you test it.
+   - Declare and record the rule that selects the 100,000 reviews before the run.
+4. **No switch to a hosted open-weight model or a local model for labels.** The reasons are in the
    [decision and timing plan](docs/jev_decision_and_timing.md).
+5. **Send 10 reviews in each model request** in the final run, with a traceable result for each row.
+   Ten reviews in one request is not the same as ten parallel one-review requests.
+6. **Measure a low-cost evidence extractor.** The OpenRouter extractor benchmark is capped strictly below
+   US$1 in total. Haiku is an example only, not a selected provider.
+7. **Deliver a deployed dashboard, a backend and a database** that stores the results. Put the live URL
+   in this README.
+
+The full instructor clarification is in [AGENTS.md](AGENTS.md).
 
 ## 3. Measured results
 
@@ -65,14 +79,15 @@ Codex evidence on the 500-review checkpoint:
 
 | Risk | Measured basis | Effect |
 | --- | --- | --- |
-| Jev time | One review per request: 0.335 s per review | About 45 hours for 484,189 distinct texts |
-| Evidence time | One Codex call per review: 6.77 s and about 18,350 input tokens per review | About 910 hours for 484,189 distinct texts |
+| Jev time | One review per request: 0.335 s per review | About 7 hours for the 75,894 distinct texts in the first 100,000 rows. About 45 hours for the full corpus. |
+| Evidence time | One Codex call per review: 6.77 s and about 18,350 input tokens per review | About 143 hours for 75,894 texts. About 910 hours for the full corpus. |
+| Dashboard | No deployed service, database or live URL | A required final deliverable is missing |
 | Weak review flag | `needs_review` is true on 387 of 500 checkpoint records | The flag carries little signal |
 | Missing stages | Verify, grouping, ranking, memo, export and calculator do not exist | The grading checker cannot pass |
 
 The [decision and timing plan](docs/jev_decision_and_timing.md) gives the mitigations:
 
-1. Send up to 50 reviews in each Jev request. The grading contract allows this.
+1. Send 10 reviews in each Jev request. The grading contract allows up to 50.
 2. Build evidence in code for most reviews. Use a model only for a declared, capped fraction.
 3. Use 2 to 4 workers, one shared rate limiter and one spend cap.
 4. Save after each batch. Resume without a second request for completed IDs.
@@ -84,9 +99,11 @@ The [decision and timing plan](docs/jev_decision_and_timing.md) gives the mitiga
 | 7 Oct | Batched Jev and code-built evidence on development rows | Labels agree with the frozen v2 labels on the same rows |
 | 7 Oct | True end-to-end cold and warm run on `cost_100.csv` | All six stages run. The warm run makes zero new enrichment calls. |
 | 8 Oct | Verify, grouping, ranking, memo and grading export | The supplied checker passes on the pilot |
-| 8 Oct | 10,000-review development run | The full-run projection is under about 24 hours |
-| 9 Oct | **Latest start for the full run** | — |
-| 11–12 Oct | Export, self-check, human memo review, recording | — |
+| 8 Oct | 10,000-review development run | The 100,000-review projection is under about 24 hours |
+| 8 Oct | Dashboard, backend and database deployed | A live URL shows the pilot results |
+| 9 Oct | **Latest start for the 100,000-review run** | The selection rule is recorded |
+| 10–11 Oct | Full corpus, only if measured time and cost allow | Stretch goal only |
+| 11–12 Oct | Export, self-check, dashboard update, human memo review, recording | — |
 | 13 Oct | Buffer only | — |
 
 ## 6. How to run
@@ -181,11 +198,14 @@ The grading folder must contain:
 - `calls.jsonl`, `checkpoint_before.json`, `checkpoint_after.json`
 
 The `cost/` folder must contain a real cold and warm 100-review pilot, editable dated rates, usage files,
-an offline replay command and a report. None of these outputs exists yet in this pipeline.
+an offline replay command and a report.
+
+The final submission also needs a deployed dashboard, a backend and a database that stores the results.
+Put the live URL in this README. None of these outputs exists yet in this pipeline.
 
 Rules that the code must follow:
 
-- Send at most 50 reviews in each enrichment request. Validate every returned ID.
+- Send 10 reviews in each enrichment request (the contract limit is 50). Validate every returned ID.
 - Save results after each batch. Resume must not send completed IDs again under the same configuration.
 - An exact-text reuse points directly to a completed original with `cache_source_id`. No chains.
 - Rank complaint and cancellation records only: `priority_score = severity_sum`. Sort by score descending,
