@@ -260,6 +260,11 @@ class AnalysisTests(unittest.TestCase):
 
 class WSGITests(unittest.TestCase):
     def setUp(self):
+        from unittest import mock
+        from pathlib import Path as _P
+        patcher = mock.patch("dashboard.server.DIST", _P("/nonexistent-web-dist"))
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.copy = build_dashboard_copy(self.temp.name)

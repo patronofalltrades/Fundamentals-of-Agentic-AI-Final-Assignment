@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, urlparse
 from .store import connect
 
 STATIC = Path(__file__).with_name("static")
+# The built Astro site (web/dist). When present it replaces the legacy static page.
+DIST = Path(__file__).resolve().parents[1] / "web" / "dist"
 TOPICS = ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other")
 TARGET_MINIMUM_SOURCE_ROWS = 100000  # instructor clarification; see AGENTS.md
 SECURITY_HEADERS = (
@@ -24,6 +26,18 @@ SECURITY_HEADERS = (
     ("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                 "object-src 'none'; base-uri 'none'; frame-ancestors 'none'"),
 )
+# Built HTML carries its own hash-based CSP <meta> (Astro security.csp); a strict header CSP would
+# block its hashed inline scripts, so HTML pages only get the directives a <meta> cannot set.
+HTML_HEADERS = tuple((k, v) for k, v in SECURITY_HEADERS if k != "Content-Security-Policy") + (
+    ("Content-Security-Policy", "frame-ancestors 'none'"),
+)
+
+
+def headers_for(content_type):
+    """Security headers for one response: API and assets keep the strict CSP."""
+    return HTML_HEADERS if content_type.startswith("text/html") and DIST.is_dir() else SECURITY_HEADERS
+
+
 ISSUE_RE = re.compile(r"^/api/issues/([^/]+)$")
 REVIEW_RE = re.compile(r"^/api/reviews/([0-9]+)$")
 
@@ -45,6 +59,47 @@ def _stores_full_text(conn):
     return getattr(conn, "stores_full_text", True)
 
 
+def _mean(total, count):
+    return str((Decimal(total) / Decimal(count)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP))
+
+
+def _trends(ag):
+    """Monthly series from the month aggregates, or ``None`` when the database has none."""
+    reviews_by_month = ag.get("month_reviews", {})
+    complaints, severity = ag.get("month_complaints", {}), ag.get("month_severity_sum", {})
+    months = sorted(set(reviews_by_month) | set(complaints))
+    if not months:
+        return None
+    return {"months": months,
+            "reviews": [int(reviews_by_month.get(m, 0)) for m in months],
+            "complaints": [int(complaints.get(m, 0)) for m in months],
+            "mean_severity": [_mean(severity.get(m, 0), complaints[m]) if complaints.get(m) else None for m in months]}
+
+
+def _evaluations(conn):
+    if not _has_table(conn, "dashboard_meta"):
+        return {}
+    sets = {}
+    for row in conn.execute("SELECT key, value FROM dashboard_meta WHERE key LIKE ? ORDER BY key", ("evaluation:%",)):
+        record = json.loads(row["value"])
+        sets[record["label_set"]] = record
+    return sets
+
+
+def evaluation(conn):
+    sets = _evaluations(conn)
+    return {"status": "saved", "sets": sets} if sets else {"status": "pending"}
+
+
+def top_issue(conn):
+    items = issues(conn)["items"]
+    if not items:
+        return None
+    first = items[0]
+    return {"issue_id": first["issue_id"], "title": first["title"], "mean_severity": first["mean_severity"],
+            "priority_score": first["priority_score"], "complaint_count": first["review_count"]}
+
+
 def summary(conn):
     ag = _aggregates(conn)
     rows = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
@@ -53,12 +108,16 @@ def summary(conn):
     source = dict(conn.execute("SELECT key,value FROM meta WHERE key IN ('file_sha256','source_basename')"))
     config = conn.execute("SELECT DISTINCT config_hash FROM record_state LIMIT 1").fetchone()
     run = _run(conn)
+    saved_evaluation = evaluation(conn)
     return {
         "source": {"basename": source["source_basename"], "sha256": source["file_sha256"], "config_hash": config[0] if config else None},
         "coverage": {"source_rows": rows, "nonempty_rows": ag.get("source_status", {}).get("nonempty", 0), "distinct_nonempty_texts": distinct, "completed_rows": ag.get("processing_status", {}).get("completed", 0), "empty_rows": ag.get("source_status", {}).get("empty", 0)},
         "raw_labels": {"topic": ag.get("topic", {}), "intent": ag.get("intent", {}), "severity": ag.get("severity", {})},
-        "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": "pending"},
+        "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": saved_evaluation["status"]},
         "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": run["recommendation_status"] if run else "pending", "memo": memo(conn)["status"], "run_id": run["run_id"] if run else None},
+        "trends": _trends(ag),
+        "evaluation": saved_evaluation,
+        "top_issue": top_issue(conn),
         "target": {"minimum_source_rows": TARGET_MINIMUM_SOURCE_ROWS, "is_demo": rows < TARGET_MINIMUM_SOURCE_ROWS},
         "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
     }
@@ -115,7 +174,7 @@ def issues(conn):
     items = []
     for row in rows:
         item = dict(row)
-        item["mean_severity"] = str((Decimal(item["priority_score"]) / Decimal(item["review_count"])).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP))
+        item["mean_severity"] = _mean(item["priority_score"], item["review_count"])
         items.append(item)
     return {"status": "accepted_membership", "run_id": run["run_id"], "ranking_method": "severity_sum", "items": items}
 
@@ -215,6 +274,15 @@ def route(open_conn, method, path, query=""):
             with open_conn() as conn:
                 return _api(conn, path, query)
         name = "index.html" if path == "/" else path.lstrip("/")
+        if DIST.is_dir():
+            root = DIST.resolve()
+            target = (root / name).resolve()
+            if root not in target.parents or not target.is_file():
+                return _json_body(404, {"error": "not found"})
+            content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+            if content_type.startswith("text/"):
+                content_type += "; charset=utf-8"
+            return 200, content_type, target.read_bytes()
         if name not in ("index.html", "app.js", "style.css"):
             return _json_body(404, {"error": "not found"})
         return 200, mimetypes.guess_type(name)[0] or "application/octet-stream", (STATIC / name).read_bytes()
@@ -232,7 +300,7 @@ def make_handler(db_path):
             status, content_type, body = route(open_conn, method, parsed.path, parsed.query)
             self.send_response(status)
             self.send_header("Content-Type", content_type)
-            for name, value in SECURITY_HEADERS:
+            for name, value in headers_for(content_type):
                 self.send_header(name, value)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()

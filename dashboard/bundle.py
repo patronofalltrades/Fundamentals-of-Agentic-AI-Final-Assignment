@@ -7,7 +7,9 @@
   labels and the source-exact ``evidence_quote``. It does **not** contain the full review text,
   rating, likes, app version or timestamp: the dashboard does not need them.
 - ``manifest.json``: bundle version, source and configuration identity, separate source-row and
-  distinct-text counts, label aggregates, and the SHA-256 of ``rows.jsonl``.
+  distinct-text counts, label aggregates, per-month aggregates (``months``) and the SHA-256 of
+  ``rows.jsonl``. Months are counts only: ``YYYY-MM`` -> source rows, completed
+  complaint/cancellation rows and their severity sum. No row carries a timestamp.
 
 ``load_bundle(backend, bundle_dir)`` loads a bundle into SQLite or Postgres:
 
@@ -17,7 +19,9 @@
    ``ON CONFLICT DO NOTHING``. An interrupted load can run again and continue.
 4. It recounts the rows in the database. Only when every count matches does it write the
    aggregates and set ``import_status=complete``.
-5. A second load of the same complete bundle returns ``unchanged`` and writes nothing.
+5. A second load of the same complete bundle returns ``unchanged`` and writes nothing. If that
+   database lacks the bundle's month aggregates, it writes only those and returns
+   ``aggregates_refreshed``. Older manifests without ``months`` still load.
 
 No model call happens here. Standard library only.
 """
@@ -29,7 +33,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .store import connect
+from .store import MONTH, MONTH_DIMENSIONS, connect, month_aggregates
 
 BUNDLE_VERSION = "dashboard-bundle-v1"
 ROW_FIELDS = ("row_index", "review_id", "row_sha256", "text_sha256", "is_empty", "status", "reason",
@@ -107,6 +111,7 @@ def export_bundle(dashboard_db: str, out_dir: str) -> Dict[str, Any]:
             "FROM records r JOIN record_state s USING(row_index) "
             "LEFT JOIN classifications c ON c.row_index=r.row_index AND c.config_hash=s.config_hash "
             "ORDER BY r.row_index").fetchall()
+        months = month_aggregates(conn)
     counts = Counter()
     labels = {"topic": Counter(), "intent": Counter(), "severity": Counter()}
     rows_path = out / "rows.jsonl"
@@ -127,6 +132,7 @@ def export_bundle(dashboard_db: str, out_dir: str) -> Dict[str, Any]:
         "config_hash": configs[0],
         "counts": dict(sorted(counts.items()), distinct_nonempty_texts=distinct),
         "labels": {dim: dict(sorted(c.items())) for dim, c in labels.items()},
+        "months": months,
         "rows_sha256": _sha256(rows_path),
         "excluded_fields": ["review_text", "review_rating", "review_likes", "app_version", "review_timestamp"],
     }
@@ -156,7 +162,30 @@ def _read_bundle(bundle_dir: str):
         raise ValueError("row counts do not match the manifest")
     if len({r["review_id"] for r in rows}) != len(rows) or [r["row_index"] for r in rows] != sorted({r["row_index"] for r in rows}):
         raise ValueError("review IDs and row indices must be unique")
+    if "months" in manifest:
+        _check_months(manifest["months"], rows)
     return manifest, rows
+
+
+def _check_months(months: Any, rows: List[Dict[str, Any]]) -> None:
+    """Month totals must add up to the rows. The rows hold no timestamps, so only totals are checked."""
+    if not isinstance(months, dict) or any(not isinstance(m, str) or not MONTH.fullmatch(m) for m in months):
+        raise ValueError("manifest months must map YYYY-MM to counts")
+    for values in months.values():
+        if (not isinstance(values, dict) or set(values) != set(MONTH_DIMENSIONS)
+                or any(type(v) is not int or v < 0 for v in values.values())
+                or values["complaints"] > values["reviews"]):
+            raise ValueError("manifest months must map YYYY-MM to counts")
+    complaints = [r for r in rows if r["status"] == "completed" and r["intent"] in ("complaint", "cancellation")]
+    totals = {key: sum(v[key] for v in months.values()) for key in MONTH_DIMENSIONS}
+    if totals != {"reviews": len(rows), "complaints": len(complaints),
+                  "severity_sum": sum(int(r["severity"]) for r in complaints)}:
+        raise ValueError("manifest month totals do not match the rows")
+
+
+def _month_aggregates(manifest: Dict[str, Any]) -> List[tuple]:
+    return [(dimension, month, values[key]) for month, values in sorted(manifest.get("months", {}).items())
+            for key, dimension in MONTH_DIMENSIONS.items() if values[key]]
 
 
 def _meta(backend, table: str) -> Dict[str, str]:
@@ -202,7 +231,18 @@ def load_bundle(backend, bundle_dir: str, chunk_size: int = CHUNK) -> Dict[str, 
     if existing_source and existing_source != identity["file_sha256"]:
         raise ValueError("database already holds a different source")
     if state.get("import_status") == "complete":
-        return {"result": "unchanged", **_summary(manifest)}
+        wanted = _month_aggregates(manifest)
+        dimensions = sorted(MONTH_DIMENSIONS.values())
+        saved = backend.execute(
+            "SELECT dimension, value, count FROM dashboard_aggregate WHERE dimension IN (%s)"
+            % ", ".join("?" for _ in dimensions), dimensions).fetchall()
+        if not wanted or sorted(tuple(r) for r in saved) == sorted(wanted):
+            return {"result": "unchanged", **_summary(manifest)}
+        backend.run_batch([("DELETE FROM dashboard_aggregate WHERE dimension IN (%s)" % ", ".join("?" for _ in dimensions),
+                            dimensions)] +
+                          [("INSERT INTO dashboard_aggregate (dimension, value, count) VALUES (?, ?, ?)", a)
+                           for a in wanted])
+        return {"result": "aggregates_refreshed", "months": len(manifest["months"]), **_summary(manifest)}
 
     backend.run_batch([
         _upsert_meta("meta", "file_sha256", identity["file_sha256"]),
@@ -232,6 +272,7 @@ def load_bundle(backend, bundle_dir: str, chunk_size: int = CHUNK) -> Dict[str, 
     aggregates += [("processing_status", k[:-5], v) for k, v in counts.items()
                    if k.endswith("_rows") and k not in ("source_rows", "nonempty_rows", "empty_rows")]
     aggregates += [(dim, value, n) for dim, values in manifest["labels"].items() for value, n in values.items()]
+    aggregates += _month_aggregates(manifest)
     backend.run_batch([("DELETE FROM dashboard_aggregate", ())] +
                       [("INSERT INTO dashboard_aggregate (dimension, value, count) VALUES (?, ?, ?)", a)
                        for a in aggregates if a[2]] +

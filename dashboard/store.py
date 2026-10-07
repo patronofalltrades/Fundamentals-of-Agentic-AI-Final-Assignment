@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}\Z")
+MONTH = re.compile(r"[0-9]{4}-(0[1-9]|1[0-2])\Z")
+MONTH_DIMENSIONS = {"reviews": "month_reviews", "complaints": "month_complaints", "severity_sum": "month_severity_sum"}
 
 EXTRA_SCHEMA = """
 CREATE TABLE IF NOT EXISTS dashboard_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -76,6 +78,26 @@ def _source_identity(conn: sqlite3.Connection) -> Dict[str, str]:
     return {"source_sha256": meta["file_sha256"], "config_hash": configs[0][0]}
 
 
+def month_aggregates(conn: sqlite3.Connection) -> Dict[str, Dict[str, int]]:
+    """Per month (first 7 characters of ``review_timestamp``): all source rows, completed
+    complaint/cancellation rows, and the severity sum of those rows. Sorted by month."""
+    months = {month: {"reviews": n, "complaints": 0, "severity_sum": 0} for month, n in conn.execute(
+        "SELECT substr(review_timestamp, 1, 7), COUNT(*) FROM records GROUP BY 1")}
+    for month, n, total in conn.execute(
+            "SELECT substr(r.review_timestamp, 1, 7), COUNT(*), SUM(c.severity) FROM records r "
+            "JOIN record_state s ON s.row_index=r.row_index "
+            "JOIN classifications c ON c.row_index=r.row_index AND c.config_hash=s.config_hash "
+            "WHERE s.status='completed' AND c.intent IN ('complaint', 'cancellation') GROUP BY 1"):
+        months[month].update(complaints=n, severity_sum=int(total or 0))
+    if any(not isinstance(month, str) or not MONTH.fullmatch(month) for month in months):
+        raise ValueError("review_timestamp must start with YYYY-MM")
+    return dict(sorted(months.items()))
+
+
+def _has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    return any(row[1] == column for row in conn.execute("PRAGMA table_info(%s)" % table))
+
+
 def _refresh_aggregates(conn: sqlite3.Connection) -> None:
     conn.execute("DELETE FROM dashboard_aggregate")
     queries = {
@@ -89,6 +111,10 @@ def _refresh_aggregates(conn: sqlite3.Connection) -> None:
     for dimension, query in queries.items():
         conn.executemany("INSERT INTO dashboard_aggregate VALUES (?, ?, ?)",
                          ((dimension, value, count) for value, count in conn.execute(query)))
+    if _has_column(conn, "records", "review_timestamp"):
+        conn.executemany("INSERT INTO dashboard_aggregate VALUES (?, ?, ?)",
+                         ((dimension, month, values[key]) for month, values in month_aggregates(conn).items()
+                          for key, dimension in MONTH_DIMENSIONS.items() if values[key]))
 
 
 def import_checkpoint(source: str, target: str) -> Dict[str, Any]:
