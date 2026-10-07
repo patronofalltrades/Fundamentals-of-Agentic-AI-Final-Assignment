@@ -171,3 +171,80 @@ New read-only routes: `/api/claims?issue_id=`, `/api/memo`. `/api/issues/{id}` n
 **Compatibility check, 7 October 2026:** a grading folder made by the pipeline's own `export_grading`
 (integration branch `fde9262`, synthetic 4-row data) loaded with no error. The ranking matched `ranking.csv`,
 and the memo claim check passed.
+
+## Monthly trends, saved evaluations and the top issue
+
+`/api/summary` has three more fields. Each one is `null` or `pending` until its data exists.
+
+### Monthly trends (`trends`)
+
+The month of a review is the first seven characters of `review_timestamp` (`YYYY-MM`). For each month
+the dashboard keeps three counts:
+
+- `reviews`: all source rows in that month, completed or not.
+- `complaints`: completed rows with intent `complaint` or `cancellation`.
+- `severity_sum`: the sum of severity over those complaint and cancellation rows.
+
+The local copy computes the counts from `records.review_timestamp` during `import-checkpoint`.
+`export-bundle` writes the counts to `manifest.json` under `months`. It does not add a timestamp to
+`rows.jsonl`, so `rows_sha256` does not change. The deployed database keeps only these counts, in
+`dashboard_aggregate` as `month_reviews`, `month_complaints` and `month_severity_sum`.
+
+`load-bundle` checks that the month totals equal the row totals. A database that already holds the same
+complete bundle, but has no month counts, gets only the month counts. The result is then
+`aggregates_refreshed`. The rows are not inserted again. A manifest without `months` still loads.
+
+```json
+"trends": {"months": ["2022-05", "2022-06"], "reviews": [2, 1], "complaints": [2, 0],
+           "mean_severity": ["3.500000", null]}
+```
+
+`mean_severity` is `severity_sum / complaints`, rounded half up to six decimals. It is `null` for a month
+with no complaints. `trends` is `null` when the database has no month counts. A local copy made before
+this change has none; import it again into a new file to add them.
+
+### Saved evaluation (`import-evaluation`)
+
+The course checker's `score_gold` writes a JSON report with golden-set agreement. Save it with:
+
+```sh
+python3 -m dashboard import-evaluation --report <report.json> --label-set original --db local/dashboard.db
+python3 -m dashboard import-evaluation --report <report.json> --label-set adjudicated --postgres-env DATABASE_URL
+```
+
+The command refuses the report when:
+
+- it has no `label_configs`, or an entry differs from the `label_config` in the dashboard's
+  `classifications`. An evaluation of a different classifier must not appear next to these labels;
+- an agreement value is not a number from 0 to 1 or `null`;
+- `approved_cases` is not an integer of 1 or more.
+
+It saves only summary fields in `dashboard_meta` under `evaluation:<label-set>`. It does not save
+per-case results or review IDs. The same report again gives `unchanged`. A different report for the same
+label set gives `replaced`. Evaluations are diagnostics, so they can be refreshed.
+
+```json
+"evaluation": {"status": "saved", "sets": {"original": {"label_set": "original",
+  "benchmark_version": "golden-50-human-v1", "benchmark_sha256": "<64 hex>", "approved_cases": 50,
+  "total_cases": 50, "missing_or_invalid_predictions": 0,
+  "agreement": {"topic": 0.46, "intent": 0.84, "severity": 0.56, "joint": 0.3},
+  "severity_mae_on_valid_predictions": 0.64, "official": true, "label_config": "<label_config>"}}}
+```
+
+Without a saved report the field is `{"status": "pending"}`. `quality.human_evaluation` is `saved` when
+at least one label set is saved.
+
+### Top issue (`top_issue`)
+
+`top_issue` is rank 1 of `/api/issues`, or `null` when no accepted ranking exists:
+
+```json
+"top_issue": {"issue_id": "issue-crash", "title": "Crashes", "mean_severity": "4.500000",
+              "priority_score": 9, "complaint_count": 2}
+```
+
+Tests: `tests/test_dashboard_trends.py` (synthetic rows only).
+
+**Evaluation reports must name the configuration hash.** In the canonical checkpoint, `classifications.label_config`
+holds the configuration hash (for the 500-row checkpoint: `0bda2b8478fab805…`). `import-evaluation` accepts a report
+only when its `label_configs` list contains that exact value. A report from a different classifier is refused.

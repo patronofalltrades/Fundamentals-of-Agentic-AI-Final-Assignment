@@ -35,6 +35,12 @@ def main():
     grading_target = grading.add_mutually_exclusive_group(required=True)
     grading_target.add_argument("--db", help="SQLite dashboard database")
     grading_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
+    evaluation = sub.add_parser("import-evaluation", help="save a golden-set evaluation report (score_gold JSON)")
+    evaluation.add_argument("--report", required=True, help="JSON report written by the course checker's score_gold")
+    evaluation.add_argument("--label-set", required=True, help="short name for the labels scored, e.g. original")
+    evaluation_target = evaluation.add_mutually_exclusive_group(required=True)
+    evaluation_target.add_argument("--db", help="SQLite dashboard database")
+    evaluation_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
     web = sub.add_parser("serve", help="serve a local read-only API and dashboard")
     web.add_argument("--db", required=True)
     web.add_argument("--host", default="127.0.0.1")
@@ -72,6 +78,23 @@ def main():
             backend = NeonHTTPBackend(url, timeout=60)
         with backend:
             print(json.dumps(load_grading(backend, args.folder, names, args.run_id), sort_keys=True))
+    elif args.command == "import-evaluation":
+        import os
+        from .evaluation import load_evaluation
+        with open(args.report, encoding="utf-8") as handle:
+            report = json.load(handle)
+        if args.db:
+            backend = SQLiteBackend(args.db, readonly=False)
+        else:
+            url = os.environ.get(args.postgres_env)
+            if not url:
+                parser.error("environment variable %s is not set" % args.postgres_env)
+            backend = NeonHTTPBackend(url, timeout=60)
+        with backend:
+            try:
+                print(json.dumps(load_evaluation(backend, report, args.label_set), sort_keys=True))
+            except ValueError as error:
+                parser.exit(2, "import-evaluation refused: %s\n" % error)
     elif args.command == "import-analysis":
         with open(args.input, encoding="utf-8") as handle:
             payload = json.load(handle)
