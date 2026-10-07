@@ -1,4 +1,46 @@
-# Hosted evidence extractor benchmark: account check saved, live run pending
+# Hosted evidence extractor benchmark: 3-row smoke complete
+
+**Current gate:** The 3-row smoke saved three successful results per pinned
+route. The 100-review checkpoint is held until a real human correction file
+is incorporated and the corrected baseline passes the read-only input plan.
+The local reviewer CSV inspected on October 7 had 289 rows but no filled
+review statuses, corrections, or notes. Blank fields are not agreement.
+
+| Route | Successful calls | Known charge | Input / output tokens | Reasoning tokens | Summed request time |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| DeepInfra 120B | 3 | $0.000044545 | 455 / 163 | 76 | 10.059 s |
+| Groq 20B | 3 | $0.000122475 | 689 / 236 | 157 | 2.245 s |
+
+The six known charges total **$0.000167020**. Shared cap exposure is
+**$0.025070564**, including attempt 2's full **$0.024903544** hold. The
+smoke added no failed requests. Read-only replay validated all six saved
+source hashes, exact quotes, whole-boundary entities, and response provider
+names. All six quotes and entity lists exactly matched saved Codex evidence.
+The three source rows are short praise with no named entities; all three
+models chose the full review as the quote and an empty entity list. This is
+a weak semantic test of complaint extraction and is not human accuracy.
+DeepInfra averaged 3.353 seconds per saved request and Groq 0.748 seconds;
+these are summed request durations, not measured stage wall time. The runner
+verified both endpoint listings before the successful smoke and sent the
+pinned provider, strict schema, no fallback, data-collection deny, and ZDR
+settings. The saved provider names matched the pins. This establishes live
+request acceptance, not an independent audit of provider privacy behavior.
+
+**Input identity repair:** The original ledger did not record the full
+supplied labels or exact request payload per successful call. The revised
+runner fingerprints source-row hash, complete label JSON, the label
+configuration hash, prompt version, and the full provider/model/schema/
+effort/output-limit payload before dispatch. A changed fingerprint cannot
+silently reuse a saved result. Repeat calls require a separate explicit flag
+and are counted in a read-only plan before spending. The six historical
+successes were bound to the still-frozen Jev baseline with provenance
+`inferred_from_frozen_baseline`; their original request payloads were not
+saved, so this binding is an inference. All attempts and charges remain.
+With that baseline, the 100-review plan is **3 reuses and 97 new calls per
+route**, with zero changed-input repeats. A corrected baseline may require
+**0–6 additional repeat calls** among the first three rows if their labels
+or configuration hash changes. That count is unknown until the actual
+correction file is integrated and planned. No larger run has started.
 
 **October 7 account reconciliation check (10:18 UTC):** The authenticated
 OpenRouter Personal account showed only one billed generation on the
@@ -17,11 +59,10 @@ status `reconciled_no_visible_bill`. Its full $0.024903544 reservation remains
 held. A retry requires an explicit attempt ID and is saved as a new attempt.
 No new inference was sent during this check.
 
-**Decision:** Do not start the 100,000-row inference run. The 3-row smoke can
-resume only with explicit retry ID 2, the existing key supplied at the hidden
-prompt, and fresh route checks. The two-route comparison is incomplete. This workspace sandbox
-cannot resolve OpenRouter's domain, so local public-catalog checks cannot
-confirm the connected Mac's route availability.
+**Decision:** Do not start the 100,000-row inference run. The next allowed
+scope is the same 100 development reviews, after correction integration,
+fingerprint planning, current route checks, and the existing hidden-key
+handoff. The two-route quality comparison is incomplete.
 
 **October 6 live preflight update:** Hanif's smoke command stopped on the
 public catalog check before sending a review. The pinned DeepInfra 120B
@@ -32,7 +73,7 @@ bug and no basis to substitute another provider. A read-only ledger check
 found **zero call rows, zero reservations, and zero charges at that time**.
 A regression fixture checks this fail-closed status case.
 
-**October 7 connection-loss update:** The ignored ledger now contains one
+**October 7 connection-loss history, before the successful smoke:** The ignored ledger contained one
 successful DeepInfra inference and one DeepInfra inference with uncertain
 delivery after a `URLError`. The latter was reserved before dispatch, so
 its POST may have reached OpenRouter and may have been billed. Known settled
@@ -50,8 +91,8 @@ timeouts, or HTTP 502/503/504, with short delays. Other HTTP errors fail
 immediately. Inference POSTs never retry automatically. A launch now stops
 before any new call while the ledger contains an uncertain, invalid, or
 in-flight inference. The account check above found no visible second bill;
-the saved attempt and full reservation remain in the ledger. Privacy
-compatibility and Groq behavior remain unmeasured.
+the saved attempt and full reservation remain in the ledger. The later
+smoke demonstrated request acceptance on both pinned routes for three rows.
 
 ### Reconcile the uncertain request
 
@@ -101,11 +142,12 @@ specifies strict JSON schema and `require_parameters`. Its [privacy guidance](ht
 documents `data_collection: deny` and `zdr: true`. The request also pins
 `provider.only` to one tag and sets `allow_fallbacks: false`. If those
 safeguards cannot be honored by a route, the request must fail; no route or
-policy is silently relaxed. Authenticated route/access remains unverified.
+policy is silently relaxed. The successful smoke verified access to both
+pinned routes under those request settings.
 The public endpoint listings do not expose a per-endpoint ZDR field. They
-therefore do **not** establish that either pinned route accepts ZDR. A live
-request with `zdr: true` is the remaining compatibility check; if it fails,
-stop instead of removing the safeguard.
+therefore do **not** establish ZDR independently. Both live routes accepted
+requests carrying `zdr: true`; if a later request fails, stop instead of
+removing the safeguard.
 
 ## Controls and offline result
 
@@ -119,7 +161,8 @@ the bill twice. Calls run with one worker and no automatic retry. The ignored
 SQLite ledger saves a reservation before dispatch and holds full exposure for
 unknown delivery. A returned response with invalid evidence retains any
 available usage and charge. Changed source, prompt, schema, or output limit
-cannot reuse the ledger.
+cannot reuse the ledger. The revised request fingerprint also blocks reuse
+when full labels, their configuration, model, provider, or effort changes.
 
 The **total approved cap is USD 1**, shared across both routes. SQLite takes
 a write lock before checking settled charges and outstanding reservations,
@@ -151,43 +194,38 @@ or alter it. The local cap is built from the published endpoint token limits
 and prices; any missing, increased, or incompatible bound stops paid work.
 
 The original local dry run validated source and baseline hashes, then stopped
-at the absent-key gate. The October 7 ledger results supersede that earlier
-zero-call state. Offline synthetic tests do not establish live route quality,
-privacy acceptance, provider-side budget enforcement, or throughput.
+at the absent-key gate. The October 7 smoke supersedes that earlier zero-call
+state. Synthetic tests alone do not establish live quality or provider-side
+budget enforcement.
 
 ## User-run handoff and next gate
 
-From this branch's repository root, Hanif can resume the 3-row smoke with an
-explicit retry of reconciled attempt 2:
+The 3-row smoke is complete. After actual corrections are incorporated into
+a reviewed baseline, use the read-only `--plan` command with the same source,
+manifest, ledger, and corrected baseline paths to count reuse, new calls,
+and changed-input repeats. Do not treat a blank review file as agreement.
+Inspect the ignored ledger and aggregate report without a key:
 
 ```sh
-zsh tools/run_openrouter_benchmark_user.zsh 3 2
-```
-
-The script prompts for the existing OpenRouter key with hidden input. It
-sets it only for the child process and does not save it. It does not buy
-credits or change credential settings. The 3-row smoke covers both routes.
-Inspect the ignored ledger and aggregate read-only report before proceeding:
-
-```sh
+python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
+  --manifest PATH_TO_MANIFEST --baseline PATH_TO_REVIEWED_BASELINE_DB \
+  --plan --limit 100
 python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
   --manifest PATH_TO_MANIFEST --baseline PATH_TO_SAVED_JEV_V2_DB --report
 ```
 
-If both routes pass privacy, schema, source-evidence, usage, and cap checks,
-run `zsh tools/run_openrouter_benchmark_user.zsh 100` to finish the same rows.
-The ledger skips successful calls and blocks a new launch while any call is
-uncertain or invalid. The saved retry is a separate attempt, and the earlier
-full reservation remains in total exposure. The user should
-share only the aggregate report, not a key or raw ledger.
+The 100-review launch remains held pending the corrected input plan and any
+repeat-call approval. The user must enter the existing key at the hidden
+prompt; no key is saved or requested in chat. The ledger keeps the earlier
+reconciled attempt's full reservation in total exposure.
 
 After a live run, report observed failures, semantic spot checks, exact
 agreement with Codex (with the non-gold limitation), reasoning-inclusive
 usage and cost, request and stage wall times, and cache behavior. Then use
 measured per-route rates to project 75,894 distinct nonempty texts in the
 first 100,000 rows and 484,189 in the full corpus, with separate no-reuse
-comparisons. There is currently no measured hosted throughput or cost for
-either route, so no defensible 100,000-row time or spend projection and no
-extractor winner yet. The earlier Codex evidence path's roughly 143 serial
+comparisons. The three trivial smoke rows give limited hosted speed and cost
+data, but no defensible 100,000-row projection or extractor winner yet.
+The earlier Codex evidence path's roughly 143 serial
 hours for the proposed first slice is a separate observed-rate projection,
 not a measured hosted result.

@@ -42,10 +42,10 @@ class BenchmarkTest(unittest.TestCase):
             row = {"review_id": "synthetic", "review_text": "Spotify playback fails."}
             payload = benchmark.make_payload("groq", row, {
                 "topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5})
-            benchmark.reserve(db, "groq", row, payload, "synthetic-row")
+            benchmark.reserve(db, "groq", row, payload, "synthetic-row", "synthetic-request")
             self.assertEqual(benchmark.budget_used(db), 29_491_200)
             with self.assertRaises(Exception):
-                benchmark.reserve(db, "groq", row, payload, "synthetic-row")
+                benchmark.reserve(db, "groq", row, payload, "synthetic-row", "synthetic-request")
             with self.assertRaises(ValueError):
                 benchmark.connect(str(Path(folder) / "ledger.db"), "different-source")
 
@@ -101,9 +101,9 @@ class BenchmarkTest(unittest.TestCase):
             baseline = str(Path(folder) / "baseline.db")
             ledger = str(Path(folder) / "ledger.db")
             db = sqlite3.connect(baseline)
-            db.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT)")
-            db.execute("INSERT INTO results VALUES (?,?,?)", (row["review_id"], json.dumps(labels),
-                benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS])))
+            db.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            db.execute("INSERT INTO results VALUES (?,?,?,?)", (row["review_id"], json.dumps(labels),
+                benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS]), "synthetic-config"))
             db.commit()
             db.close()
             with mock.patch.object(benchmark, "load_rows", return_value=[row]), \
@@ -151,24 +151,110 @@ class BenchmarkTest(unittest.TestCase):
                               review_timestamp="2022-01-01")
             baseline = str(Path(folder) / "baseline.db")
             labels = sqlite3.connect(baseline)
-            labels.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT)")
-            labels.execute("INSERT INTO results VALUES (?,?,?)", ("synthetic", "{}",
-                benchmark.row_sha256([source_row[k] for k in benchmark.SOURCE_FIELDS])))
+            labels.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            labels.execute("INSERT INTO results VALUES (?,?,?,?)", ("synthetic",
+                json.dumps({"topic": "other", "intent": "praise", "severity": 1, "sentiment": 0.5}),
+                benchmark.row_sha256([source_row[k] for k in benchmark.SOURCE_FIELDS]), "synthetic-config"))
             labels.commit()
             labels.close()
             with mock.patch.object(benchmark, "load_rows", return_value=[source_row]), \
                  mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
                  mock.patch.object(benchmark, "request_json") as post:
-                with self.assertRaisesRegex(ValueError, "needs explicit retry ID"):
+                with self.assertRaisesRegex(ValueError, "needs explicit reconciliation or retry"):
                     benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
                 post.assert_not_called()
             with self.assertRaises(ValueError):
                 benchmark.reconcile_no_visible_bill(ledger, 1, "2026-10-07T10:18:00Z", "again")
-            benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row")
+            benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row", "synthetic-request",
+                              retry_reconciled_id=1)
             self.assertEqual(db.execute("SELECT COUNT(*) FROM calls").fetchone()[0], 2)
             self.assertEqual(benchmark.budget_used(db), 49_807_088)
             with self.assertRaises(ValueError):
-                benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row")
+                benchmark.reserve(db, "deepinfra", row, {}, "synthetic-row", "synthetic-request",
+                                  retry_reconciled_id=1)
+
+    def test_label_and_request_identity_block_stale_reuse(self):
+        row = {"review_id": "synthetic", "review_text": "Synthetic playback fails",
+               "review_rating": "1", "review_likes": "0", "app_version": "",
+               "review_timestamp": "2022-01-01"}
+        labels = {"topic": "playback", "intent": "complaint", "severity": 4,
+                  "sentiment": -0.5, "model": "synthetic-v2"}
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = str(Path(folder) / "ledger.db")
+            baseline = str(Path(folder) / "baseline.db")
+            source_hash = benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS])
+            data = sqlite3.connect(baseline)
+            data.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            data.execute("INSERT INTO results VALUES (?,?,?,?)",
+                         (row["review_id"], json.dumps(labels), source_hash, "synthetic-config"))
+            data.commit()
+            data.close()
+            db = benchmark.connect(ledger, "synthetic-source")
+            old_sha = benchmark.request_fingerprint("deepinfra", row, labels, "synthetic-config")
+            benchmark.reserve(db, "deepinfra", row, {}, source_hash, old_sha)
+            db.execute("UPDATE calls SET status='succeeded',charged_nusd=100 WHERE id=1")
+            db.commit()
+            saved = benchmark.load_baseline(baseline, [row])
+            self.assertEqual(benchmark.plan_calls(db, [row], saved, 1)[0][4], "reuse")
+            changed = dict(labels, severity=3)
+            data = sqlite3.connect(baseline)
+            data.execute("UPDATE results SET label_json=?", (json.dumps(changed),))
+            data.commit()
+            data.close()
+            changed_sha = benchmark.request_fingerprint("deepinfra", row, changed, "synthetic-config")
+            self.assertNotEqual(old_sha, changed_sha)
+            self.assertNotEqual(old_sha,
+                benchmark.request_fingerprint("deepinfra", row, labels, "changed-label-config"))
+            self.assertNotEqual(old_sha,
+                benchmark.request_fingerprint("groq", row, labels, "synthetic-config"))
+            saved = benchmark.load_baseline(baseline, [row])
+            self.assertEqual(benchmark.plan_calls(db, [row], saved, 1)[0][4], "changed_input")
+            with mock.patch.object(benchmark, "load_rows", return_value=[row]), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
+                 mock.patch.object(benchmark, "request_json") as post:
+                with self.assertRaisesRegex(ValueError, "separate repeat-call approval"):
+                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
+                post.assert_not_called()
+            with self.assertRaisesRegex(ValueError, "no duplicate call admitted"):
+                benchmark.reserve(db, "deepinfra", row, {}, source_hash, old_sha,
+                                  allow_changed_inputs=True)
+            benchmark.reserve(db, "deepinfra", row, {}, source_hash, changed_sha,
+                              allow_changed_inputs=True)
+            self.assertEqual(benchmark.budget_used(db), 100 + 24_903_544)
+
+    def test_legacy_binding_is_explicit_and_preserves_charge(self):
+        row = {"review_id": "synthetic", "review_text": "Synthetic playback fails",
+               "review_rating": "1", "review_likes": "0", "app_version": "",
+               "review_timestamp": "2022-01-01"}
+        labels = {"topic": "playback", "intent": "complaint", "severity": 4,
+                  "sentiment": -0.5, "model": "synthetic-v2"}
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = str(Path(folder) / "ledger.db")
+            baseline = str(Path(folder) / "baseline.db")
+            source_hash = benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS])
+            data = sqlite3.connect(baseline)
+            data.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            data.execute("INSERT INTO results VALUES (?,?,?,?)",
+                         (row["review_id"], json.dumps(labels), source_hash, "synthetic-config"))
+            data.commit()
+            data.close()
+            db = benchmark.connect(ledger, "synthetic-source")
+            db.execute("""INSERT INTO calls(route,review_id,source_sha,status,reserved_nusd,
+                       charged_nusd,provider,evidence_json) VALUES (?,?,?,?,?,?,?,?)""",
+                       ("deepinfra", "synthetic", source_hash, "succeeded", 24_903_544,
+                        100, "DeepInfra", json.dumps({"entities": [],
+                        "evidence_quote": "playback fails"})))
+            db.commit()
+            self.assertEqual(benchmark.plan_calls(db, [row],
+                benchmark.load_baseline(baseline, [row]), 1)[0][4], "legacy_unknown")
+            with mock.patch.object(benchmark, "load_rows", return_value=[row]), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"):
+                benchmark.bind_legacy_successes("unused.csv", "unused.json", ledger, baseline)
+            self.assertEqual(db.execute("SELECT charged_nusd FROM calls").fetchone()[0], 100)
+            self.assertEqual(db.execute("SELECT input_binding FROM calls").fetchone()[0],
+                             "inferred_from_frozen_baseline")
+            self.assertEqual(benchmark.plan_calls(db, [row],
+                benchmark.load_baseline(baseline, [row]), 1)[0][4], "reuse")
 
 
 if __name__ == "__main__":

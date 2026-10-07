@@ -155,6 +155,11 @@ def connect(path, source_sha):
     db.execute("""CREATE TABLE IF NOT EXISTS reconciliations (
       call_id INTEGER PRIMARY KEY, checked_utc TEXT NOT NULL,
       evidence TEXT NOT NULL, FOREIGN KEY(call_id) REFERENCES calls(id))""")
+    columns = {col[1] for col in db.execute("PRAGMA table_info(calls)")}
+    if "request_sha" not in columns:
+        db.execute("ALTER TABLE calls ADD COLUMN request_sha TEXT")
+    if "input_binding" not in columns:
+        db.execute("ALTER TABLE calls ADD COLUMN input_binding TEXT")
     if not saved:
         with db:
             db.executemany("INSERT INTO meta VALUES (?,?)", identity.items())
@@ -169,7 +174,8 @@ def budget_used(db):
       ELSE reserved_nusd END),0) FROM calls""").fetchone()[0]
 
 
-def reserve(db, route, row, payload, source_hash):
+def reserve(db, route, row, payload, source_hash, request_sha,
+            allow_changed_inputs=False, retry_reconciled_id=None):
     model, tag, input_rate, output_rate = ROUTES[route]
     # Reserve the full published endpoint limits, including possible billed
     # reasoning output. The requested 320-token limit is not treated as hard.
@@ -177,14 +183,25 @@ def reserve(db, route, row, payload, source_hash):
     amount = money_nusd(Decimal(context_limit) * input_rate + Decimal(completion_limit) * output_rate)
     db.execute("BEGIN IMMEDIATE")
     try:
-        latest = db.execute("SELECT status FROM calls WHERE route=? AND review_id=? ORDER BY id DESC LIMIT 1",
+        if db.execute("""SELECT 1 FROM calls WHERE route=? AND review_id=?
+            AND source_sha=? AND status='succeeded' AND request_sha=? LIMIT 1""",
+            (route, row["review_id"], source_hash, request_sha)).fetchone():
+            raise ValueError("identical request already succeeded; no duplicate call admitted")
+        latest = db.execute("SELECT id,status,request_sha,source_sha FROM calls WHERE route=? AND review_id=? ORDER BY id DESC LIMIT 1",
                             (route, row["review_id"])).fetchone()
-        if latest and latest[0] != "reconciled_no_visible_bill":
+        retry_ok = (latest and latest[3] == source_hash
+                    and latest[:2] == (retry_reconciled_id, "reconciled_no_visible_bill"))
+        changed_ok = (latest and latest[3] == source_hash and latest[1] == "succeeded" and latest[2] is not None
+                      and latest[2] != request_sha and allow_changed_inputs)
+        if latest and not (retry_ok or changed_ok):
             raise ValueError("review has a settled or unresolved attempt; no duplicate call admitted")
         if budget_used(db) + amount >= CAP_NUSD:
             raise ValueError("shared USD 1 cap would be reached; no call admitted")
-        cur = db.execute("INSERT INTO calls(route,review_id,source_sha,status,reserved_nusd) VALUES (?,?,?,?,?)",
-                         (route, row["review_id"], source_hash, "in_flight", amount))
+        cur = db.execute("""INSERT INTO calls
+            (route,review_id,source_sha,status,reserved_nusd,request_sha,input_binding)
+            VALUES (?,?,?,?,?,?,?)""",
+            (route, row["review_id"], source_hash, "in_flight", amount,
+             request_sha, "saved_before_dispatch"))
         db.commit()
     except BaseException:
         db.rollback()
@@ -205,6 +222,35 @@ def make_payload(route, row, labels):
             "reasoning": {"effort": "low"}, "max_tokens": OUTPUT_LIMIT,
             "response_format": {"type": "json_schema", "json_schema": {
                 "name": "spotify_evidence", "strict": True, "schema": SCHEMA}}}
+
+
+def request_fingerprint(route, row, labels, label_config):
+    """Bind reuse to the complete supplied labels and exact request settings."""
+    if not label_config:
+        raise ValueError("baseline label configuration missing")
+    identity = {"source_sha": row_sha256([row[k] for k in SOURCE_FIELDS]),
+                "full_labels": labels, "label_config": label_config,
+                "prompt_version": PROMPT_VERSION,
+                "payload": make_payload(route, row, labels)}
+    encoded = json.dumps(identity, sort_keys=True, separators=(",", ":"),
+                         ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def load_baseline(baseline, rows):
+    db = sqlite3.connect("file:" + baseline + "?mode=ro", uri=True)
+    try:
+        saved = {rid: (json.loads(value), source_hash, config_hash)
+                 for rid, value, source_hash, config_hash in db.execute(
+                     "SELECT review_id,label_json,source_sha256,config_hash FROM results")}
+    finally:
+        db.close()
+    if set(r["review_id"] for r in rows) - saved.keys():
+        raise ValueError("baseline labels missing for source")
+    if any(saved[row["review_id"]][1] != row_sha256([row[k] for k in SOURCE_FIELDS])
+           for row in rows):
+        raise ValueError("baseline source row identity differs")
+    return saved
 
 
 def parse_response(response, row, route):
@@ -250,29 +296,104 @@ def reconcile_no_visible_bill(ledger, call_id, checked_utc, evidence):
         raise
 
 
-def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None):
+def plan_calls(db, rows, saved_labels, limit, retry_reconciled_id=None):
+    columns = {col[1] for col in db.execute("PRAGMA table_info(calls)")}
+    fingerprint_column = "request_sha" if "request_sha" in columns else "NULL"
+    planned = []
+    for route in ROUTES:
+        for row in rows[:limit]:
+            rid = row["review_id"]
+            labels, _, config_hash = saved_labels[rid]
+            source_hash = row_sha256([row[k] for k in SOURCE_FIELDS])
+            fingerprint = request_fingerprint(route, row, labels, config_hash)
+            matching_success = ("request_sha" in columns and db.execute("""SELECT 1 FROM calls
+                WHERE route=? AND review_id=? AND source_sha=?
+                AND status='succeeded' AND request_sha=? LIMIT 1""",
+                (route, rid, source_hash, fingerprint)).fetchone())
+            latest = db.execute("SELECT id,status,%s,source_sha FROM calls WHERE route=? AND review_id=? "
+                                "ORDER BY id DESC LIMIT 1" % fingerprint_column,
+                                (route, rid)).fetchone()
+            if matching_success:
+                kind = "reuse"
+            elif latest is None:
+                kind = "new"
+            elif latest[3] != source_hash:
+                kind = "source_mismatch"
+            elif latest[1] == "succeeded":
+                kind = ("legacy_unknown" if latest[2] is None else
+                        "reuse" if latest[2] == fingerprint else "changed_input")
+            elif latest[:2] == (retry_reconciled_id, "reconciled_no_visible_bill"):
+                kind = "explicit_retry"
+            elif latest[1] == "reconciled_no_visible_bill":
+                kind = "needs_explicit_retry"
+            else:
+                kind = "unresolved"
+            planned.append((route, row, labels, fingerprint, kind))
+    return planned
+
+
+def summarize_plan(db, planned):
+    result = {"budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
+              "routes": {route: {} for route in ROUTES}}
+    for route, _, _, _, kind in planned:
+        route_counts = result["routes"][route]
+        route_counts[kind] = route_counts.get(kind, 0) + 1
+    result["extra_repeat_calls_if_allowed"] = sum(kind == "changed_input"
+                                                     for _, _, _, _, kind in planned)
+    return result
+
+
+def bind_legacy_successes(source, manifest, ledger, baseline):
+    """Infer old fingerprints from the frozen baseline, without any model calls."""
+    rows = load_rows(source, manifest)
+    by_id = {row["review_id"]: row for row in rows}
+    saved_labels = load_baseline(baseline, rows)
+    db = connect(ledger, file_sha256(source))
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        calls = list(db.execute("""SELECT id,route,review_id,source_sha,provider,evidence_json
+            FROM calls WHERE status='succeeded' AND request_sha IS NULL"""))
+        for call_id, route, rid, source_hash, provider, evidence_json in calls:
+            if route not in ROUTES or rid not in by_id:
+                raise ValueError("legacy call route/source missing; no bindings saved")
+            row = by_id[rid]
+            if source_hash != row_sha256([row[k] for k in SOURCE_FIELDS]):
+                raise ValueError("legacy call source differs; no bindings saved")
+            if provider is None or provider.lower() != ("deepinfra" if route == "deepinfra" else "groq"):
+                raise ValueError("legacy provider differs; no bindings saved")
+            validate_evidence(row["review_text"], json.loads(evidence_json))
+            labels, _, config_hash = saved_labels[rid]
+            fingerprint = request_fingerprint(route, row, labels, config_hash)
+            db.execute("UPDATE calls SET request_sha=?,input_binding=? WHERE id=?",
+                       (fingerprint, "inferred_from_frozen_baseline", call_id))
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    print(json.dumps({"legacy_successes_bound": len(calls),
+                      "method": "inferred_from_frozen_baseline; original payload was not saved"}))
+
+
+def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
+        allow_changed_inputs=False):
     rows = load_rows(source, manifest)
     source_sha = file_sha256(source)
     db = connect(ledger, source_sha)
-    labels = sqlite3.connect("file:" + baseline + "?mode=ro", uri=True)
-    saved_labels = {rid: (json.loads(value), source_hash) for rid, value, source_hash in
-                    labels.execute("SELECT review_id,label_json,source_sha256 FROM results")}
-    if set(r["review_id"] for r in rows) - saved_labels.keys():
-        raise ValueError("baseline labels missing for source")
-    if any(saved_labels[row["review_id"]][1] != row_sha256([row[k] for k in SOURCE_FIELDS]) for row in rows):
-        raise ValueError("baseline source row identity differs")
+    saved_labels = load_baseline(baseline, rows)
     unresolved = db.execute("""SELECT COUNT(*) FROM calls
         WHERE status NOT IN ('succeeded','reconciled_no_visible_bill')""").fetchone()[0]
     if unresolved:
         raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
-    if retry_reconciled_id is None and db.execute("""SELECT COUNT(*) FROM calls
-        WHERE status='reconciled_no_visible_bill' AND NOT EXISTS (
-          SELECT 1 FROM calls later WHERE later.route=calls.route
-          AND later.review_id=calls.review_id AND later.id>calls.id)""").fetchone()[0]:
-        raise ValueError("reconciled call needs explicit retry ID; no calls made")
-    if retry_reconciled_id is not None and db.execute("""SELECT COUNT(*) FROM calls
-        WHERE id=? AND status='reconciled_no_visible_bill'""", (retry_reconciled_id,)).fetchone()[0] != 1:
-        raise ValueError("explicit retry ID is not a reconciled attempt; no calls made")
+    planned = plan_calls(db, rows, saved_labels, limit, retry_reconciled_id)
+    kinds = [item[4] for item in planned]
+    if "legacy_unknown" in kinds:
+        raise ValueError("legacy successful request lacks input fingerprint; bind frozen baseline first")
+    if "needs_explicit_retry" in kinds or "unresolved" in kinds or "source_mismatch" in kinds:
+        raise ValueError("review needs explicit reconciliation or retry; no calls made")
+    if retry_reconciled_id is not None and "explicit_retry" not in kinds:
+        raise ValueError("explicit retry ID is not a current reconciled attempt; no calls made")
+    if "changed_input" in kinds and not allow_changed_inputs:
+        raise ValueError("changed labels or request settings need separate repeat-call approval; no calls made")
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise ValueError("OPENROUTER_API_KEY absent; no calls made")
@@ -280,15 +401,14 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None):
     for route in ROUTES:
         verify_route(route)
     completed_this_run = 0
-    for route in ROUTES:
-        for row in rows[:limit]:
-            rid = row["review_id"]
-            latest = db.execute("SELECT id,status FROM calls WHERE route=? AND review_id=? ORDER BY id DESC LIMIT 1",
-                                (route, rid)).fetchone()
-            if latest and not (latest == (retry_reconciled_id, "reconciled_no_visible_bill")):
-                continue  # Explicit retry only; never replay a failed POST by default.
-            payload = make_payload(route, row, saved_labels[rid][0])
-            call_id = reserve(db, route, row, payload, row_sha256([row[k] for k in SOURCE_FIELDS]))
+    for route, row, labels, fingerprint, kind in planned:
+            if kind == "reuse":
+                continue
+            payload = make_payload(route, row, labels)
+            call_id = reserve(db, route, row, payload,
+                              row_sha256([row[k] for k in SOURCE_FIELDS]), fingerprint,
+                              allow_changed_inputs=(kind == "changed_input" and allow_changed_inputs),
+                              retry_reconciled_id=(retry_reconciled_id if kind == "explicit_retry" else None))
             start = time.monotonic()
             response = None
             try:
@@ -372,6 +492,11 @@ if __name__ == "__main__":
     p.add_argument("--ledger", default="local/openrouter_extractor_benchmark.db")
     p.add_argument("--limit", type=int, choices=range(1, 101), default=3)
     p.add_argument("--report", action="store_true", help="read only, no network or key")
+    p.add_argument("--plan", action="store_true", help="read-only repeat-call counts, no network or key")
+    p.add_argument("--bind-legacy-successes", action="store_true",
+                   help="infer old request fingerprints from the frozen baseline; no model calls")
+    p.add_argument("--allow-changed-inputs", action="store_true",
+                   help="permit measured repeat calls after separate approval")
     p.add_argument("--retry-reconciled-id", type=int, help="explicitly retry one account-reconciled attempt")
     p.add_argument("--reconcile-no-visible-bill", type=int, help="record account check for an uncertain attempt")
     p.add_argument("--checked-utc", help="UTC time of authenticated account check")
@@ -381,10 +506,23 @@ if __name__ == "__main__":
         if not a.baseline:
             p.error("--report requires --baseline")
         report(a.ledger, a.baseline)
+    elif a.plan:
+        if not all((a.source, a.manifest, a.baseline)):
+            p.error("--plan requires --source, --manifest, and --baseline")
+        rows = load_rows(a.source, a.manifest)
+        saved_labels = load_baseline(a.baseline, rows)
+        with sqlite3.connect("file:" + a.ledger + "?mode=ro", uri=True) as db:
+            planned = plan_calls(db, rows, saved_labels, a.limit, a.retry_reconciled_id)
+            print(json.dumps(summarize_plan(db, planned), indent=2, sort_keys=True))
+    elif a.bind_legacy_successes:
+        if not all((a.source, a.manifest, a.baseline)):
+            p.error("--bind-legacy-successes requires --source, --manifest, and --baseline")
+        bind_legacy_successes(a.source, a.manifest, a.ledger, a.baseline)
     elif a.reconcile_no_visible_bill is not None:
         reconcile_no_visible_bill(a.ledger, a.reconcile_no_visible_bill,
                                   a.checked_utc, a.reconciliation_evidence)
     else:
         if not all((a.source, a.manifest, a.baseline)):
             p.error("inference requires --source, --manifest, and --baseline")
-        run(a.source, a.manifest, a.ledger, a.baseline, a.limit, a.retry_reconciled_id)
+        run(a.source, a.manifest, a.ledger, a.baseline, a.limit,
+            a.retry_reconciled_id, a.allow_changed_inputs)
