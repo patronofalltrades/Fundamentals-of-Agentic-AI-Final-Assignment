@@ -207,6 +207,7 @@ Rules that the code must follow:
 Main documents:
 
 - [Agent instructions](AGENTS.md) and the [coordination record](docs/tasks.md)
+- [Fix list for Codex, 7 October](docs/fix_list_2026-10-07.md) — read first
 - [Decision and timing plan](docs/jev_decision_and_timing.md)
 - [Evidence scaling plan](docs/jev_evidence_scaling_plan.md)
 - [Implementation notes](docs/implementation.md) and [architecture](docs/architecture.md)
