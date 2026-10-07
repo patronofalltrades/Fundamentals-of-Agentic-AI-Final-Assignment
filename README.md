@@ -8,6 +8,7 @@ playback, or billing/support? No recommendation exists yet.
 
 | Item | Value |
 | --- | --- |
+| **Live dashboard** | **https://fundamentals-of-agentic-ai-final-as.vercel.app** — public, read-only, no login. It now shows development data only (500 reviews). See section 6. |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Class 7 is on the same day; the time is not known. |
 | Submission | This public repository. Final submission through the course portal is pending. |
 | Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
@@ -31,7 +32,7 @@ playback, or billing/support? No recommendation exists yet.
 | Grading export and self-check | Not started. | — |
 | Cost calculator with measured cold and warm runs | Partial. Only offline replay scaffolding exists. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Scoring has not run in this pipeline. | Section 7 |
-| Dashboard, backend, database, live URL | Local foundation only, on branch `feat/dashboard-local-foundation`. No live URL. | — |
+| Dashboard, backend, database, live URL | **Live** with the 500-review development data. Issue ranking and recommendations show pending. | [live dashboard](https://fundamentals-of-agentic-ai-final-as.vercel.app), [dashboard guide](docs/dashboard.md) |
 | 100,000-review run | Not started. | — |
 | Full-corpus run (stretch) | Not started. | — |
 
@@ -100,7 +101,7 @@ The [decision and timing plan](docs/jev_decision_and_timing.md) gives the mitiga
 | 7 Oct | True end-to-end cold and warm run on `cost_100.csv` | All six stages run. The warm run makes zero new enrichment calls. |
 | 8 Oct | Verify, grouping, ranking, memo and grading export | The supplied checker passes on the pilot |
 | 8 Oct | 10,000-review development run | The 100,000-review projection is under about 24 hours |
-| 8 Oct | Dashboard, backend and database deployed | A live URL shows the pilot results |
+| 8 Oct | Dashboard, backend and database deployed | **Done 7 Oct.** Load the 100,000-review data when it exists. |
 | 9 Oct | **Latest start for the 100,000-review run** | The selection rule is recorded |
 | 10–11 Oct | Full corpus, only if measured time and cost allow | Stretch goal only |
 | 11–12 Oct | Export, self-check, dashboard update, human memo review, recording | — |
@@ -112,7 +113,7 @@ Use Python 3.9 or newer. Use the standard library only. No installation is neede
 Run all commands from the repository root.
 
 ```sh
-python3 -m unittest discover -s tests -t . -v      # 182 offline tests
+python3 -m unittest discover -s tests -t . -v      # 202 offline tests
 python3 -m spotify_pipeline --help
 ```
 
@@ -145,6 +146,46 @@ approval and a flag such as `--execute`.
 | `tools/compare_jev_pilots.py` | Offline v1/v2 comparison |
 | `tools/offline_pipeline_harness.py` | Synthetic cold/warm orchestration check with stubs |
 | `tools/export_human_labels.py`, `tools/evaluate_human_labels.py` | Human label export and offline scoring |
+
+### Dashboard
+
+**Live:** https://fundamentals-of-agentic-ai-final-as.vercel.app
+
+- Open the link in any browser. No account or login is needed.
+- The page and the API only read saved results. Opening the page makes no model call and spends no credit.
+- The API rejects every method except GET and HEAD.
+- The database stores review IDs, row hashes, labels and source-exact evidence quotes.
+- The database does not store the full review text, rating, likes, app version or timestamp.
+- The API never returns review IDs or full review text.
+
+| Route | Result |
+| --- | --- |
+| `/` | The dashboard page |
+| `/api/summary` | Source identity, coverage (source rows and distinct texts), raw label counts, analysis status |
+| `/api/reviews?topic=&q=&limit=&offset=` | Saved labels and evidence quotes, at most 50 for each page |
+| `/api/reviews/{row_index}` | One saved record |
+| `/api/issues`, `/api/issues/{issue_id}` | Accepted issue ranking by `severity_sum`, or pending |
+| `/api/recommendations` | Saved draft recommendations with their issue links, or pending |
+
+Run the same dashboard on your computer:
+
+```sh
+python3 -m dashboard import-checkpoint --source <canonical.db> --db local/dashboard.db
+python3 -m dashboard serve --db local/dashboard.db        # http://127.0.0.1:8765
+```
+
+Load saved results into the deployed database (needs the project's `DATABASE_URL`):
+
+```sh
+python3 -m dashboard export-bundle --db local/dashboard.db --out local/bundle
+python3 -m dashboard load-bundle --bundle local/bundle --postgres-env DATABASE_URL
+python3 -m dashboard import-analysis --input local/accepted-analysis.json --postgres-env DATABASE_URL
+```
+
+- Hosting: Vercel project `fundamentals-of-agentic-ai-final-assignment`. A merge to `main` deploys production.
+- Database: Neon Postgres, Free plan, region `iad1`, added through the Vercel Marketplace.
+- A repeated `load-bundle` of the same data returns `unchanged`. New data shows on the live page with no redeploy.
+- Details: [dashboard guide](docs/dashboard.md) and [Vercel staging record](docs/vercel-staging.md).
 
 ## 7. Human golden labels
 
@@ -201,7 +242,8 @@ The `cost/` folder must contain a real cold and warm 100-review pilot, editable 
 an offline replay command and a report.
 
 The final submission also needs a deployed dashboard, a backend and a database that stores the results.
-Put the live URL in this README. None of these outputs exists yet in this pipeline.
+The dashboard is live (section 6). It must show the final 100,000-review results before submission.
+The grading folder and the `cost/` outputs do not exist yet in this pipeline.
 
 Rules that the code must follow:
 
@@ -217,6 +259,8 @@ Rules that the code must follow:
 | Path | Contents |
 | --- | --- |
 | `spotify_pipeline/` | Offline pipeline package: ingest, state, checkpoints, schema, cost replay, Jev adapter |
+| `dashboard/` | Read-only dashboard API, page, storage backends and the import contract |
+| `api/`, `vercel.json` | Vercel Function entry and routing |
 | `tools/` | Pilot runners, launchers, evidence and import tools, comparisons |
 | `tests/` | Offline tests with synthetic fixtures |
 | `reports/` | Aggregate reports. No review text, original IDs or private paths. |
@@ -229,6 +273,7 @@ Main documents:
 - [Agent instructions](AGENTS.md) and the [coordination record](docs/tasks.md)
 - [Fix list for Codex, 7 October](docs/fix_list_2026-10-07.md) — read first
 - [Decision and timing plan](docs/jev_decision_and_timing.md)
+- [Dashboard guide](docs/dashboard.md) and [Vercel staging record](docs/vercel-staging.md)
 - [Evidence scaling plan](docs/jev_evidence_scaling_plan.md)
 - [Implementation notes](docs/implementation.md) and [architecture](docs/architecture.md)
 - [Jev enrichment](docs/jev_enrichment.md) and the [entity boundary repair](docs/jev_entity_boundary_bug.md)
