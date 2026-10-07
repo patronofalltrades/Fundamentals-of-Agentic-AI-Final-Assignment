@@ -39,6 +39,10 @@ class ProjectBudgetTest(unittest.TestCase):
             with ProjectBudget(budget_path, paths) as budget:
                 self.assertEqual(budget.exposure("openrouter"), 25_540_000)
                 self.assertEqual(budget.exposure("jev"), 23_691_254)
+                with self.assertRaises(sqlite3.OperationalError):
+                    budget.reserve("rolled-back", "openrouter", 1000,
+                        record=lambda db: db.execute("INSERT INTO absent VALUES (1)"))
+                self.assertIsNone(budget.db.execute("SELECT 1 FROM reservations WHERE request_key='rolled-back'").fetchone())
                 budget.reserve("batch-1", "openrouter", 24_903_544)
                 with self.assertRaisesRegex(ValueError, "duplicate"):
                     budget.reserve("batch-1", "openrouter", 24_903_544)

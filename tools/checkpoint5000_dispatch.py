@@ -1,0 +1,320 @@
+"""Prepare and run the approved first-5000 Jev/DeepInfra checkpoint.
+
+Default status and prepare are offline. Paid modes require explicit flags,
+current route checks, configured credentials and a shared atomic cost ledger.
+No request with unknown delivery is retried automatically.
+"""
+
+import argparse
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from datetime import date
+from decimal import Decimal
+import hashlib
+import json
+import os
+import sqlite3
+import time
+
+from spotify_pipeline.checkpoint5000_queue import CheckpointQueue
+from spotify_pipeline.config import config_hash
+from spotify_pipeline.contract import file_sha256
+from spotify_pipeline import deepinfra_batch
+from spotify_pipeline import jev
+from spotify_pipeline.jev_pilot import NANODOLLARS_PER_INPUT_TOKEN, RESERVATION_NANODOLLARS
+from spotify_pipeline.project_budget import ProjectBudget
+from tools import deepinfra_batch10_canary as canary
+from tools import openrouter_extractor_benchmark as benchmark
+
+HISTORICAL_BENCHMARK = "/Users/haniframadhan/Documents/Codex/2026-10-06/task-3/spotify-extractor-benchmark/local/openrouter_extractor_benchmark.db"
+HISTORICAL_JEV = "/Users/haniframadhan/Documents/Codex/2026-10-06/task-2/spotify-v2-comparison/local/jev_checkpoint500_v2.db"
+DATASET = "/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset"
+MAX_WORKERS = 2
+PROGRESS = (100, 1000, 2500, 5000)
+
+
+def emit_progress(queue, field, reported):
+    current = queue.summary()[field]
+    for milestone in PROGRESS:
+        if milestone <= current and milestone not in reported:
+            reported.add(milestone)
+            print(json.dumps({"checkpoint": milestone, field: current,
+                "jev_exposure_nusd": queue.budget.exposure("jev"),
+                "openrouter_exposure_nusd": queue.budget.exposure("openrouter")},
+                sort_keys=True), flush=True)
+
+
+def legacy_paths():
+    return {"benchmark": HISTORICAL_BENCHMARK,
+        "batch_v1": "local/deepinfra_batch10_canary.db",
+        "batch_v2": "local/deepinfra_batch10_canary_v2.db",
+        "jev_checkpoint": HISTORICAL_JEV}
+
+
+def load_manifest(path):
+    with open(path, encoding="utf-8") as stream:
+        manifest = json.load(stream)
+    if manifest.get("schema_version") != "checkpoint5000-manifest-v1" or \
+            manifest.get("selected_rows") != 5000 or len(manifest.get("rows", [])) != 5000 or \
+            manifest.get("label_config_hash") != config_hash(jev.label_config()):
+        raise ValueError("checkpoint manifest version, count or Jev configuration differs")
+    if manifest.get("source_file") != "spotify_reviews_18months.csv":
+        raise ValueError("checkpoint manifest source differs")
+    with open(os.path.join(DATASET, "manifest.json"), encoding="utf-8") as stream:
+        supplied = json.load(stream)
+    if manifest["source_file_sha256"] != supplied["files"][manifest["source_file"]]["sha256"]:
+        raise ValueError("checkpoint manifest source hash differs from supplied source")
+    return manifest, file_sha256(path)
+
+
+def seed_labels(manifest):
+    """Resolve manifest cache candidates to direct, exact-text v2 Jev labels."""
+    candidates = {row["saved500_label_source_id"]: row["text"] for row in manifest["rows"]
+                  if row.get("saved500_label_source_id")}
+    if not candidates:
+        return {}
+    path = HISTORICAL_JEV
+    with sqlite3.connect("file:" + os.path.abspath(path) + "?mode=ro", uri=True) as db:
+        saved = {rid: (text, cfg, value, direct) for rid, text, cfg, value, direct in db.execute(
+            "SELECT review_id,review_text,config_hash,label_json,cache_source_id FROM results")}
+    output = {}
+    for rid, text in candidates.items():
+        row = saved.get(rid)
+        if row is None or row[0] != text or row[1] != manifest["label_config_hash"]:
+            raise ValueError("saved500 cache candidate differs from source or label version")
+        direct_id = row[3] or rid
+        direct = saved.get(direct_id)
+        if direct is None or direct[0] != text or direct[1] != row[1] or \
+                direct[2] != row[2] or direct[3] is not None:
+            raise ValueError("saved500 label cache origin is not a direct exact-text record")
+        if text in output and output[text] != (direct[2], direct_id):
+            raise ValueError("conflicting exact-text saved labels")
+        output[text] = (direct[2], direct_id)
+    return output
+
+
+def open_checkpoint(args):
+    manifest, manifest_sha = load_manifest(args.manifest)
+    budget = ProjectBudget(args.budget, legacy_paths())
+    try:
+        queue = CheckpointQueue(budget, manifest["rows"], manifest["source_file_sha256"],
+                                manifest_sha, seed_labels(manifest))
+    except BaseException:
+        budget.close()
+        raise
+    return budget, queue
+
+
+def _metered_jev(payload):
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    value = usage.get("input_tokens") if isinstance(usage, dict) else None
+    if type(value) is int and 0 <= value <= 64000:
+        return value * NANODOLLARS_PER_INPUT_TOKEN
+    return None
+
+
+def _metered_deepinfra(payload):
+    if not isinstance(payload, dict) or payload.get("provider") != "DeepInfra":
+        return None
+    usage = payload.get("usage") or {}
+    inp, out = usage.get("prompt_tokens"), usage.get("completion_tokens")
+    if type(inp) is int and type(out) is int and 0 <= inp <= benchmark.ENDPOINT_BOUNDS["deepinfra"][0] \
+            and 0 <= out <= benchmark.ENDPOINT_BOUNDS["deepinfra"][1]:
+        return benchmark.money_nusd(Decimal(inp) * deepinfra_batch.INPUT_RATE +
+                                     Decimal(out) * deepinfra_batch.OUTPUT_RATE)
+    return None
+
+
+def _jev_worker(text, key):
+    started = time.monotonic()
+    try:
+        return jev.post_systemone(jev.build_request(text), key), time.monotonic() - started, None
+    except Exception as error:
+        return None, time.monotonic() - started, type(error).__name__
+
+
+def _evidence_worker(payload, key):
+    started = time.monotonic()
+    try:
+        return benchmark.request_json("https://openrouter.ai/api/v1/chat/completions", payload, key), \
+            time.monotonic() - started, None
+    except Exception as error:
+        return None, time.monotonic() - started, type(error).__name__
+
+
+def run_labels(queue, key, first_100=False, max_new_requests=None):
+    queue.assert_resume_safe("jev")
+    if not key:
+        raise ValueError("Jev key unavailable; no paid call")
+    jev.check_model_access(key)
+    active = {}
+    reported = set()
+    admitted = failures = 0
+    stop = False
+    halt_reason = None
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        while active or not stop:
+            while not stop and len(active) < MAX_WORKERS and (max_new_requests is None or
+                    admitted < max_new_requests):
+                row = queue.next_jev(first_100)
+                if row is None:
+                    break
+                try:
+                    request_key = queue.reserve("jev", [row], queue.label_config_sha,
+                                                RESERVATION_NANODOLLARS)
+                except Exception as error:
+                    stop, halt_reason = True, type(error).__name__ + ": " + str(error)
+                    break
+                active[pool.submit(_jev_worker, row["review_text"], key)] = (request_key, row)
+                admitted += 1
+            if not active:
+                break
+            done, _ = wait(active, return_when=FIRST_COMPLETED)
+            for future in done:
+                request_key, row = active.pop(future)
+                response, elapsed, error_class = future.result()
+                if response is None:
+                    queue.fail(request_key, error_class=error_class, elapsed_seconds=elapsed)
+                    stop, halt_reason = True, "unknown Jev delivery"
+                    continue
+                try:
+                    labels = jev.parse_response(response)
+                except Exception as error:
+                    charge = _metered_jev(response)
+                    queue.fail(request_key, metered_charge=charge, error_class=type(error).__name__,
+                               response=response, elapsed_seconds=elapsed)
+                    failures += 1
+                    if charge is None or response.get("model") != jev.MODEL or failures >= 5:
+                        stop, halt_reason = True, "Jev invalid response or failure streak"
+                    continue
+                charge = labels.input_tokens * NANODOLLARS_PER_INPUT_TOKEN
+                try:
+                    queue.save_label(request_key, row, json.dumps(labels.__dict__, sort_keys=True),
+                        charge, labels.input_tokens, labels.output_tokens, elapsed)
+                except Exception as error:
+                    queue.fail(request_key, metered_charge=charge, error_class=type(error).__name__,
+                               response=response, elapsed_seconds=elapsed)
+                    stop, halt_reason = True, "Jev result persistence failed"
+                    continue
+                failures = 0
+                emit_progress(queue, "labels", reported)
+            if stop:
+                # Already admitted requests finish and are recorded; never cancel delivery blindly.
+                continue
+    return {"admitted": admitted, "paused": stop, "halt_reason": halt_reason,
+            **queue.summary()}
+
+
+def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None):
+    queue.assert_resume_safe("evidence")
+    if batch_limit not in (25, 50) or not key:
+        raise ValueError("batch limit or OpenRouter key missing")
+    benchmark.verify_route("deepinfra")
+    canary.verify_project_key(key, deepinfra_batch.reservation_nusd())
+    if first_100 and queue.db.execute("SELECT COUNT(*) FROM checkpoint_labels l JOIN "
+            "checkpoint_rows r USING(review_id) WHERE r.position<=100").fetchone()[0] != 100:
+        raise ValueError("first 100 Jev labels are incomplete")
+    active = {}
+    reported = set()
+    admitted = failures = 0
+    stop = False
+    halt_reason = None
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        while active or not stop:
+            while not stop and len(active) < MAX_WORKERS and (max_new_requests is None or
+                    admitted < max_new_requests):
+                rows = queue.next_evidence(batch_limit, first_100)
+                if not rows:
+                    break
+                try:
+                    labels = queue.labels_for(rows)
+                    request = deepinfra_batch.payload(rows, labels, batch_limit)
+                    config = deepinfra_batch.config_sha(batch_limit, len(rows))
+                    request_key = queue.reserve("evidence", rows, config,
+                                                deepinfra_batch.reservation_nusd(), batch_limit)
+                except Exception as error:
+                    stop, halt_reason = True, type(error).__name__ + ": " + str(error)
+                    break
+                active[pool.submit(_evidence_worker, request, key)] = \
+                    (request_key, rows, config)
+                admitted += 1
+            if not active:
+                break
+            done, _ = wait(active, return_when=FIRST_COMPLETED)
+            for future in done:
+                request_key, rows, config = active.pop(future)
+                response, elapsed, error_class = future.result()
+                if response is None:
+                    queue.fail(request_key, error_class=error_class, elapsed_seconds=elapsed)
+                    stop, halt_reason = True, "unknown DeepInfra delivery"
+                    continue
+                try:
+                    accepted, inp, out, reasoning, charge = \
+                        deepinfra_batch.validate_response(response, rows, batch_limit)
+                except Exception as error:
+                    charge = _metered_deepinfra(response)
+                    queue.fail(request_key, metered_charge=charge,
+                               error_class=type(error).__name__, response=response,
+                               elapsed_seconds=elapsed)
+                    failures += 1
+                    if charge is None or failures >= 5:
+                        stop, halt_reason = True, "DeepInfra invalid response or failure streak"
+                    continue
+                try:
+                    queue.save_evidence(request_key, rows, accepted, config, charge,
+                        inp, out, reasoning, response["id"], elapsed)
+                except Exception as error:
+                    queue.fail(request_key, metered_charge=charge,
+                               error_class=type(error).__name__, response=response,
+                               elapsed_seconds=elapsed)
+                    stop, halt_reason = True, "DeepInfra result persistence failed"
+                    continue
+                failures = 0
+                emit_progress(queue, "complete", reported)
+            if stop:
+                continue
+    return {"admitted": admitted, "paused": stop, "halt_reason": halt_reason,
+            **queue.summary()}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", default="local/checkpoint5000_manifest.json")
+    parser.add_argument("--budget", default="local/project_budget.db")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--prepare", action="store_true")
+    mode.add_argument("--status", action="store_true")
+    mode.add_argument("--run-labels", action="store_true")
+    mode.add_argument("--run-evidence", action="store_true")
+    parser.add_argument("--first-100", action="store_true")
+    parser.add_argument("--batch-limit", type=int, choices=(25, 50))
+    parser.add_argument("--max-new-requests", type=int)
+    parser.add_argument("--jev-price-checked-on")
+    args = parser.parse_args()
+    if args.max_new_requests is not None and args.max_new_requests <= 0:
+        parser.error("max-new-requests must be positive")
+    if args.run_labels and (args.jev_price_checked_on != date.today().isoformat()):
+        parser.error("Jev USD 0.042/M input price requires today's verified date")
+    if args.run_evidence and args.batch_limit is None:
+        parser.error("evidence mode requires --batch-limit 25 or 50")
+    budget, queue = open_checkpoint(args)
+    try:
+        if args.run_labels:
+            result = run_labels(queue, os.environ.get("TYPESAFE_API_KEY"), args.first_100,
+                                args.max_new_requests)
+        elif args.run_evidence:
+            key = canary.keychain_secret(timeout_seconds=90)
+            try:
+                result = run_evidence(queue, key, args.batch_limit, args.first_100,
+                                      args.max_new_requests)
+            finally:
+                key = None
+        else:
+            result = {"status": "prepared_offline" if args.prepare else "offline_status",
+                      **queue.summary()}
+        print(json.dumps(result, sort_keys=True))
+    finally:
+        budget.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -94,6 +94,24 @@ class CheckpointQaTest(unittest.TestCase):
         self.assertIn("label_prompt_mismatch", report["failure_reasons"])
         self.assertIn("source_hash_mismatch", report["failure_reasons"])
 
+    def test_fifty_direct_members_and_cached_alias_without_model_batch(self):
+        bundle = fixture(51)
+        alias = bundle["source_rows"][-1]
+        alias["review_text"] = bundle["source_rows"][0]["review_text"]
+        source_hash = row_sha256([alias[k] for k in SOURCE_FIELDS])
+        bundle["manifest"][-1]["source_sha256"] = source_hash
+        cached = bundle["results"][-1]
+        cached.update({"review_text": alias["review_text"], "source_sha256": source_hash,
+            "is_cached": True, "cache_source_id": bundle["results"][0]["review_id"],
+            "batch_id": None, "request_id": None})
+        bundle["batches"] = [{"batch_id": 0, "status": "succeeded",
+            "review_ids": [r["review_id"] for r in bundle["source_rows"][:50]]}]
+        for result in bundle["results"][:50]:
+            result["batch_id"] = 0
+        report, _ = self.check(bundle)
+        self.assertTrue(report["structurally_clean"], report["failure_reasons"])
+        self.assertEqual(report["accepted_rows"], 51)
+
 
 if __name__ == "__main__":
     unittest.main()

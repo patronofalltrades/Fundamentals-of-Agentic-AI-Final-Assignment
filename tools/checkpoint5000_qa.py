@@ -80,7 +80,7 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
         batches[bid] = batch
         if batch.get("status") not in STATUSES:
             _issue(problems, "invalid_batch_status")
-        if len(batch["review_ids"]) > 10 or len(batch["review_ids"]) == 0:
+        if len(batch["review_ids"]) > 50 or len(batch["review_ids"]) == 0:
             _issue(problems, "invalid_batch_size")
         seen = set()
         for rid in batch["review_ids"]:
@@ -97,7 +97,10 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
             else:
                 membership[rid] = bid
     for rid in manifest.keys() - membership.keys():
-        _issue(problems, "missing_batch_id")
+        rec = next((item for item in bundle["results"] if isinstance(item, dict)
+                    and item.get("review_id") == rid), None)
+        if rec is not None and not rec.get("is_cached"):
+            _issue(problems, "missing_batch_id")
     for rec in bundle["results"]:
         if not isinstance(rec, dict) or not isinstance(rec.get("review_id"), str):
             _issue(problems, "malformed_result")
@@ -115,7 +118,7 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
             continue
         expected = {"review_id": rid, "review_text": row["review_text"],
                     "source_sha256": row_sha256([row[k] for k in SOURCE_FIELDS])}
-        if rec.get("batch_id") != membership.get(rid):
+        if not rec.get("is_cached") and rec.get("batch_id") != membership.get(rid):
             _issue(problems, "result_batch_mismatch")
             invalid_rows.add(rid)
         if rec.get("source_sha256") != expected["source_sha256"] or rec.get("review_text") != row["review_text"]:
@@ -123,7 +126,7 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
             invalid_rows.add(rid)
         batch = batches.get(membership.get(rid), {})
         if rec.get("status") == "completed":
-            if batch.get("status") != "succeeded":
+            if not rec.get("is_cached") and batch.get("status") != "succeeded":
                 _issue(problems, "completed_in_unsettled_batch")
                 invalid_rows.add(rid)
             for error in validate_completed(rec, expected):

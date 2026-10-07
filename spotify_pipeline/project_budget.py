@@ -120,7 +120,7 @@ class ProjectBudget:
             FROM reservations WHERE budget=?""", (budget,)).fetchone()[0]
         return legacy + future
 
-    def reserve(self, request_key, budget, amount_nusd):
+    def reserve(self, request_key, budget, amount_nusd, record=None):
         if not request_key or budget not in CAPS or type(amount_nusd) is not int or amount_nusd <= 0:
             raise ValueError("invalid cost reservation")
         self.db.execute("BEGIN IMMEDIATE")
@@ -132,12 +132,14 @@ class ProjectBudget:
                 raise ValueError("cumulative project cap would be reached")
             self.db.execute("INSERT INTO reservations(request_key,budget,status,reserved_nusd)"
                             " VALUES (?,?,'reserved',?)", (request_key, budget, amount_nusd))
+            if record is not None:
+                record(self.db)
             self.db.commit()
         except BaseException:
             self.db.rollback()
             raise
 
-    def settle(self, request_key, status, charged_nusd):
+    def settle(self, request_key, status, charged_nusd, record=None):
         if status not in ("succeeded", "quarantined_metered") or type(charged_nusd) is not int or charged_nusd < 0:
             raise ValueError("settlement requires measured nonnegative charge")
         self.db.execute("BEGIN IMMEDIATE")
@@ -148,18 +150,22 @@ class ProjectBudget:
                 raise ValueError("request not reserved or charge exceeds bound")
             self.db.execute("UPDATE reservations SET status=?,charged_nusd=?,settled_utc=datetime('now')"
                             " WHERE request_key=?", (status, charged_nusd, request_key))
+            if record is not None:
+                record(self.db)
             self.db.commit()
         except BaseException:
             self.db.rollback()
             raise
 
-    def uncertain(self, request_key):
+    def uncertain(self, request_key, record=None):
         self.db.execute("BEGIN IMMEDIATE")
         try:
             changed = self.db.execute("UPDATE reservations SET status='uncertain'"
                 " WHERE request_key=? AND status='reserved'", (request_key,)).rowcount
             if changed != 1:
                 raise ValueError("only a reserved request can become uncertain")
+            if record is not None:
+                record(self.db)
             self.db.commit()
         except BaseException:
             self.db.rollback()
