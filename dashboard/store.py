@@ -129,43 +129,8 @@ def initialize_existing(path: str) -> None:
 
 
 def import_analysis(path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Persist accepted membership; derive ranking from saved classifications."""
-    with connect(path) as conn:
-        identity = _source_identity(conn)
-        if payload.get("source_sha256") != identity["source_sha256"] or payload.get("config_hash") != identity["config_hash"]:
-            raise ValueError("analysis source/configuration identity mismatch")
-        run_id = payload.get("run_id")
-        if not isinstance(run_id, str) or not IDENTIFIER.fullmatch(run_id):
-            raise ValueError("run_id is required")
-        issues = payload.get("issues")
-        recommendations = payload.get("recommendations", [])
-        if not isinstance(issues, list) or not issues or not isinstance(recommendations, list):
-            raise ValueError("accepted issues and recommendation list are required")
-        known_rows = {r[0]: r[1] for r in conn.execute("SELECT r.row_index,c.intent FROM records r JOIN classifications c USING(row_index) WHERE c.config_hash=?", (identity["config_hash"],))}
-        issue_ids = set()
-        memberships = []
-        for item in issues:
-            issue_id, title, rows = item.get("issue_id"), item.get("title"), item.get("row_indices")
-            if not isinstance(issue_id, str) or not IDENTIFIER.fullmatch(issue_id) or issue_id in issue_ids or not isinstance(title, str) or not title.strip() or not isinstance(rows, list) or not rows:
-                raise ValueError("issue needs unique ID, title, and nonempty membership")
-            issue_ids.add(issue_id)
-            if any(type(row) is not int for row in rows) or len(rows) != len(set(rows)) or any(known_rows.get(row) not in ("complaint", "cancellation") for row in rows):
-                raise ValueError("membership must contain unique completed complaint/cancellation rows")
-            memberships.extend((run_id, issue_id, row) for row in rows)
-        recommendation_ids = set()
-        for item in recommendations:
-            rid, body, refs = item.get("recommendation_id"), item.get("text"), item.get("issue_ids")
-            if not isinstance(rid, str) or not IDENTIFIER.fullmatch(rid) or rid in recommendation_ids or not isinstance(body, str) or not body.strip() or not isinstance(refs, list) or not refs or any(ref not in issue_ids for ref in refs) or len(refs) != len(set(refs)):
-                raise ValueError("recommendation needs unique ID, text, and valid issue links")
-            recommendation_ids.add(rid)
-        with conn:
-            existing = conn.execute("SELECT 1 FROM analysis_run WHERE run_id=?", (run_id,)).fetchone()
-            if existing:
-                raise ValueError("analysis run ID already exists; saved analysis is immutable")
-            conn.execute("INSERT INTO analysis_run(run_id,source_sha256,config_hash,grouping_status,verifier_status,recommendation_status) VALUES(?,?,?,'accepted','pending',?)", (run_id, identity["source_sha256"], identity["config_hash"], "draft_unverified" if recommendations else "pending"))
-            conn.executemany("INSERT INTO issue VALUES (?,?,?)", ((run_id, i["issue_id"], i["title"]) for i in issues))
-            conn.executemany("INSERT INTO issue_membership VALUES (?,?,?)", memberships)
-            for item in recommendations:
-                conn.execute("INSERT INTO recommendation VALUES (?,?,?)", (run_id, item["recommendation_id"], item["text"]))
-                conn.executemany("INSERT INTO recommendation_issue VALUES (?,?,?)", ((run_id, item["recommendation_id"], issue_id) for issue_id in item["issue_ids"]))
-    return {"run_id": run_id, "issues": len(issues), "memberships": len(memberships), "recommendations": len(recommendations)}
+    """Persist accepted membership in a SQLite dashboard copy. See ``dashboard.analysis``."""
+    from .analysis import load_analysis
+    from .backend import SQLiteBackend
+    with SQLiteBackend(path, readonly=False) as backend:
+        return load_analysis(backend, payload)

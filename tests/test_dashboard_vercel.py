@@ -8,9 +8,10 @@ from pathlib import Path
 from wsgiref.util import setup_testing_defaults
 
 from dashboard import bundle
+from dashboard.analysis import load_analysis
 from dashboard.backend import NeonHTTPBackend, Row, SQLiteBackend, from_env, translate_sqlite_to_postgres
 from dashboard.server import route, summary
-from dashboard.store import connect, import_checkpoint
+from dashboard.store import connect, import_analysis, import_checkpoint
 from dashboard.wsgi import make_app
 from spotify_pipeline.db import Database
 from tests.helpers import completed_item, make_db
@@ -173,6 +174,88 @@ class BundleTests(unittest.TestCase):
         with SQLiteBackend(self.target) as backend:
             target = summary(backend)["target"]
         self.assertEqual(target, {"minimum_source_rows": 100000, "is_demo": True})
+
+
+class AnalysisTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        tmp = Path(self.temp.name)
+        self.copy = build_dashboard_copy(self.temp.name)
+        bundle.export_bundle(self.copy, str(tmp / "bundle"))
+        self.portable = str(tmp / "portable.db")
+        with SQLiteBackend(self.portable, readonly=False) as backend:
+            bundle.load_bundle(backend, str(tmp / "bundle"))
+            ident = backend.execute("SELECT value FROM meta WHERE key='file_sha256'").fetchone()[0]
+            config = backend.execute("SELECT DISTINCT config_hash FROM record_state").fetchone()[0]
+        self.payload = {"run_id": "synthetic-run", "source_sha256": ident, "config_hash": config,
+                        "issues": [{"issue_id": "z", "title": "Playback", "row_indices": [0]},
+                                   {"issue_id": "a", "title": "Billing", "row_indices": [1]}],
+                        "recommendations": [{"recommendation_id": "draft-1", "text": "Investigate both.",
+                                             "issue_ids": ["z", "a"]}]}
+
+    def test_portable_backend_matches_original_sqlite_importer(self):
+        import_analysis(self.copy, self.payload)
+        with SQLiteBackend(self.portable, readonly=False) as backend:
+            self.assertEqual(load_analysis(backend, self.payload)["memberships"], 2)
+        original = lambda path: call(lambda: connect(self.copy, readonly=True), path)[1]
+        portable = lambda path: call(lambda: SQLiteBackend(self.portable), path)[1]
+        self.assertEqual(original("/api/issues")["items"], portable("/api/issues")["items"])
+        self.assertEqual(original("/api/recommendations"), portable("/api/recommendations"))
+        self.assertEqual(original("/api/issues/a")["reviews"], portable("/api/issues/a")["reviews"])
+        self.assertEqual(original("/api/summary")["analysis"]["grouping"], "accepted")
+        self.assertEqual(portable("/api/summary")["analysis"]["grouping"], "accepted")
+        ranked = call(lambda: SQLiteBackend(self.portable), "/api/issues")[1]["items"]
+        self.assertEqual([(i["issue_id"], i["priority_score"], i["mean_severity"]) for i in ranked],
+                         [("a", 4, "4.000000"), ("z", 4, "4.000000")])
+
+    def test_rejections_and_immutability(self):
+        with SQLiteBackend(self.portable, readonly=False) as backend:
+            for bad in ({**self.payload, "config_hash": "wrong"},
+                        {**self.payload, "issues": [{"issue_id": "p", "title": "Praise", "row_indices": [2]}]},
+                        {**self.payload, "recommendations": [{"recommendation_id": "r", "text": "x", "issue_ids": ["nope"]}]}):
+                with self.assertRaises(ValueError):
+                    load_analysis(backend, bad)
+            load_analysis(backend, self.payload)
+            with self.assertRaises(ValueError):
+                load_analysis(backend, self.payload)
+            self.assertEqual(backend.execute("SELECT COUNT(*) FROM analysis_run").fetchone()[0], 1)
+
+    def test_failed_batch_writes_nothing(self):
+        with SQLiteBackend(self.portable, readonly=False) as backend:
+            bad = dict(self.payload, issues=self.payload["issues"] + [{"issue_id": "a2", "title": "Dup", "row_indices": [1]}])
+            original = backend.run_batch
+
+            def failing(statements):
+                original(statements[:-1] + [("INSERT INTO issue (run_id, issue_id, title) VALUES (?, ?, ?)",
+                                             ("synthetic-run", "a", "duplicate key"))])
+            backend.run_batch = failing
+            with self.assertRaises(Exception):
+                load_analysis(backend, bad)
+            backend.run_batch = original
+            self.assertEqual(backend.execute("SELECT COUNT(*) FROM analysis_run").fetchone()[0], 0)
+            self.assertEqual(backend.execute("SELECT COUNT(*) FROM issue").fetchone()[0], 0)
+
+    def test_postgres_path_is_one_transaction(self):
+        sent = []
+        with SQLiteBackend(self.portable) as local:
+            def transport(url, headers, body, timeout):
+                payload = json.loads(body)
+                if "queries" in payload:
+                    sent.append(payload["queries"])
+                    return {"results": []}
+                sql = payload["query"]
+                for n in range(len(payload["params"]), 0, -1):
+                    sql = sql.replace("$%d" % n, "?")
+                rows = local.execute(sql, payload["params"]).fetchall()
+                names = [d[0] for d in local._conn.execute(sql, payload["params"]).description] if rows else []
+                return {"fields": [{"name": n, "dataTypeID": 25} for n in names], "rows": [list(r) for r in rows]}
+
+            result = load_analysis(NeonHTTPBackend("postgres://u:p@ep-x.neon.tech/d", transport=transport), self.payload)
+        self.assertEqual(result["memberships"], 2)
+        self.assertEqual(len(sent), 1)
+        self.assertTrue(sent[0][0]["query"].startswith("INSERT INTO analysis_run"))
+        self.assertTrue(all("$" in q["query"] and "?" not in q["query"] for q in sent[0]))
 
 
 class WSGITests(unittest.TestCase):

@@ -17,7 +17,9 @@ def main():
     copy.add_argument("--db", required=True)
     analysis = sub.add_parser("import-analysis", help="save accepted issue membership and draft recommendation")
     analysis.add_argument("--input", required=True)
-    analysis.add_argument("--db", required=True)
+    analysis_target = analysis.add_mutually_exclusive_group(required=True)
+    analysis_target.add_argument("--db", help="SQLite dashboard database")
+    analysis_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
     export = sub.add_parser("export-bundle", help="write rows.jsonl + manifest.json (no full review text)")
     export.add_argument("--db", required=True, help="dashboard SQLite copy made by import-checkpoint")
     export.add_argument("--out", required=True, help="new, empty bundle directory")
@@ -50,7 +52,16 @@ def main():
     elif args.command == "import-analysis":
         with open(args.input, encoding="utf-8") as handle:
             payload = json.load(handle)
-        print(json.dumps(import_analysis(args.db, payload), sort_keys=True))
+        if args.db:
+            print(json.dumps(import_analysis(args.db, payload), sort_keys=True))
+        else:
+            import os
+            from .analysis import load_analysis
+            url = os.environ.get(args.postgres_env)
+            if not url:
+                parser.error("environment variable %s is not set" % args.postgres_env)
+            with NeonHTTPBackend(url, timeout=60) as backend:
+                print(json.dumps(load_analysis(backend, payload), sort_keys=True))
     else:
         serve(args.db, args.host, args.port)
 
