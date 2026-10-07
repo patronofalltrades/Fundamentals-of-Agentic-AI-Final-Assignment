@@ -10,6 +10,33 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 **Submission:** This public repository will be the grader's entry point. Final submission through the course portal is pending.
 
+## Instructor clarification and final deliverables
+
+Hanif reported an in-class clarification on October 6 Pacific / October 7 UTC:
+the minimum analysis is **100,000 source reviews** to control cost. Exact-text
+cache reuse may reduce inference calls, but every selected original review ID
+and source hash must remain in the saved output. Full-corpus processing is a
+stretch goal subject to measured feasibility. The supplied
+`GRADING_CONTRACT.md` still specifies full-corpus output, so a scoped run must
+be disclosed and its acceptance checked before final submission.
+
+The instructor's approximate **US$10 cost for 100,000 reviews** is an
+expectation, not a measurement or spending approval. The current OpenRouter
+extractor comparison retains its separate **strictly below US$1 total** cap.
+Scaling needs measured cost, verified access, and explicit authorization.
+Keep Jev for low-cost fixed labels; evaluate a low-cost evidence extractor.
+Haiku is one example, not a selected replacement.
+
+The final submission also needs a **deployed dashboard, backend, and database**
+that stores the analyzed results, with the **live URL in this README**. The
+large run needs bounded parallel workers, a durable queue, exact-text caching,
+and **10 reviews per model request**, each with traceable row results. Use
+atomic shared budget reservations across workers, bounded retries, saved
+checkpoints, and safe resume. Ten reviews in one request is different from
+ten parallel single-review requests. Benchmark 10-review payload quality,
+ID completeness, token caps, throughput, and recovery before scaling. These
+are final-run requirements; the current extractor diagnostic is serial.
+
 ## Current status
 
 As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
@@ -86,9 +113,9 @@ No API key is needed. Close all database writers before re-ingestion. Status wit
 - `GRADING_CONTRACT.md` and `COST_CALCULATOR.md` in the expanded course dataset ZIP specify the export format and measured pilot requirements. These supplied files are not yet committed here.
 - [Original dataset](https://www.kaggle.com/datasets/bwandowando/3-4-million-spotify-google-store-reviews), by BwandoWando, version 2, published November 17, 2023. The publisher lists CC0: Public Domain.
 
-**Planned scope is the full corpus:** account for 660,622 original IDs, classify all 660,609 nonempty reviews, and quarantine the 13 empty texts with `empty_review_text`. Other unresolved nonempty reviews must remain visible and reduce successful classification coverage.
+**Clarified minimum scope is 100,000 source reviews.** Keep each selected original ID, classify its nonempty text, and quarantine selected empty texts with `empty_review_text`. The earlier full-corpus target was 660,622 original IDs, 660,609 nonempty reviews, and 13 empty texts. Other unresolved nonempty reviews must remain visible and reduce successful classification coverage.
 
-The current brief includes “or at least 100,000” in several passages, while other passages and the local grading contract require full coverage. This project targets the full contract; any reduced scope would need clarification and explicit disclosure. The older `spotify-insight-dataset` README describes sample processing, whereas the expanded `Final Assignment - Spotify Reviews Dataset` package adds the full-run contract, calculator specification, checker, and cost pilot. Their four shared CSVs are byte-identical. The expanded package is the planning reference.
+The brief includes “or at least 100,000” in several passages; Hanif reports that the instructor confirmed this minimum. Other passages and the supplied grading contract still require full coverage. Do not claim the unchanged full-corpus checker accepts a 100,000-row export without verifying it. The older `spotify-insight-dataset` README describes sample processing, whereas the expanded `Final Assignment - Spotify Reviews Dataset` package adds the full-run contract, calculator specification, checker, and cost pilot. Their four shared CSVs are byte-identical. The expanded package is the planning reference.
 
 ## Verified dataset inventory
 
