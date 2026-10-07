@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, urlparse
 from .store import connect
 
 STATIC = Path(__file__).with_name("static")
+# The built Astro site (web/dist). When present it replaces the legacy static page.
+DIST = Path(__file__).resolve().parents[1] / "web" / "dist"
 TOPICS = ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other")
 TARGET_MINIMUM_SOURCE_ROWS = 100000  # instructor clarification; see AGENTS.md
 SECURITY_HEADERS = (
@@ -24,6 +26,18 @@ SECURITY_HEADERS = (
     ("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; "
                                 "object-src 'none'; base-uri 'none'; frame-ancestors 'none'"),
 )
+# Built HTML carries its own hash-based CSP <meta> (Astro security.csp); a strict header CSP would
+# block its hashed inline scripts, so HTML pages only get the directives a <meta> cannot set.
+HTML_HEADERS = tuple((k, v) for k, v in SECURITY_HEADERS if k != "Content-Security-Policy") + (
+    ("Content-Security-Policy", "frame-ancestors 'none'"),
+)
+
+
+def headers_for(content_type):
+    """Security headers for one response: API and assets keep the strict CSP."""
+    return HTML_HEADERS if content_type.startswith("text/html") and DIST.is_dir() else SECURITY_HEADERS
+
+
 ISSUE_RE = re.compile(r"^/api/issues/([^/]+)$")
 REVIEW_RE = re.compile(r"^/api/reviews/([0-9]+)$")
 
@@ -260,6 +274,15 @@ def route(open_conn, method, path, query=""):
             with open_conn() as conn:
                 return _api(conn, path, query)
         name = "index.html" if path == "/" else path.lstrip("/")
+        if DIST.is_dir():
+            root = DIST.resolve()
+            target = (root / name).resolve()
+            if root not in target.parents or not target.is_file():
+                return _json_body(404, {"error": "not found"})
+            content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+            if content_type.startswith("text/"):
+                content_type += "; charset=utf-8"
+            return 200, content_type, target.read_bytes()
         if name not in ("index.html", "app.js", "style.css"):
             return _json_body(404, {"error": "not found"})
         return 200, mimetypes.guess_type(name)[0] or "application/octet-stream", (STATIC / name).read_bytes()
@@ -277,7 +300,7 @@ def make_handler(db_path):
             status, content_type, body = route(open_conn, method, parsed.path, parsed.query)
             self.send_response(status)
             self.send_header("Content-Type", content_type)
-            for name, value in SECURITY_HEADERS:
+            for name, value in headers_for(content_type):
                 self.send_header(name, value)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()

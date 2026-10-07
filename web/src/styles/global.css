@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter-tight";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens sampled from the reference shot (docs/design-requirements.md).
+ * The dashboard is dark only, so :root and .dark carry the same values.
+ */
+@theme inline {
+  --font-heading: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-canvas: var(--canvas);
+  --color-tile: var(--tile);
+  --color-track: var(--track);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --radius-sm: calc(var(--radius) * 0.4);
+  --radius-md: calc(var(--radius) * 0.55);
+  --radius-lg: calc(var(--radius) * 0.7);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.35);
+  --radius-3xl: calc(var(--radius) * 1.7);
+  --radius-4xl: calc(var(--radius) * 2);
+}
+
+:root,
+.dark {
+  --radius: 1.5rem;              /* 24px cards; tiles use rounded-2xl (~16px) */
+  --ambient-1: #24384f;           /* blue glow behind the app frame */
+  --ambient-2: #0b0f15;
+  --background: #0b0f15;          /* page around the frame */
+  --canvas: #060508;              /* app canvas between cards */
+  --foreground: #ffffff;
+  --card: #18171a;
+  --card-foreground: #ffffff;
+  --popover: #232226;
+  --popover-foreground: #ffffff;
+  --primary: #aac5fa;             /* the single accent */
+  --primary-foreground: #000010;
+  --secondary: #2e2d30;
+  --secondary-foreground: #ffffff;
+  --tile: #2e2d30;
+  --muted: #2e2d30;
+  --muted-foreground: #adacaf;
+  --accent: #2e2d30;
+  --accent-foreground: #ffffff;
+  --destructive: #f4d2d1;
+  --border: #242326;
+  --input: #2e2d30;
+  --ring: #aac5fa;
+  --track: #5a595c;
+  --positive: #d7f8c8;
+  --negative: #f4d2d1;
+  --chart-1: #bdcde7;             /* lavender */
+  --chart-2: #fdf9d4;             /* butter */
+  --chart-3: #d2f6f5;             /* mint */
+  --chart-4: #d7f8c8;
+  --chart-5: #f4d2d1;
+  --sidebar: #18171a;
+  --sidebar-foreground: #adacaf;
+  --sidebar-primary: #aac5fa;
+  --sidebar-primary-foreground: #000010;
+  --sidebar-accent: #2e2d30;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #242326;
+  --sidebar-ring: #aac5fa;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    letter-spacing: -0.01em;
+    background-image: radial-gradient(1200px 700px at 50% -10%, var(--ambient-1), transparent 70%);
+    background-attachment: fixed;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* The hero orb: layered gradients only, no image asset. */
+.orb {
+  position: relative;
+  width: 11rem;
+  aspect-ratio: 1;
+  border-radius: 46% 54% 52% 48% / 50% 44% 56% 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #e4efff 0 6%, transparent 18%),
+    radial-gradient(circle at 70% 70%, #0b1d6b 0 18%, transparent 46%),
+    conic-gradient(from 210deg, #1638b8, #5c86ff, #0a1a63, #3f6dff, #c9dbff, #1638b8);
+  box-shadow:
+    inset -18px -22px 40px rgba(2, 8, 40, 0.85),
+    inset 14px 12px 30px rgba(190, 215, 255, 0.55),
+    0 30px 80px -20px rgba(64, 110, 255, 0.55);
+  filter: saturate(1.15);
+  animation: orb-turn 18s linear infinite;
+}
+.orb::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: inherit;
+  background: conic-gradient(from 40deg, transparent, rgba(255, 255, 255, 0.35), transparent 30%);
+  mix-blend-mode: screen;
+  filter: blur(6px);
+}
+@keyframes orb-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb {
+    animation: none;
+  }
+}
+
+/* Dotted leader between a label and its value: "Goal ······ 8,000". */
+.leader {
+  flex: 1;
+  margin: 0 0.5rem;
+  border-bottom: 1px dotted var(--track);
+  transform: translateY(-0.25em);
+}

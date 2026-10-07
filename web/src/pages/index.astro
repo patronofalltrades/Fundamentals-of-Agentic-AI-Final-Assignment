@@ -1,0 +1,132 @@
+---
+import Layout from "@/layouts/main.astro"
+import { BarChart3, BookOpenText, FileText, House, ListOrdered, ArrowRight } from "lucide-react"
+import KpiTiles from "@/components/dashboard/kpi-tiles"
+import ProgressStrip from "@/components/dashboard/progress-strip"
+import IssueTable from "@/components/dashboard/issue-table"
+import Gauges from "@/components/dashboard/gauges"
+import Readiness from "@/components/dashboard/readiness"
+import MemoPanel from "@/components/dashboard/memo-panel"
+import EvidenceExplorer from "@/components/dashboard/evidence-explorer"
+import HeroStatus from "@/components/dashboard/hero-status"
+
+const nav = [
+  { id: "overview", label: "Overview", icon: House },
+  { id: "issues", label: "Issues", icon: ListOrdered },
+  { id: "memo", label: "Memo", icon: FileText },
+  { id: "evidence", label: "Evidence", icon: BarChart3 },
+  { id: "method", label: "Method", icon: BookOpenText },
+]
+---
+
+<Layout title="Spotify review evidence" description="Read-only dashboard of saved Spotify review classifications, issue ranking and the decision memo.">
+  <a href="#overview" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">Skip to content</a>
+  <div class="mx-auto max-w-[1520px] p-0 sm:p-4 lg:p-10">
+    <div class="flex min-h-svh overflow-clip bg-canvas sm:min-h-0 sm:rounded-[2.5rem] sm:shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
+      <!-- Icon rail (desktop) -->
+      <aside class="hidden w-[100px] shrink-0 bg-sidebar md:block">
+      <nav aria-label="Sections" class="sticky top-0 flex h-svh max-h-[56rem] flex-col items-center gap-2 py-8">
+        <a href="#overview" class="mb-8 grid size-14 place-items-center rounded-[14px] bg-primary text-primary-foreground" aria-label="Spotify review evidence, top">
+          <svg viewBox="0 0 64 64" class="size-7" aria-hidden="true"><path d="M12 44c4-16 9-23 13-23s4 13 9 13 7-11 14-15" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        {nav.map(({ id, label, icon: Icon }) => (
+          <a href={`#${id}`} data-nav={id} title={label}
+            class="nav-link relative grid h-14 w-full place-items-center text-muted-foreground transition-colors hover:text-foreground aria-[current=true]:text-foreground aria-[current=true]:bg-gradient-to-r aria-[current=true]:from-primary/25 aria-[current=true]:to-transparent">
+            <span class="nav-bar absolute inset-y-0 left-0 w-0.5 bg-primary opacity-0"></span>
+            <Icon className="size-5" aria-hidden="true" />
+            <span class="sr-only">{label}</span>
+          </a>
+        ))}
+      </nav>
+      </aside>
+
+      <main class="min-w-0 flex-1 space-y-6 p-4 pb-28 sm:p-6 md:pb-6">
+        <!-- Overview -->
+        <section id="overview" aria-label="Overview" class="grid scroll-mt-6 gap-6 xl:grid-cols-[minmax(0,0.43fr)_minmax(0,1fr)]">
+          <div class="relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#090a11_0%,#101520_45%,#314966_85%,#64819f_100%)] px-6 pt-10 pb-8 text-center">
+            <div class="orb mb-8" aria-hidden="true"></div>
+            <p class="text-[13px] tracking-[0.18em] text-primary uppercase">Product question</p>
+            <h1 class="mt-3 text-[1.65rem] leading-tight font-normal tracking-tight text-balance">Where should Spotify invest next quarter?</h1>
+            <p class="mt-3 max-w-[38ch] text-[15px] text-white/80">Access, usability, playback, or billing and support — ranked from saved review labels, with every number traced to its evidence.</p>
+            <div class="mt-5"><HeroStatus client:load /></div>
+            <a href="#memo" class="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-[15px] text-primary-foreground transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none">
+              Read the memo <ArrowRight className="size-4" aria-hidden="true" />
+            </a>
+          </div>
+          <div class="flex min-w-0 flex-col gap-6">
+            <div class="flex flex-1 flex-col rounded-3xl bg-card p-6"><KpiTiles client:load /></div>
+            <ProgressStrip client:load />
+          </div>
+        </section>
+
+        <!-- Issues -->
+        <section id="issues" aria-label="Issues" class="grid scroll-mt-6 gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <div class="min-w-0 rounded-3xl bg-card p-6"><IssueTable client:visible /></div>
+          <div class="flex min-w-0 flex-col gap-6">
+            <Gauges client:visible />
+            <Readiness client:visible />
+          </div>
+        </section>
+
+        <!-- Memo -->
+        <section id="memo" aria-label="Memo" class="scroll-mt-6 rounded-3xl bg-card p-6"><MemoPanel client:visible /></section>
+
+        <!-- Evidence -->
+        <section id="evidence" aria-label="Evidence" class="scroll-mt-6 rounded-3xl bg-card p-6"><EvidenceExplorer client:only="react" /></section>
+
+        <!-- Method -->
+        <section id="method" aria-label="Method" class="scroll-mt-6 rounded-3xl bg-card p-6">
+          <h2 class="text-xl">Method and limits</h2>
+          <div class="mt-4 grid gap-6 text-[15px] leading-7 text-muted-foreground md:grid-cols-3">
+            <div>
+              <h3 class="mb-1 text-foreground">Labels</h3>
+              <p>Jev classifies each review's topic, intent and severity from the review text only. Star ratings are metadata and do not set labels. Exact duplicate texts reuse one saved result.</p>
+            </div>
+            <div>
+              <h3 class="mb-1 text-foreground">Ranking</h3>
+              <p>Only complaint and cancellation reviews are ranked. An issue's priority is the sum of its review severities. Ties sort by issue ID. The dashboard recomputes the ranking before it shows it.</p>
+            </div>
+            <div>
+              <h3 class="mb-1 text-foreground">Limits</h3>
+              <p>These are self-selected public app reviews, not all customers. There is no revenue, plan or churn data. A cancellation review states intent; it does not prove that a person left.</p>
+            </div>
+          </div>
+        </section>
+
+        <footer class="px-2 pb-2 text-[13px] text-muted-foreground">Read-only view of saved results. Opening this page makes no model request.</footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- Bottom navigation (phones) -->
+  <nav aria-label="Sections" class="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-3xl bg-sidebar/95 p-2 shadow-2xl backdrop-blur md:hidden">
+    {nav.map(({ id, label, icon: Icon }) => (
+      <a href={`#${id}`} data-nav={id} class="nav-link flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[11px] text-muted-foreground aria-[current=true]:bg-tile aria-[current=true]:text-foreground">
+        <Icon className="size-5" aria-hidden="true" />{label}
+      </a>
+    ))}
+  </nav>
+</Layout>
+
+<script>
+  // Mark the section in view as current in both navigation bars.
+  const links = document.querySelectorAll<HTMLAnchorElement>("[data-nav]")
+  const sections = [...new Set([...links].map((a) => a.dataset.nav))]
+    .map((id) => document.getElementById(id ?? ""))
+    .filter((el): el is HTMLElement => el !== null)
+  const mark = (id: string) =>
+    links.forEach((a) => {
+      const on = a.dataset.nav === id
+      a.setAttribute("aria-current", String(on))
+      a.querySelector<HTMLElement>(".nav-bar")?.classList.toggle("opacity-100", on)
+    })
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      if (visible[0]) mark(visible[0].target.id)
+    },
+    { rootMargin: "-20% 0px -60% 0px" },
+  )
+  sections.forEach((s) => observer.observe(s))
+  mark("overview")
+</script>
