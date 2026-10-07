@@ -77,6 +77,7 @@ def _refresh_aggregates(conn: sqlite3.Connection) -> None:
         "topic": "SELECT topic, COUNT(*) FROM classifications GROUP BY topic",
         "intent": "SELECT intent, COUNT(*) FROM classifications GROUP BY intent",
         "severity": "SELECT CAST(severity AS TEXT), COUNT(*) FROM classifications GROUP BY severity",
+        "coverage": "SELECT 'distinct_nonempty_texts', COUNT(*) FROM texts",
     }
     for dimension, query in queries.items():
         conn.executemany("INSERT INTO dashboard_aggregate VALUES (?, ?, ?)",

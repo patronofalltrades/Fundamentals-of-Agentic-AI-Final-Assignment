@@ -1,6 +1,16 @@
-# Vercel staging plan — not deployed
+# Vercel staging plan — code ready, not deployed
 
 The current dashboard is a local `ThreadingHTTPServer` reading an ignored SQLite copy. Do not connect this branch to Vercel as-is. The Vercel Python runtime loads ASGI or WSGI entrypoints as Functions, rather than running a long-lived server process. The local SQLite file is not tracked and must not be bundled. This branch adds `.vercelignore` for CLI upload exclusion and ignores `.vercel/` project-link state. For a Git deployment, inspect tracked files and the build input separately. It does not create a Vercel project, database, credentials, deployment, or URL.
+
+## Status, 7 October 2026
+
+- The Function entry, the Postgres backend and the import contract exist on branch `feat/dashboard-vercel`.
+  See [the dashboard guide](dashboard.md).
+- Vercel project: `fundamentals-of-agentic-ai-final-assignment` in team `haniframadhan-9680`. It is linked
+  to the GitHub repository. The production branch is `main`. Vercel Authentication protects deployment
+  URLs except custom domains. The project has no environment variables and no database.
+- The public alias returns `404 NOT_FOUND`. `main` has no web output yet.
+- A push to any branch makes a preview deployment. A merge to `main` makes a production deployment.
 
 ## Recommendation
 

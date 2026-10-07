@@ -8,8 +8,9 @@
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <header><span class="eyebrow">LOCAL ANALYSIS • SAVED RESULTS</span><h1>Spotify review evidence</h1><p>Trace a product decision from saved labels to source evidence.</p></header>
+  <header><span class="eyebrow">SAVED RESULTS • READ-ONLY</span><h1>Spotify review evidence</h1><p>Trace a product decision from saved labels to source evidence.</p></header>
   <main>
+    <div id="coverage-banner" class="banner" role="status" hidden></div>
     <div id="error" role="alert"></div>
     <section aria-labelledby="coverage-title"><h2 id="coverage-title">Coverage</h2><div id="coverage" class="metrics"></div><p id="source-note" class="note"></p></section>
     <section aria-labelledby="status-title"><h2 id="status-title">Decision status</h2><div id="status" class="status-grid"></div><p class="note">Quality measures remain unknown until independent verification and human evaluation run.</p></section>
@@ -18,6 +19,6 @@
     <section aria-labelledby="recommendations-title"><h2 id="recommendations-title">Recommendations</h2><div id="recommendations"></div></section>
     <section aria-labelledby="reviews-title"><div class="section-head"><div><h2 id="reviews-title">Supporting review evidence</h2><p>Source-exact quotes; source IDs and full text stay in the local database.</p></div><div class="review-controls"><label>Topic <select id="topic-filter"><option value="">All topics</option></select></label><form id="search-form"><label for="quote-search">Search quotes</label><input id="quote-search" type="search" maxlength="100" placeholder="Word in evidence"><button type="submit">Search</button></form></div></div><div id="reviews" class="review-list"></div><button id="more" type="button">Load more</button></section>
   </main>
-  <footer>Local, read-only view. No model requests are made when opening this page.</footer>
+  <footer>Read-only view of saved results. Opening this page makes no model request.</footer>
 </body>
 </html>

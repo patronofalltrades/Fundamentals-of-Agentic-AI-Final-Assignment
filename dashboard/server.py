@@ -1,4 +1,8 @@
-"""Local HTTP API and dashboard. GET only; no browser credentials or writes."""
+"""Read-only dashboard API and static UI. GET only; no browser credentials or writes.
+
+``route()`` is the single request handler. The local ``http.server`` (``serve``) and the Vercel
+WSGI entry (``dashboard.wsgi``) both call it, so local and deployed behavior match.
+"""
 
 import json
 import mimetypes
@@ -11,6 +15,15 @@ from urllib.parse import parse_qs, urlparse
 from .store import connect
 
 STATIC = Path(__file__).with_name("static")
+TOPICS = ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other")
+TARGET_MINIMUM_SOURCE_ROWS = 100000  # instructor clarification; see AGENTS.md
+SECURITY_HEADERS = (
+    ("Cache-Control", "no-store"),
+    ("X-Content-Type-Options", "nosniff"),
+    ("Referrer-Policy", "no-referrer"),
+    ("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+                                "object-src 'none'; base-uri 'none'; frame-ancestors 'none'"),
+)
 ISSUE_RE = re.compile(r"^/api/issues/([^/]+)$")
 REVIEW_RE = re.compile(r"^/api/reviews/([0-9]+)$")
 
@@ -27,10 +40,16 @@ def _run(conn):
     return dict(row) if row else None
 
 
+def _stores_full_text(conn):
+    # A raw sqlite3 connection (local copy) keeps the texts table; the deployed database does not.
+    return getattr(conn, "stores_full_text", True)
+
+
 def summary(conn):
     ag = _aggregates(conn)
     rows = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
-    distinct = conn.execute("SELECT COUNT(*) FROM texts").fetchone()[0]
+    saved = ag.get("coverage", {}).get("distinct_nonempty_texts")
+    distinct = saved if saved is not None else conn.execute("SELECT COUNT(*) FROM texts").fetchone()[0]
     source = dict(conn.execute("SELECT key,value FROM meta WHERE key IN ('file_sha256','source_basename')"))
     config = conn.execute("SELECT DISTINCT config_hash FROM record_state LIMIT 1").fetchone()
     run = _run(conn)
@@ -40,6 +59,7 @@ def summary(conn):
         "raw_labels": {"topic": ag.get("topic", {}), "intent": ag.get("intent", {}), "severity": ag.get("severity", {})},
         "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": "pending"},
         "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": run["recommendation_status"] if run else "pending", "run_id": run["run_id"] if run else None},
+        "target": {"minimum_source_rows": TARGET_MINIMUM_SOURCE_ROWS, "is_demo": rows < TARGET_MINIMUM_SOURCE_ROWS},
         "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
     }
 
@@ -77,7 +97,7 @@ def review(conn, row_index):
         return None
     result = dict(row)
     result["source_id_stored"] = True
-    result["review_text_available_in_database"] = True
+    result["review_text_available_in_database"] = bool(_stores_full_text(conn))
     result["review_text_exposed"] = False
     return result
 
@@ -112,72 +132,84 @@ def recommendations(conn):
     return {"status": run["recommendation_status"], "items": result}
 
 
+def _json_body(status, value):
+    return status, "application/json; charset=utf-8", json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
+def _api(conn, path, query):
+    if path == "/api/summary":
+        return _json_body(200, summary(conn))
+    if path == "/api/reviews":
+        q = parse_qs(query)
+        topic = q.get("topic", [None])[0]
+        if topic and topic not in TOPICS:
+            return _json_body(400, {"error": "invalid topic"})
+        text_query = q.get("q", [None])[0]
+        if text_query and len(text_query) > 100:
+            return _json_body(400, {"error": "query too long"})
+        return _json_body(200, reviews(conn, topic, q.get("limit", [20])[0], q.get("offset", [0])[0],
+                                       q.get("issue_id", [None])[0], text_query))
+    if path == "/api/issues":
+        return _json_body(200, issues(conn))
+    if path == "/api/recommendations":
+        return _json_body(200, recommendations(conn))
+    match = ISSUE_RE.match(path)
+    if match:
+        item = next((x for x in issues(conn)["items"] if x["issue_id"] == match.group(1)), None)
+        if item is None:
+            return _json_body(404, {"error": "issue not found"})
+        return _json_body(200, {**item, "reviews": reviews(conn, issue_id=match.group(1))})
+    match = REVIEW_RE.match(path)
+    if match:
+        result = review(conn, int(match.group(1)))
+        return _json_body(200, result) if result is not None else _json_body(404, {"error": "review not found"})
+    return _json_body(404, {"error": "not found"})
+
+
+def route(open_conn, method, path, query=""):
+    """Handle one request. ``open_conn()`` returns a context-managed read-only connection.
+
+    Returns ``(status, content_type, body_bytes)``. Only GET and HEAD are served.
+    """
+    if method not in ("GET", "HEAD"):
+        return _json_body(405, {"error": "read-only API"})
+    try:
+        if path.startswith("/api/"):
+            with open_conn() as conn:
+                return _api(conn, path, query)
+        name = "index.html" if path == "/" else path.lstrip("/")
+        if name not in ("index.html", "app.js", "style.css"):
+            return _json_body(404, {"error": "not found"})
+        return 200, mimetypes.guess_type(name)[0] or "application/octet-stream", (STATIC / name).read_bytes()
+    except (ValueError, TypeError):
+        return _json_body(400, {"error": "invalid query"})
+
+
 def make_handler(db_path):
+    def open_conn():
+        return connect(db_path, readonly=True)
+
     class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
+        def _send(self, method):
             parsed = urlparse(self.path)
-            path = parsed.path
-            try:
-                if path.startswith("/api/"):
-                    with connect(db_path, readonly=True) as conn:
-                        if path == "/api/summary":
-                            result = summary(conn)
-                        elif path == "/api/reviews":
-                            q = parse_qs(parsed.query)
-                            topic = q.get("topic", [None])[0]
-                            if topic and topic not in ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other"):
-                                return self._json(400, {"error": "invalid topic"})
-                            query = q.get("q", [None])[0]
-                            if query and len(query) > 100:
-                                return self._json(400, {"error": "query too long"})
-                            result = reviews(conn, topic, q.get("limit", [20])[0], q.get("offset", [0])[0], q.get("issue_id", [None])[0], query)
-                        elif path == "/api/issues":
-                            result = issues(conn)
-                        elif path == "/api/recommendations":
-                            result = recommendations(conn)
-                        elif ISSUE_RE.match(path):
-                            issue_id = ISSUE_RE.match(path).group(1)
-                            ranked = issues(conn)
-                            item = next((x for x in ranked["items"] if x["issue_id"] == issue_id), None)
-                            if item is None:
-                                return self._json(404, {"error": "issue not found"})
-                            result = {**item, "reviews": reviews(conn, issue_id=issue_id)}
-                        elif REVIEW_RE.match(path):
-                            result = review(conn, int(REVIEW_RE.match(path).group(1)))
-                            if result is None:
-                                return self._json(404, {"error": "review not found"})
-                        else:
-                            return self._json(404, {"error": "not found"})
-                    return self._json(200, result)
-                name = "index.html" if path == "/" else path.lstrip("/")
-                if name not in ("index.html", "app.js", "style.css"):
-                    return self._json(404, {"error": "not found"})
-                data = (STATIC / name).read_bytes()
-                self.send_response(200)
-                self._headers(mimetypes.guess_type(name)[0] or "application/octet-stream")
-                self.send_header("Content-Length", str(len(data)))
-                self.end_headers()
-                self.wfile.write(data)
-            except (ValueError, TypeError):
-                self._json(400, {"error": "invalid query"})
+            status, content_type, body = route(open_conn, method, parsed.path, parsed.query)
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            for name, value in SECURITY_HEADERS:
+                self.send_header(name, value)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if method != "HEAD":
+                self.wfile.write(body)
+
+        def do_GET(self):
+            self._send("GET")
+
+        def do_HEAD(self):
+            self._send("HEAD")
 
         def do_POST(self):
-            self._json(405, {"error": "read-only API"})
-
-        def _headers(self, content_type):
-            self.send_header("Content-Type", content_type)
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Referrer-Policy", "no-referrer")
-            self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'")
-
-        def _json(self, status, value):
-            data = json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
-            self.send_response(status)
-            self._headers("application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+            self._send("POST")
 
         def log_message(self, fmt, *args):
             pass  # No request URLs or review details in local logs.

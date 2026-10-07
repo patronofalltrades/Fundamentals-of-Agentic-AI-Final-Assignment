@@ -1,4 +1,4 @@
-# Local dashboard foundation
+# Dashboard: local foundation and Vercel backend
 
 This branch adds a local, read-only dashboard and API for saved pipeline results. It uses Python 3.9+ and the standard library. Opening the page makes no model call and spends no API credits. This is a development slice, not the final deployed submission.
 
@@ -77,3 +77,66 @@ The dashboard tests use synthetic rows. They cover idempotent import, source mis
 4. Set the live URL in canonical `README.md` after deployment and verify it loads the saved database without paid reruns. The final deadline is October 13, 2026, 11:59 pm Pacific Time.
 
 No host, account, deployment, or live URL was created in this branch.
+
+## Vercel backend and database (branch `feat/dashboard-vercel`)
+
+The same read-only API now runs in two places:
+
+- **Local:** `python3 -m dashboard serve --db local/dashboard.db` (SQLite, unchanged).
+- **Vercel:** `api/index.py` exposes the WSGI app in `dashboard/wsgi.py`. `vercel.json` sends every path to it.
+
+`dashboard/server.py` has one `route()` function. Both entry points call it, so the local and deployed
+answers are the same. The deployed Function only reads. It rejects every method except GET and HEAD.
+A database error returns `503` with no connection detail.
+
+### Storage backends (`dashboard/backend.py`)
+
+| Variable | Backend | Use |
+| --- | --- | --- |
+| `DATABASE_URL` (or `POSTGRES_URL`) | Postgres through Neon's HTTPS `/sql` endpoint | Vercel |
+| `DASHBOARD_DB` | SQLite file, read-only | Local checks |
+
+The code uses the Python standard library only. It sends Postgres queries over HTTPS, so the Function has
+no database driver dependency. **The Neon path has synthetic tests only. It has not run against a live
+Neon database yet.**
+
+### Import contract (`dashboard/bundle.py`)
+
+1. Make the private SQLite copy: `python3 -m dashboard import-checkpoint --source <canonical.db> --db local/dashboard.db`.
+2. Export a bundle: `python3 -m dashboard export-bundle --db local/dashboard.db --out local/bundle`.
+3. Load it: `python3 -m dashboard load-bundle --bundle local/bundle --sqlite local/portable.db`
+   or `python3 -m dashboard load-bundle --bundle local/bundle --postgres-env DATABASE_URL`.
+
+The bundle keeps the original `review_id`, `row_sha256`, `text_sha256`, status, labels and the
+source-exact evidence quote. It does not keep the full review text, rating, likes, app version or
+timestamp. The manifest keeps source rows and distinct texts as separate counts.
+
+The loader is idempotent:
+
+- It checks the `rows.jsonl` hash and every count before a write.
+- It refuses a database that holds a different source, configuration or bundle.
+- It marks `importing`, inserts rows in chunks with `ON CONFLICT DO NOTHING`, then recounts.
+- Only matching counts set `complete`. A stopped load can run again and continue.
+- A second load of a complete bundle returns `unchanged`.
+
+**Measured on the real 500-row checkpoint (offline):** the bundle has 500 rows and 479 distinct texts.
+`rows.jsonl` is 359,224 bytes. The second load returned `unchanged`. All six API routes returned the
+same JSON from the portable database and from the original copy. The source database was not changed.
+
+### UI
+
+- A banner shows demo coverage when the database has fewer than 100,000 source rows.
+- Long hashes and quotes wrap. Filters are full width on narrow screens.
+- Checked with headless Chrome at 1280 px and inside a true 390 px frame. No sideways scroll at 390 px.
+
+### Checks
+
+`python3 -m unittest discover -s tests -t .` runs 198 tests, including 12 in `tests/test_dashboard_vercel.py`
+for the backends, the bundle contract and the WSGI entry.
+
+### Not done (needs approval)
+
+1. Provision the database (proposal: Neon Free through the Vercel Marketplace).
+2. Set `DATABASE_URL` in the Vercel project. Load the bundle.
+3. Deploy a protected preview from this branch.
+4. Port `import-analysis` to the backend interface when accepted issue membership exists.

@@ -7,6 +7,12 @@ let offset = 0;
 let topic = '';
 let query = '';
 
+function showBanner(summary) {
+  if (!summary.target || !summary.target.is_demo) return;
+  const c = summary.coverage;
+  text($('coverage-banner'), `Demo coverage: ${c.source_rows.toLocaleString()} source rows (${c.distinct_nonempty_texts.toLocaleString()} distinct texts) of the ${summary.target.minimum_source_rows.toLocaleString()}-review minimum. Issue rankings and recommendations are not final.`);
+  $('coverage-banner').hidden = false;
+}
 function showCoverage(summary) {
   const values = [
     ['Source rows', summary.coverage.source_rows],
@@ -73,7 +79,7 @@ async function loadReviews(reset=false) {
 }
 async function main() {
   try {
-    const summary = await api('/api/summary'); showCoverage(summary); showStatus(summary); showTopics(summary);
+    const summary = await api('/api/summary'); showBanner(summary); showCoverage(summary); showStatus(summary); showTopics(summary);
     await Promise.all([showIssues(), showRecommendations(), loadReviews()]);
     $('topic-filter').addEventListener('change', (event) => { topic = event.target.value; loadReviews(true).catch(error => text($('error'), error.message)); });
     $('search-form').addEventListener('submit', (event) => { event.preventDefault(); query = $('quote-search').value.trim(); loadReviews(true).catch(error => text($('error'), error.message)); });
