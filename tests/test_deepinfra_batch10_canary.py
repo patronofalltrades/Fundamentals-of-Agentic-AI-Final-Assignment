@@ -78,6 +78,9 @@ class BatchTenTest(unittest.TestCase):
         chosen = batch.select_canary(rows, labels)
         self.assertEqual(len(chosen), 10)
         payload = batch.payload(chosen, labels)
+        instruction = payload["messages"][0]["content"]
+        self.assertIn("products, features, plans, or explicitly described problems", instruction)
+        self.assertIn("Do not list ordinary verbs, adjectives, or generic words", instruction)
         self.assertEqual(payload["provider"], {"only": ["deepinfra/bf16"],
             "allow_fallbacks": False, "require_parameters": True,
             "data_collection": "deny", "zdr": True})
@@ -86,6 +89,9 @@ class BatchTenTest(unittest.TestCase):
         parsed, inp, out, reason, charge = batch.validate_batch_response(response(chosen), chosen)
         self.assertEqual((len(parsed), inp, out, reason), (10, 1200, 900, 600))
         self.assertEqual(charge, 1200 * 37 + 900 * 170)
+        current_hash = batch.config_sha()
+        with mock.patch.object(batch, "PROMPT_VERSION", "deepinfra-batch10-evidence-v1"):
+            self.assertNotEqual(batch.config_sha(), current_hash)
         duplicate = response(chosen)
         body = json.loads(duplicate["choices"][0]["message"]["content"])
         body["results"][9]["review_id"] = body["results"][0]["review_id"]

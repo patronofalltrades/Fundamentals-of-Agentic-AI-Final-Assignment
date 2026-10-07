@@ -2,7 +2,7 @@
 # One authorized ten-review DeepInfra canary. Key is read from macOS Keychain.
 set -euo pipefail
 cd "${0:A:h:h}"
-mode="${1:-run}"
+mode="${1:-check}"
 if [[ "$mode" != "run" && "$mode" != "check" ]]; then
   print -u2 'Use check to verify Keychain and provider limit, or run for a pending approved canary.'
   exit 2

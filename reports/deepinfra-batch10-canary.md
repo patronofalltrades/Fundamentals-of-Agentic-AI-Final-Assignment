@@ -26,17 +26,29 @@ the combined local exposure after this settled canary is **$0.726093792**.
 The later user-approved project cap is $5; this call occurred under the
 earlier $1 local cap, and that history is retained.
 
-**Quality hold:** Against saved Codex development evidence, exact quotes
-matched on **4/10** rows and entity lists on **0/10**. This is agreement with
-a development baseline, not human truth. A manual spot check found several
-batch quotes relevant to their supplied labels, but the model frequently
-listed ordinary words, adjectives, or verbs as entities. The v1 batch prompt
-requires exact source substrings and arrays but does not narrow entities to
-named products, features, plans, or problems as clearly as the single-review
-prompt. Exact-span validation catches invented text, yet it cannot reject
-irrelevant exact words. The ten-row result does **not** support scaling this
-batch prompt to 100,000 reviews. A stricter prompt and versioned cache need
-another bounded quality check before any bulk authorization.
+**Quality finding:** Against saved Codex development evidence, exact quotes
+matched on **4/10** rows and entity lists on **0/10**. These are development
+agreement counts, not human accuracy. All ten batch quotes were exact source
+spans; the reviewed complaint quotes generally supported their supplied
+labels, though a few were broader or less focused than the Codex choice.
+Entity differences included reasonable phrase granularity and omissions as
+well as a clear error pattern: the batch often listed isolated ordinary
+words, adjectives, or verbs instead of product, feature, plan, or problem
+names. Even the two short general-criticism reviews received entity lists
+where the saved Codex evidence used empty lists. The v1 batch prompt asked
+for exact substrings but omitted the single-review prompt's semantic
+restriction to products, features, plans, and problems. Exact-span checking
+cannot catch irrelevant *exact* words. This proves a prompt mismatch and
+supports a versioned v2 wording test; it does not prove every batch result
+semantically unusable. The v1 result and cache identity remain preserved.
+
+A mechanical straight-line projection from this one request is **$2.263960**
+and **42.0 hours of summed request time** for 100,000 reviews in ten-review
+requests with one worker, before failures, cache reuse, verification, grouping,
+memo, queue overhead, and fixed costs. It is an illustrative rate, not a
+forecast or spending approval. Review lengths and the v2 prompt may change
+token use; two workers' wall time was not measured. Full endpoint reservations
+could stop a run well before the $5 local cap even when expected bills are low.
 
 This one request measures batch token use and latency; it does not establish
 parallel throughput, retry behavior in live failures, end-to-end cost, or a

@@ -44,4 +44,7 @@ the completed ten-review canary cost **$0.000226396**. The combined local
 exposure is **$0.726093792**. The USD 5 provider key limit is a second guard,
 not a guarantee that delayed provider billing can never overshoot. The local
 runner reserves the full published endpoint bound before a request and stops
-admitting work at or above the project cap. No further paid batch is pending.
+admitting work at or above the project cap. A v2 prompt is prepared in a
+separate ignored ledger because the first canary's entity semantics need
+review. The `check` command sends no inference; do not run another paid batch
+until the v2 quality trial is approved.
