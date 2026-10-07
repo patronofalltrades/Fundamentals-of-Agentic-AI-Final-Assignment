@@ -49,9 +49,13 @@ class CheckpointQueueTest(unittest.TestCase):
                 evidence = {r["review_id"]: {"entities": ["premium"],
                     "evidence_quote": "premium problem"} for r in first}
                 queue.save_evidence(ekey, first, evidence, "evidence-config", 100_000,
-                    300, 200, 50, "synthetic-gen", 1.2)
+                    300, 200, 50, "synthetic-gen", 1.2,
+                    response={"id": "synthetic-gen", "usage": {"prompt_tokens": 300}})
                 self.assertEqual(queue.summary()["evidence"], 4)
                 self.assertEqual(queue.summary()["complete"], 4)
+                self.assertIn("synthetic-gen", budget.db.execute(
+                    "SELECT response_json FROM checkpoint_requests WHERE request_key=?",
+                    (ekey,)).fetchone()[0])
             with ProjectBudget(path, paths) as reopened:
                 queue = CheckpointQueue(reopened, rows, "full-hash", "prefix-hash", seed)
                 self.assertEqual(queue.summary()["complete"], 4)

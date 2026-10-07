@@ -261,7 +261,8 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
                     continue
                 try:
                     queue.save_evidence(request_key, rows, accepted, config, charge,
-                        inp, out, reasoning, response["id"], elapsed, invalid=invalid)
+                        inp, out, reasoning, response["id"], elapsed,
+                        invalid=invalid, response=response)
                 except Exception as error:
                     queue.fail(request_key, metered_charge=charge,
                                error_class=type(error).__name__, response=response,

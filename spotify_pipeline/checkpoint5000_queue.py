@@ -219,16 +219,18 @@ class CheckpointQueue:
 
     def save_evidence(self, request_key, rows, accepted, config_sha, charge_nusd,
                       input_tokens, output_tokens, reasoning_tokens, response_id,
-                      elapsed_seconds, invalid=None):
+                      elapsed_seconds, invalid=None, response=None):
         invalid = invalid or {}
+        saved_response = json.dumps(response, ensure_ascii=False) if response is not None else None
         def record(db):
             self._write_evidence_rows(db, request_key, rows, accepted, invalid, config_sha)
             changed = db.execute("UPDATE checkpoint_requests SET status=?,response_id=?,"
-                "input_tokens=?,output_tokens=?,reasoning_tokens=?,elapsed_seconds=?"
+                "input_tokens=?,output_tokens=?,reasoning_tokens=?,elapsed_seconds=?,"
+                "response_json=?"
                 " WHERE request_key=? AND status='reserved'",
                 ("partial_succeeded" if invalid else "succeeded", response_id,
                  input_tokens, output_tokens, reasoning_tokens, elapsed_seconds,
-                 request_key)).rowcount
+                 saved_response, request_key)).rowcount
             if changed != 1:
                 raise ValueError("evidence request is not reserved")
         self.budget.settle(request_key, "succeeded", charge_nusd, record=record)
