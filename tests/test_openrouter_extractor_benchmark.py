@@ -46,6 +46,11 @@ class BenchmarkTest(unittest.TestCase):
             self.assertEqual(benchmark.budget_used(db), 29_491_200)
             with self.assertRaises(Exception):
                 benchmark.reserve(db, "groq", row, payload, "synthetic-row", "synthetic-request")
+            with mock.patch.object(benchmark, "CAP_NUSD", 2 * 29_491_200):
+                with self.assertRaisesRegex(ValueError, "shared USD 1 cap would be reached"):
+                    benchmark.reserve(db, "groq", dict(row, review_id="synthetic-2"), payload,
+                                      "synthetic-row-2", "synthetic-request-2")
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM calls").fetchone()[0], 1)
             with self.assertRaises(ValueError):
                 benchmark.connect(str(Path(folder) / "ledger.db"), "different-source")
 
@@ -161,7 +166,7 @@ class BenchmarkTest(unittest.TestCase):
     def test_validation_circuit_pauses_only_failed_route(self):
         rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
                  "review_rating": "1", "review_likes": "0", "app_version": "",
-                 "review_timestamp": "2022-01-01"} for i in range(4)]
+                 "review_timestamp": "2022-01-01"} for i in range(6)]
         labels = {"topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5}
         with tempfile.TemporaryDirectory() as folder:
             baseline, ledger = (str(Path(folder) / name) for name in ("baseline.db", "ledger.db"))
@@ -191,15 +196,15 @@ class BenchmarkTest(unittest.TestCase):
                  mock.patch.object(benchmark, "verify_route"), \
                  mock.patch.object(benchmark, "request_json", side_effect=response), \
                  mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
-                benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
-                self.assertEqual(counter, ["deepinfra"] * 3 + ["groq"] * 4)
-                benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
-                self.assertEqual(counter, ["deepinfra"] * 3 + ["groq"] * 4)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 6)
+                self.assertEqual(counter, ["deepinfra"] * 5 + ["groq"] * 6)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 6)
+                self.assertEqual(counter, ["deepinfra"] * 5 + ["groq"] * 6)
             saved = sqlite3.connect(ledger)
-            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE status='invalid_response'").fetchone()[0], 3)
-            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='groq' AND status='succeeded'").fetchone()[0], 4)
+            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE status='invalid_response'").fetchone()[0], 5)
+            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='groq' AND status='succeeded'").fetchone()[0], 6)
             self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE route='deepinfra' AND status='succeeded'").fetchone()[0], 0)
-            self.assertEqual(benchmark.budget_used(saved), 3 * 24_903_544 + 4 * (186 * 75 + 80 * 300))
+            self.assertEqual(benchmark.budget_used(saved), 5 * 24_903_544 + 6 * (186 * 75 + 80 * 300))
 
     def test_metered_groq_schema_error_skips_without_accepting_or_retrying(self):
         rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
@@ -245,6 +250,46 @@ class BenchmarkTest(unittest.TestCase):
             saved.execute("UPDATE calls SET invalid_response_json=? WHERE id=1", (json.dumps(bad),))
             saved.commit()
             self.assertFalse(benchmark.skippable_invalid(saved, 1, "groq"))
+
+    def test_three_historical_isolated_failures_do_not_block_resume(self):
+        rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
+                 "review_rating": "1", "review_likes": "0", "app_version": "",
+                 "review_timestamp": "2022-01-01"} for i in range(7)]
+        labels = {"topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5}
+        pattern = [False, False, True, False, True, False, True]
+        sent = []
+        def response(_url, _payload, _key):
+            index = len(sent)
+            sent.append(index)
+            return {"id": "synthetic-%d" % index, "provider": "DeepInfra",
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                    "entities": [], "evidence_quote": "Playback fails" if pattern[index] else "not in source"})}}],
+                "usage": {"prompt_tokens": 186, "completion_tokens": 80}}
+        with tempfile.TemporaryDirectory() as folder:
+            baseline, ledger = (str(Path(folder) / name) for name in ("baseline.db", "ledger.db"))
+            db = sqlite3.connect(baseline)
+            db.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            db.executemany("INSERT INTO results VALUES (?,?,?,?)", [
+                (row["review_id"], json.dumps(labels),
+                 benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS]), "synthetic-config")
+                for row in rows])
+            db.commit()
+            db.close()
+            with mock.patch.dict(benchmark.ROUTES, {"deepinfra": benchmark.ROUTES["deepinfra"]}, clear=True), \
+                 mock.patch.object(benchmark, "load_rows", return_value=rows), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
+                 mock.patch.object(benchmark, "verify_route"), \
+                 mock.patch.object(benchmark, "request_json", side_effect=response), \
+                 mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
+                self.assertEqual(sent, list(range(4)))
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 7)
+                self.assertEqual(sent, list(range(7)))
+            saved = sqlite3.connect(ledger)
+            self.assertEqual(saved.execute("SELECT status,COUNT(*) FROM calls GROUP BY status ORDER BY status").fetchall(),
+                             [("invalid_response", 4), ("succeeded", 3)])
+            self.assertEqual(benchmark.consecutive_invalid_count(saved, "deepinfra"), 0)
+            self.assertEqual(benchmark.budget_used(saved), 4 * 24_903_544 + 3 * (186 * 37 + 80 * 170))
 
     def test_reconciliation_keeps_exposure_and_requires_explicit_retry(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -1,5 +1,17 @@
 # Hosted evidence extractor benchmark: row-level skip ready
 
+**Latest continuation state:** DeepInfra has 36 accepted, 3 failed, and 61
+untouched source rows. Groq has 27 accepted, 2 failed, and 71 untouched.
+The second Groq failure was a metered upstream strict-schema rejection:
+`/entities` was an object instead of an array, `finish_reason` was `error`,
+and the response had no usable content. The specific Groq schema rejection
+is now quarantined without retry or accepted evidence. Known ledger charges
+are **$0.002139617**; shared cap exposure, including all held reservations,
+is **$0.160537312**. No route has five consecutive row-output failures.
+The read-only plan admits 61 new DeepInfra and 71 new Groq requests within
+the same approved 100-review scope. No paid request has run after this
+streak-policy change.
+
 **October 7 incident, after the smoke:** Hanif launched the approved
 100-development-review continuation. It saved no further accepted evidence.
 DeepInfra attempt 8 returned a response, then local evidence validation raised
@@ -37,7 +49,7 @@ or accepting unvalidated evidence.
 No larger inference run or human golden evaluation occurred. The semantic
 comparison and scale recommendation remain pending.
 
-**Current gate:** The 3-row smoke saved three successful results per pinned
+**Baseline:** The 3-row smoke saved three successful results per pinned
 route. The validated development overlay has been applied to a separate,
 ignored 100-row baseline. Its SHA-256 is
 `340153ef37c1bd49f28392e88ca10685343a68480bf32f7186583d85b656960b`.
@@ -47,16 +59,18 @@ Exactly one of four explicit human topic corrections intersects the supplied
 `cost_100.csv`; 285 other checkpoint review rows are unreviewed. The
 original Jev database and overlay remain unchanged. This is a development
 comparison baseline, not a revised rubric or human golden evaluation. The
-100-review continuation has not resumed after the invalid response.
+100-review continuation later resumed; see the latest state above.
 
 **Row-level failure policy:** A received response may be skipped only when
 it failed evidence JSON or exact-source validation *after* pinned provider,
 normal finish, token bound, response ID, request fingerprint, and metered
 usage checks. The failed attempt, response when available, diagnostic, and
 full reservation stay in the ignored ledger. It is never retried
-automatically. The third validation failure on either route opens a circuit
-and stops further requests, counting attempt 8 as the first DeepInfra
-failure. Any uncertain delivery, missing usage, route mismatch, truncation,
+automatically. Five consecutive confirmed row-output failures on one route
+pause that route, durably across process restarts; an accepted result breaks
+the streak. Historical isolated failures do not accumulate into a stop.
+The other approved route may continue. Any uncertain delivery, missing usage,
+route mismatch, truncation,
 budget failure, or privacy/catalog failure still stops immediately. This is
 an offline code change; no new paid request has tested the continuation.
 Reports state the 100-source denominator, per-route accepted and failed

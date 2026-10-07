@@ -40,7 +40,7 @@ SCHEMA = {"type": "object", "additionalProperties": False,
 PROMPT_VERSION = "openrouter-evidence-v1"
 OUTPUT_LIMIT = 320
 CATALOG_RETRIES = 3
-MAX_INVALID_PER_ROUTE = 3  # Third metered row-validation failure opens circuit.
+MAX_CONSECUTIVE_INVALID = 5  # Durable route circuit; isolated misses do not accumulate.
 
 
 def money_nusd(value):
@@ -391,11 +391,21 @@ def invalid_count(db, route):
     return len(ids)
 
 
+def consecutive_invalid_count(db, route):
+    """Count the route's trailing row-output failures across process restarts."""
+    streak = 0
+    for (status,) in db.execute("SELECT status FROM calls WHERE route=? ORDER BY id DESC", (route,)):
+        if status != "invalid_response":
+            break
+        streak += 1
+    return streak
+
+
 def summarize_plan(db, planned):
     result = {"budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
               "routes": {route: {} for route in ROUTES},
               "paused_validation_routes": [route for route in ROUTES
-                   if invalid_count(db, route) >= MAX_INVALID_PER_ROUTE]}
+                   if consecutive_invalid_count(db, route) >= MAX_CONSECUTIVE_INVALID]}
     for route, _, _, _, kind in planned:
         route_counts = result["routes"][route]
         route_counts[kind] = route_counts.get(kind, 0) + 1
@@ -446,8 +456,8 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
     if unresolved:
         raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
     failures = {route: invalid_count(db, route) for route in ROUTES}
-    paused_routes = {route for route, count in failures.items()
-                     if count >= MAX_INVALID_PER_ROUTE}
+    paused_routes = {route for route in ROUTES
+                     if consecutive_invalid_count(db, route) >= MAX_CONSECUTIVE_INVALID}
     if len(paused_routes) == len(ROUTES):
         raise ValueError("all row-validation circuits open; no new calls made")
     planned = plan_calls(db, rows, saved_labels, limit, retry_reconciled_id)
@@ -520,9 +530,8 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
                 stage = "inference POST delivery/charge uncertain" if response is None else "inference POST response invalid"
                 if skippable_invalid(db, call_id, route):
                     failures[route] += 1
-                    if failures[route] < MAX_INVALID_PER_ROUTE:
-                        continue
-                    paused_routes.add(route)
+                    if consecutive_invalid_count(db, route) >= MAX_CONSECUTIVE_INVALID:
+                        paused_routes.add(route)
                     continue
                 raise RuntimeError("%s (%s); saved reservation retained, no automatic retry" %
                                    (stage, type(exc).__name__)) from None

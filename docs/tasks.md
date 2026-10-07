@@ -65,10 +65,12 @@ failed local evidence validation. Its exact validation detail was not saved,
 and provider I/O logging was disabled. The runner stopped, kept the full
 reservation, and made no automatic retry. The benchmark owner added local
 forensic capture for future invalid responses and a synthetic regression.
-The checked, metered validation failure is now skipped at row level; a third
-validation failure on either route stops the run. The read-only plan has
-96 untouched DeepInfra rows and 97 untouched Groq rows. No continuation has
-run after this code change. See
+The runner now skips only confirmed metered row-output failures, including
+Groq's specific strict-schema rejection, without accepting or retrying them.
+Five consecutive failures pause that route, while isolated failures allow
+continued sampling. The read-only plan has 61 untouched DeepInfra rows and
+71 untouched Groq rows; no continuation has run after the streak-policy
+change. See
 `reports/openrouter-extractor-benchmark.md`.
 
 Agree on the task owner and file scope first. Record the branch and worktree.
