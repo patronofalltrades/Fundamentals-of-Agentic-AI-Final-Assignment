@@ -1,0 +1,70 @@
+{
+  "status": "pilot_100_structurally_complete",
+  "source_file": "cost_100.csv",
+  "source_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+  "source_rows": 100,
+  "source_identity_checks_passed": 100,
+  "model": "jev-1.13.0",
+  "configuration": {
+    "effort": "systemone",
+    "prompt_version": "jev-rubric-v1",
+    "schema_version": "jev-labels-v1",
+    "needs_review_rule": "Any of four confidence values below 0.60, or topic other, or intent unclear"
+  },
+  "attempts": {
+    "total": 100,
+    "settled": 100,
+    "uncertain": 0,
+    "retries": 0,
+    "input_tokens": 87887,
+    "output_tokens": 19656,
+    "summed_attempt_seconds": 42.076869542,
+    "cold_wall_seconds": null
+  },
+  "pricing": {
+    "source": "https://docs.typesafe.ai/models",
+    "input_usd_per_million_tokens": "0.042",
+    "output_usd_per_million_tokens": "0",
+    "usage_derived_cost_usd": "0.003691254",
+    "provider_credit_debit_usd": null,
+    "approved_hard_cap_usd": "0.60"
+  },
+  "results": {
+    "direct_labels": 100,
+    "exact_text_cache_copies": 0,
+    "schema_or_identity_errors": 0,
+    "needs_review": 73,
+    "topic_other": 47,
+    "evidence_records": 100,
+    "exact_evidence_records_validated": 100,
+    "entity_mentions": 93,
+    "evidence_model": "gpt-6.1-sol",
+    "evidence_prompt_versions": {
+      "evidence-extract-v1": 90,
+      "evidence-extract-v2": 10
+    },
+    "summed_evidence_attempt_seconds": 927.694823499,
+    "foundation_completed_classifications": 100,
+    "human_agreement": null
+  },
+  "warm_run": "not_run",
+  "offline_warm_replay": {
+    "measured_at_utc": "2026-10-05T23:10:57+00:00",
+    "method": "Read-only SQLite replay of saved labels, canonical source identity, and exact evidence. No ingestion or model execution.",
+    "first_pass_wall_seconds": 0.005421209,
+    "warm_pass_wall_seconds": 0.002301875,
+    "completed_items_per_pass": 100,
+    "validated_evidence_per_pass": 100,
+    "additional_model_calls": 0
+  },
+  "scope": "Supplied 100-review cost sample only; full-corpus classification, evaluation, grouping, and memo were not run.",
+  "limitations": [
+    "Cost is computed from returned usage at the published rate; the account debit was not independently checked.",
+    "Summed request time is not total wall time. The runner did not persist cold wall time.",
+    "Labels and evidence have not been verified against human answers; structural checks do not establish semantic accuracy.",
+    "Summed evidence attempt time is not total evidence wall time; evidence token usage and any account debit were not measured.",
+    "The offline warm replay made no model requests and is not the required end-to-end warm pilot measurement.",
+    "Replay wall times are one local two-pass measurement, not a stable performance benchmark.",
+    "Saved evidence spans two prompt versions; the original local databases and outputs were not rewritten."
+  ]
+}

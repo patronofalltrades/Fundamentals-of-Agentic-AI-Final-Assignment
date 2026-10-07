@@ -1,0 +1,31 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Local datasets (raw inputs are never committed)
+data/
+
+# Local state, runs and checkpoints
+local/
+state/
+runs/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.db-tmp
+*.tmp
+
+# Python caches and logs
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+*.log
+logs/
+
+# OS noise
+.DS_Store

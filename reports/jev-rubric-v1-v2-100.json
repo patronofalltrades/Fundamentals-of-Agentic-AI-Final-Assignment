@@ -1,0 +1,124 @@
+{
+  "status": "completed_read_only_comparison",
+  "sample": "cost_100.csv",
+  "source_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+  "source_rows_validated": 100,
+  "comparison_scope": "Same source rows; no human golden evaluation",
+  "pricing": {
+    "source": "https://docs.typesafe.ai/models",
+    "input_usd_per_million": "0.042",
+    "output_usd_per_million": "0"
+  },
+  "runs": {
+    "v1": {
+      "prompt_version": "jev-rubric-v1",
+      "schema_version": "jev-labels-v1",
+      "model": "jev-1.13.0",
+      "configuration_hash": "7256c9843fe9921f077f01a83101e2b15793a87031f33f1c7a45a328a214ff1c",
+      "results": 100,
+      "settled_attempts": 100,
+      "retries": 0,
+      "uncertain_attempts": 0,
+      "input_tokens": 87887,
+      "output_tokens": 19656,
+      "summed_attempt_seconds": 42.076869542,
+      "usage_derived_cost_usd": "0.003691254",
+      "topics": {
+        "access": 2,
+        "billing": 6,
+        "catalog": 12,
+        "downloads": 3,
+        "other": 47,
+        "playback": 19,
+        "support": 1,
+        "usability": 10
+      },
+      "needs_review": {
+        "false": 27,
+        "true": 73
+      },
+      "evidence_records": 100
+    },
+    "v2": {
+      "prompt_version": "jev-rubric-v2",
+      "schema_version": "jev-labels-v1",
+      "model": "jev-1.13.0",
+      "configuration_hash": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+      "results": 100,
+      "settled_attempts": 100,
+      "retries": 0,
+      "uncertain_attempts": 0,
+      "input_tokens": 101487,
+      "output_tokens": 19652,
+      "summed_attempt_seconds": 37.275935833,
+      "usage_derived_cost_usd": "0.004262454",
+      "topics": {
+        "access": 2,
+        "billing": 7,
+        "catalog": 10,
+        "downloads": 2,
+        "other": 58,
+        "playback": 7,
+        "usability": 14
+      },
+      "needs_review": {
+        "false": 25,
+        "true": 75
+      },
+      "evidence_records": 0
+    }
+  },
+  "changes": {
+    "field_changed_counts": {
+      "topic": 32,
+      "intent": 0,
+      "severity": 1,
+      "sentiment": 69,
+      "needs_review": 16
+    },
+    "topic_transitions": {
+      "billing -> other": 1,
+      "billing -> usability": 2,
+      "catalog -> other": 4,
+      "downloads -> catalog": 1,
+      "other -> playback": 1,
+      "other -> usability": 1,
+      "playback -> billing": 4,
+      "playback -> other": 2,
+      "playback -> usability": 8,
+      "support -> other": 1,
+      "usability -> catalog": 1,
+      "usability -> other": 5,
+      "usability -> playback": 1
+    },
+    "label_change_patterns": {
+      "none": 24,
+      "sentiment": 44,
+      "topic": 7,
+      "topic+sentiment": 24,
+      "topic+severity+sentiment": 1
+    },
+    "review_flag_transitions": {
+      "False -> True": 9,
+      "True -> False": 7
+    },
+    "v1_evidence_label_compatible_rows": 24,
+    "v1_evidence_not_automatically_reusable_rows": 76,
+    "compatible_evidence_prompt_versions": {
+      "evidence-extract-v1": 21,
+      "evidence-extract-v2": 3
+    }
+  },
+  "cumulative_usage_derived_cost_usd": "0.007953708",
+  "v2_cap_usd": "0.596308746",
+  "v2_runner_wall_seconds": null,
+  "v2_timing_status": "invalid_negative_or_missing_value",
+  "v2_recorded_invalid_wall_seconds": -0.043681375,
+  "limitations": [
+    "Usage-derived cost is not independently reconciled with account credit debit.",
+    "Summed request durations are not end-to-end wall time.",
+    "The v2 launcher's cross-process monotonic clock produced an invalid negative wall time.",
+    "Saved evidence is compatible only where all four labels match; it was not copied into v2.",
+    "Topic changes and manual development judgments are not gold accuracy measurements."
+  ]
+}

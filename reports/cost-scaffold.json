@@ -1,0 +1,23 @@
+{
+  "approved_to_scale": false,
+  "budget_ceiling_usd": "49.990000",
+  "currency": "USD",
+  "disclaimer": "Offline scaffold only. No paid execution command exists, no human approval is recorded, and this is not proven live spend control.",
+  "notes": [
+    "cold measurements missing; totals unresolved",
+    "warm measurements missing; totals unresolved",
+    "no genuine measured pilot; no approval to scale"
+  ],
+  "pilot": {
+    "cold": null,
+    "warm": null
+  },
+  "projection": {
+    "base": null,
+    "conservative": null,
+    "note": "Projections are not implemented in this offline scaffold.",
+    "status": "not_implemented"
+  },
+  "status": "not_measured",
+  "warm_enrichment_calls": null
+}

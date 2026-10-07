@@ -1,0 +1,17 @@
+{
+  "currency": "USD",
+  "budget_ceiling_usd": "49.99",
+  "concurrency": 1,
+  "target_records": 660622,
+  "nonempty_records": 660609,
+  "distinct_texts": 484189,
+  "output_token_cap": null,
+  "fallback_cap": null,
+  "limits": {
+    "max_workers": 1,
+    "output_token_cap": null,
+    "fallback_cap": null
+  },
+  "assumptions": null,
+  "note": "Budget ceiling is strictly under USD 50 and concurrency is 1. output_token_cap and fallback_cap are UNSET (null), so admission is blocked rather than treated as unbounded. Assumptions stay unavailable until measured. No paid execution command exists."
+}

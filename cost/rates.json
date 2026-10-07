@@ -1,0 +1,30 @@
+{
+  "currency": "USD",
+  "as_of": null,
+  "source": null,
+  "note": "No provider is selected. Prices stay null; do not fabricate zero. Set source (a real http(s) URL) and as_of with any real price. Billing items are nonoverlapping: uncached_input_tokens, cached_input_tokens, output_tokens, request_count and compute_seconds.",
+  "api": {
+    "uncached_input_tokens": {
+      "price": null,
+      "unit": "per_1k_tokens"
+    },
+    "cached_input_tokens": {
+      "price": null,
+      "unit": "per_1k_tokens"
+    },
+    "output_tokens": {
+      "price": null,
+      "unit": "per_1k_tokens"
+    },
+    "request_count": {
+      "price": null,
+      "unit": "per_call"
+    }
+  },
+  "local": {
+    "compute_seconds": {
+      "price": null,
+      "unit": "per_second"
+    }
+  }
+}

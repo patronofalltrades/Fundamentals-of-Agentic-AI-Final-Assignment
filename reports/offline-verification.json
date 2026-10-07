@@ -1,0 +1,13 @@
+{
+  "actual_classifications": 0,
+  "cost_scaffold_status": "not_measured",
+  "fixture_scope": "synthetic only; no real model outputs",
+  "full_profile_matches_course_helper": true,
+  "golden_source_checksum_unchanged": true,
+  "mermaid_check": "18 declared nodes, 29 valid edge references, 2 balanced subgraphs; no parser/render test available",
+  "paid_runtime_execution_available": false,
+  "publication": "local only; not pushed",
+  "synthetic_tests_failed": 0,
+  "synthetic_tests_passed": 134,
+  "test_command": "python3 -m unittest discover -s tests -t . -q"
+}
