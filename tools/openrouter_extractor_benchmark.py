@@ -19,6 +19,7 @@ from urllib.error import HTTPError, URLError
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from spotify_pipeline.codex_evidence import validate_evidence
 from spotify_pipeline.contract import SOURCE_FIELDS, file_sha256, row_sha256
+from spotify_pipeline.errors import ValidationError
 from spotify_pipeline.manifest import validate_identity
 
 CAP_NUSD = 1_000_000_000
@@ -39,6 +40,7 @@ SCHEMA = {"type": "object", "additionalProperties": False,
 PROMPT_VERSION = "openrouter-evidence-v1"
 OUTPUT_LIMIT = 320
 CATALOG_RETRIES = 3
+MAX_INVALID_PER_ROUTE = 3  # Third metered row-validation failure opens circuit.
 
 
 def money_nusd(value):
@@ -271,9 +273,13 @@ def parse_response(response, row, route):
     if output_tokens > OUTPUT_LIMIT or choice.get("finish_reason") != "stop":
         raise ValueError("truncated or over-limit response")
     provider = response.get("provider")
-    if provider is not None and provider.lower() != ("deepinfra" if route == "deepinfra" else "groq"):
+    if not isinstance(provider, str) or provider.lower() != ("deepinfra" if route == "deepinfra" else "groq"):
         raise ValueError("response provider differs from pinned route")
-    evidence = validate_evidence(row["review_text"], json.loads(choice["message"]["content"]))
+    try:
+        content = json.loads(choice["message"]["content"])
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("evidence content is not valid JSON") from exc
+    evidence = validate_evidence(row["review_text"], content)
     _, _, input_rate, output_rate = ROUTES[route]
     # OpenRouter completion_tokens includes reasoning; never charge twice.
     charge = money_nusd(Decimal(input_tokens) * input_rate + Decimal(output_tokens) * output_rate)
@@ -332,10 +338,36 @@ def plan_calls(db, rows, saved_labels, limit, retry_reconciled_id=None):
                 kind = "explicit_retry"
             elif latest[1] == "reconciled_no_visible_bill":
                 kind = "needs_explicit_retry"
+            elif latest[1] == "invalid_response" and skippable_invalid(db, latest[0], route):
+                kind = "validation_failed"
             else:
                 kind = "unresolved"
             planned.append((route, row, labels, fingerprint, kind))
     return planned
+
+
+def skippable_invalid(db, call_id, route):
+    """Only a metered, pinned, normally finished row-validation failure may be skipped."""
+    call = db.execute("""SELECT status,error_class,charged_nusd,reserved_nusd,
+        input_tokens,output_tokens,provider,finish_reason,response_id,request_sha
+        FROM calls WHERE id=? AND route=?""", (call_id, route)).fetchone()
+    if call is None:
+        return False
+    status, error, charged, reserved, inp, out, provider, finish, response_id, request_sha = call
+    return (status == "invalid_response" and error == "ValidationError"
+            and type(charged) is int and 0 <= charged <= reserved
+            and type(inp) is int and inp >= 0 and type(out) is int and 0 <= out <= OUTPUT_LIMIT
+            and isinstance(provider, str)
+            and provider.lower() == ("deepinfra" if route == "deepinfra" else "groq")
+            and finish == "stop" and bool(response_id) and bool(request_sha))
+
+
+def invalid_count(db, route):
+    ids = [record[0] for record in db.execute(
+        "SELECT id FROM calls WHERE route=? AND status='invalid_response'", (route,))]
+    if not all(skippable_invalid(db, call_id, route) for call_id in ids):
+        raise ValueError("invalid response lacks safe metered/pinned evidence; no new calls made")
+    return len(ids)
 
 
 def summarize_plan(db, planned):
@@ -387,9 +419,12 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
     db = connect(ledger, source_sha)
     saved_labels = load_baseline(baseline, rows)
     unresolved = db.execute("""SELECT COUNT(*) FROM calls
-        WHERE status NOT IN ('succeeded','reconciled_no_visible_bill')""").fetchone()[0]
+        WHERE status NOT IN ('succeeded','reconciled_no_visible_bill','invalid_response')""").fetchone()[0]
     if unresolved:
         raise ValueError("%d unresolved inference call(s) require billing reconciliation; no new calls made" % unresolved)
+    failures = {route: invalid_count(db, route) for route in ROUTES}
+    if any(count >= MAX_INVALID_PER_ROUTE for count in failures.values()):
+        raise ValueError("row-validation circuit open; no new calls made")
     planned = plan_calls(db, rows, saved_labels, limit, retry_reconciled_id)
     kinds = [item[4] for item in planned]
     if "legacy_unknown" in kinds:
@@ -408,7 +443,7 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
         verify_route(route)
     completed_this_run = 0
     for route, row, labels, fingerprint, kind in planned:
-            if kind == "reuse":
+            if kind in ("reuse", "validation_failed"):
                 continue
             payload = make_payload(route, row, labels)
             call_id = reserve(db, route, row, payload,
@@ -457,9 +492,16 @@ def run(source, manifest, ledger, baseline, limit, retry_reconciled_id=None,
                        str(exc), json.dumps(response, ensure_ascii=False) if response is not None else None,
                        call_id))
                 stage = "inference POST delivery/charge uncertain" if response is None else "inference POST response invalid"
+                if isinstance(exc, ValidationError) and skippable_invalid(db, call_id, route):
+                    failures[route] += 1
+                    if failures[route] < MAX_INVALID_PER_ROUTE:
+                        continue
+                    raise RuntimeError("row-validation circuit open after %d %s failures; saved reservations retained" %
+                                       (failures[route], route)) from None
                 raise RuntimeError("%s (%s); saved reservation retained, no automatic retry" %
                                    (stage, type(exc).__name__)) from None
-    print(json.dumps({"new_successful_calls": completed_this_run, "budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
+    print(json.dumps({"new_successful_calls": completed_this_run, "validation_failed_by_route": failures,
+                      "budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
                       "saved_successful_calls": db.execute("SELECT COUNT(*) FROM calls WHERE status='succeeded'").fetchone()[0]}))
 
 
@@ -468,7 +510,9 @@ def report(ledger, baseline):
     reference = sqlite3.connect("file:" + baseline + "?mode=ro", uri=True)
     codex = {rid: (json.loads(entities), quote) for rid, entities, quote in
              reference.execute("SELECT review_id,entities_json,evidence_quote FROM evidence")}
-    result = {"budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000), "routes": {}}
+    result = {"budget_exposure_usd": str(Decimal(budget_used(db))/1_000_000_000),
+              "source_review_count": reference.execute("SELECT COUNT(*) FROM results").fetchone()[0],
+              "routes": {}}
     for route in ROUTES:
         calls = list(db.execute("""SELECT review_id,status,reserved_nusd,charged_nusd,input_tokens,
             output_tokens,reasoning_tokens,elapsed_seconds,error_class,evidence_json,finish_reason
@@ -477,12 +521,16 @@ def report(ledger, baseline):
         matches = [c for c in success if c[0] in codex]
         result["routes"][route] = {
             "attempts": len(calls), "successes": len(success),
-            "unresolved_attempts": sum(c[1] not in ("succeeded", "reconciled_no_visible_bill") for c in calls),
+            "unresolved_attempts": sum(c[1] not in ("succeeded", "reconciled_no_visible_bill", "invalid_response") for c in calls),
+            "validation_failed_attempts": sum(c[1] == "invalid_response" for c in calls),
             "reconciled_no_visible_bill_attempts": sum(c[1] == "reconciled_no_visible_bill" for c in calls),
             "input_tokens": sum(c[4] for c in success),
             "output_tokens_including_reasoning": sum(c[5] for c in success),
+            "metered_input_tokens_all_attempts": sum(c[4] for c in calls if c[4] is not None),
+            "metered_output_tokens_all_attempts": sum(c[5] for c in calls if c[5] is not None),
             "reported_reasoning_tokens": (sum(c[6] for c in success) if all(c[6] is not None for c in success) else None),
-            "charged_usd_known": str(Decimal(sum(c[3] for c in success))/1_000_000_000),
+            "charged_usd_known": str(Decimal(sum(c[3] for c in calls if c[3] is not None))/1_000_000_000),
+            "successful_charged_usd_known": str(Decimal(sum(c[3] for c in success))/1_000_000_000),
             "held_reservation_usd": str(Decimal(sum(c[2] for c in calls if c[1] != "succeeded"))/1_000_000_000),
             "summed_request_seconds": sum(c[7] for c in success),
             "exact_quote_agreement_with_codex": sum(json.loads(c[9])["evidence_quote"] == codex[c[0]][1] for c in matches),
@@ -490,6 +538,10 @@ def report(ledger, baseline):
             "comparison_count": len(matches), "error_classes": sorted({c[8] for c in calls if c[8]}),
             "truncations": sum(c[10] == "length" for c in calls),
         }
+    success_sets = [set(rid for (rid,) in db.execute(
+        "SELECT review_id FROM calls WHERE route=? AND status='succeeded'", (route,)))
+        for route in ROUTES]
+    result["paired_route_success_count"] = len(set.intersection(*success_sets))
     print(json.dumps(result, indent=2, sort_keys=True))
 
 

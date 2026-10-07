@@ -1,4 +1,4 @@
-# Hosted evidence extractor benchmark: 100-row continuation blocked
+# Hosted evidence extractor benchmark: row-level skip ready
 
 **October 7 incident, after the smoke:** Hanif launched the approved
 100-development-review continuation. It saved no further accepted evidence.
@@ -29,10 +29,11 @@ invalid and attempt 2 reconciled as no visible bill. Known usage-derived
 charges across the ledger total **$0.000205352**. The two held DeepInfra
 reservations total **$0.049807088**, giving **$0.049974108** aggregate cap
 exposure under the $1 authorization. The read-only 100-row plan now shows
-DeepInfra 3 reuses, 96 untouched rows, and 1 unresolved row; Groq has 3
-reuses and 97 untouched rows. The unresolved attempt blocks further
-inference. Neither its observed small charge nor its normal finish reason
-justifies releasing the reserved exposure or accepting unvalidated evidence.
+DeepInfra 3 reuses, 96 untouched rows, and 1 validation-failed row; Groq has
+3 reuses and 97 untouched rows. The validation-failed row is skipped without
+retry and never counted as accepted evidence. Neither its observed small
+charge nor its normal finish reason justifies releasing the reserved exposure
+or accepting unvalidated evidence.
 No larger inference run or human golden evaluation occurred. The semantic
 comparison and scale recommendation remain pending.
 
@@ -46,7 +47,21 @@ Exactly one of four explicit human topic corrections intersects the supplied
 `cost_100.csv`; 285 other checkpoint review rows are unreviewed. The
 original Jev database and overlay remain unchanged. This is a development
 comparison baseline, not a revised rubric or human golden evaluation. The
-100-review continuation is blocked on the invalid response described above.
+100-review continuation has not resumed after the invalid response.
+
+**Row-level failure policy:** A received response may be skipped only when
+it failed evidence JSON or exact-source validation *after* pinned provider,
+normal finish, token bound, response ID, request fingerprint, and metered
+usage checks. The failed attempt, response when available, diagnostic, and
+full reservation stay in the ignored ledger. It is never retried
+automatically. The third validation failure on either route opens a circuit
+and stops further requests, counting attempt 8 as the first DeepInfra
+failure. Any uncertain delivery, missing usage, route mismatch, truncation,
+budget failure, or privacy/catalog failure still stops immediately. This is
+an offline code change; no new paid request has tested the continuation.
+Reports state the 100-source denominator, per-route accepted and failed
+counts, and the count of source reviews accepted by both routes. Compare
+models only on that paired subset, while disclosing coverage loss.
 
 | Route | Successful calls | Known charge | Input / output tokens | Reasoning tokens | Summed request time |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -100,8 +115,9 @@ held. A retry requires an explicit attempt ID and is saved as a new attempt.
 No new inference was sent during this check.
 
 **Decision:** Do not start the 100,000-row inference run. The approved
-100-review scope remains incomplete and paused at the invalid response.
-The two-route quality comparison is incomplete.
+100-review scope remains incomplete. Row-level validation skip is ready for
+a controlled continuation through the existing hidden-key launcher. The
+two-route quality comparison is incomplete.
 
 **October 6 live preflight update:** Hanif's smoke command stopped on the
 public catalog check before sending a review. The pinned DeepInfra 120B
@@ -241,7 +257,8 @@ budget enforcement.
 
 The 3-row smoke is complete. The validated overlay is incorporated in an
 ignored corrected baseline, and the read-only plan confirms three reuses
-and 97 new calls per route with no changed-input repeats. Inspect the
+and 96 new DeepInfra calls, 97 new Groq calls, one skipped DeepInfra row,
+and no changed-input repeats. Inspect the
 ignored ledger and aggregate report without a key:
 
 ```sh

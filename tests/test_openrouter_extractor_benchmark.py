@@ -142,13 +142,10 @@ class BenchmarkTest(unittest.TestCase):
             with mock.patch.object(benchmark, "load_rows", return_value=[row]), \
                  mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
                  mock.patch.object(benchmark, "verify_route"), \
+                 mock.patch.dict(benchmark.ROUTES, {"deepinfra": benchmark.ROUTES["deepinfra"]}, clear=True), \
                  mock.patch.object(benchmark, "request_json", return_value=reply) as post, \
                  mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
-                with self.assertRaisesRegex(RuntimeError, "inference POST response invalid"):
-                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
-                self.assertEqual(post.call_count, 1)
-                with self.assertRaisesRegex(ValueError, "unresolved inference call"):
-                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
+                benchmark.run("unused.csv", "unused.json", ledger, baseline, 1)
                 self.assertEqual(post.call_count, 1)
             saved = sqlite3.connect(ledger)
             status, charged, detail, raw = saved.execute(
@@ -158,6 +155,45 @@ class BenchmarkTest(unittest.TestCase):
             self.assertIn("exact whole-word source spans", detail)
             self.assertEqual(json.loads(raw), reply)
             self.assertEqual(benchmark.budget_used(saved), 24_903_544)
+            self.assertEqual(benchmark.plan_calls(saved, [row],
+                benchmark.load_baseline(baseline, [row]), 1)[0][4], "validation_failed")
+
+    def test_validation_failure_skips_row_then_circuit_stops_third_failure(self):
+        rows = [{"review_id": "synthetic-%d" % i, "review_text": "Playback fails %d" % i,
+                 "review_rating": "1", "review_likes": "0", "app_version": "",
+                 "review_timestamp": "2022-01-01"} for i in range(4)]
+        labels = {"topic": "playback", "intent": "complaint", "severity": 4, "sentiment": -0.5}
+        with tempfile.TemporaryDirectory() as folder:
+            baseline, ledger = (str(Path(folder) / name) for name in ("baseline.db", "ledger.db"))
+            db = sqlite3.connect(baseline)
+            db.execute("CREATE TABLE results(review_id TEXT,label_json TEXT,source_sha256 TEXT,config_hash TEXT)")
+            db.executemany("INSERT INTO results VALUES (?,?,?,?)", [
+                (row["review_id"], json.dumps(labels),
+                 benchmark.row_sha256([row[k] for k in benchmark.SOURCE_FIELDS]), "synthetic-config")
+                for row in rows])
+            db.commit()
+            db.close()
+            invalid = {"provider": "DeepInfra", "choices": [{"finish_reason": "stop", "message": {
+                "content": json.dumps({"entities": [], "evidence_quote": "not in source"})}}],
+                "usage": {"prompt_tokens": 186, "completion_tokens": 185}}
+            counter = []
+            def response(*args):
+                counter.append(len(counter))
+                return dict(invalid, id="synthetic-generation-%d" % len(counter))
+            with mock.patch.object(benchmark, "load_rows", return_value=rows), \
+                 mock.patch.object(benchmark, "file_sha256", return_value="synthetic-source"), \
+                 mock.patch.object(benchmark, "verify_route"), \
+                 mock.patch.object(benchmark, "request_json", side_effect=response), \
+                 mock.patch.dict(benchmark.os.environ, {"OPENROUTER_API_KEY": "synthetic-only"}):
+                with self.assertRaisesRegex(RuntimeError, "row-validation circuit open after 3"):
+                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
+                self.assertEqual(len(counter), 3)
+                with self.assertRaisesRegex(ValueError, "row-validation circuit open"):
+                    benchmark.run("unused.csv", "unused.json", ledger, baseline, 4)
+                self.assertEqual(len(counter), 3)
+            saved = sqlite3.connect(ledger)
+            self.assertEqual(saved.execute("SELECT COUNT(*) FROM calls WHERE status='invalid_response'").fetchone()[0], 3)
+            self.assertEqual(benchmark.budget_used(saved), 3 * 24_903_544)
 
     def test_reconciliation_keeps_exposure_and_requires_explicit_retry(self):
         with tempfile.TemporaryDirectory() as folder:

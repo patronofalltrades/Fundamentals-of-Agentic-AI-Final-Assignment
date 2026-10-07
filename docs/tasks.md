@@ -65,7 +65,10 @@ failed local evidence validation. Its exact validation detail was not saved,
 and provider I/O logging was disabled. The runner stopped, kept the full
 reservation, and made no automatic retry. The benchmark owner added local
 forensic capture for future invalid responses and a synthetic regression.
-The unresolved attempt blocks further inference. See
+The checked, metered validation failure is now skipped at row level; a third
+validation failure on either route stops the run. The read-only plan has
+96 untouched DeepInfra rows and 97 untouched Groq rows. No continuation has
+run after this code change. See
 `reports/openrouter-extractor-benchmark.md`.
 
 Agree on the task owner and file scope first. Record the branch and worktree.
