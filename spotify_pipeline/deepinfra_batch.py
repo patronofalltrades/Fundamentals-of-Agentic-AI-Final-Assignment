@@ -66,7 +66,8 @@ def payload(rows, labels, batch_limit):
         "response_format": {"type": "json_schema", "json_schema": {
             "name": "spotify_batch_evidence", "strict": True, "schema": schema(len(rows))}}}
     # UTF-8 bytes are a conservative ceiling on BPE token count for this text.
-    if len(json.dumps(body, ensure_ascii=False).encode("utf-8")) > benchmark.ENDPOINT_BOUNDS["deepinfra"][0]:
+    if (len(json.dumps(body, ensure_ascii=False).encode("utf-8")) +
+            LIMITS[batch_limit] > benchmark.ENDPOINT_BOUNDS["deepinfra"][0]):
         raise ValueError("batch input exceeds conservative context bound")
     return body
 
