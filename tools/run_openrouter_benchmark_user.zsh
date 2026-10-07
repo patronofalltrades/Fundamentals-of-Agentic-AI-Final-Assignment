@@ -17,7 +17,12 @@ if [[ -n "$retry_id" ]]; then
   retry_args=(--retry-reconciled-id "$retry_id")
 fi
 dataset='/Users/haniframadhan/Desktop/Fundamentals of Agentic AI - Final Assignment - Spotify/Final Assignment - Spotify Reviews Dataset'
-baseline='/Users/haniframadhan/Documents/Codex/2026-10-06/task-2/spotify-v2-comparison/local/jev_pilot_v2_evidence.db'
+baseline="$PWD/local/openrouter_corrected_100.db"
+expected_baseline_sha='340153ef37c1bd49f28392e88ca10685343a68480bf32f7186583d85b656960b'
+if [[ ! -f "$baseline" || "$(shasum -a 256 "$baseline" | cut -d ' ' -f1)" != "$expected_baseline_sha" ]]; then
+  print -u2 'Corrected benchmark baseline is missing or changed. No key requested; no calls made.'
+  exit 2
+fi
 print 'Enter your existing OpenRouter key. Input is hidden. No key is stored in a file.'
 read -rs 'pilot_key?Existing OpenRouter API key: '
 print

@@ -1,10 +1,16 @@
 # Hosted evidence extractor benchmark: 3-row smoke complete
 
 **Current gate:** The 3-row smoke saved three successful results per pinned
-route. The 100-review checkpoint is held until a real human correction file
-is incorporated and the corrected baseline passes the read-only input plan.
-The local reviewer CSV inspected on October 7 had 289 rows but no filled
-review statuses, corrections, or notes. Blank fields are not agreement.
+route. The validated development overlay has been applied to a separate,
+ignored 100-row baseline. Its SHA-256 is
+`340153ef37c1bd49f28392e88ca10685343a68480bf32f7186583d85b656960b`.
+The source overlay SHA-256 is
+`feeba27e2ed1a1b54c625ea6ccfde7048c93312b4ffb237130489e5988071cf0`.
+Exactly one of four explicit human topic corrections intersects the supplied
+`cost_100.csv`; 285 other checkpoint review rows are unreviewed. The
+original Jev database and overlay remain unchanged. This is a development
+comparison baseline, not a revised rubric or human golden evaluation. The
+100-review inference awaits hidden key entry.
 
 | Route | Successful calls | Known charge | Input / output tokens | Reasoning tokens | Summed request time |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -36,11 +42,9 @@ and are counted in a read-only plan before spending. The six historical
 successes were bound to the still-frozen Jev baseline with provenance
 `inferred_from_frozen_baseline`; their original request payloads were not
 saved, so this binding is an inference. All attempts and charges remain.
-With that baseline, the 100-review plan is **3 reuses and 97 new calls per
-route**, with zero changed-input repeats. A corrected baseline may require
-**0–6 additional repeat calls** among the first three rows if their labels
-or configuration hash changes. That count is unknown until the actual
-correction file is integrated and planned. No larger run has started.
+With the corrected baseline, the read-only 100-review plan is **3 reuses
+and 97 new calls per route**, with **zero changed-input repeats**. The one
+corrected row had no saved hosted extractor result. No larger run has started.
 
 **October 7 account reconciliation check (10:18 UTC):** The authenticated
 OpenRouter Personal account showed only one billed generation on the
@@ -59,10 +63,10 @@ status `reconciled_no_visible_bill`. Its full $0.024903544 reservation remains
 held. A retry requires an explicit attempt ID and is saved as a new attempt.
 No new inference was sent during this check.
 
-**Decision:** Do not start the 100,000-row inference run. The next allowed
-scope is the same 100 development reviews, after correction integration,
-fingerprint planning, current route checks, and the existing hidden-key
-handoff. The two-route quality comparison is incomplete.
+**Decision:** Do not start the 100,000-row inference run. The next approved
+scope is the same 100 development reviews, using the corrected baseline and
+the existing hidden-key handoff. Fresh route checks run before paid calls.
+The two-route quality comparison is incomplete.
 
 **October 6 live preflight update:** Hanif's smoke command stopped on the
 public catalog check before sending a review. The pinned DeepInfra 120B
@@ -200,11 +204,10 @@ budget enforcement.
 
 ## User-run handoff and next gate
 
-The 3-row smoke is complete. After actual corrections are incorporated into
-a reviewed baseline, use the read-only `--plan` command with the same source,
-manifest, ledger, and corrected baseline paths to count reuse, new calls,
-and changed-input repeats. Do not treat a blank review file as agreement.
-Inspect the ignored ledger and aggregate report without a key:
+The 3-row smoke is complete. The validated overlay is incorporated in an
+ignored corrected baseline, and the read-only plan confirms three reuses
+and 97 new calls per route with no changed-input repeats. Inspect the
+ignored ledger and aggregate report without a key:
 
 ```sh
 python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
@@ -214,10 +217,12 @@ python3 tools/openrouter_extractor_benchmark.py --source PATH_TO_COST_100 \
   --manifest PATH_TO_MANIFEST --baseline PATH_TO_SAVED_JEV_V2_DB --report
 ```
 
-The 100-review launch remains held pending the corrected input plan and any
-repeat-call approval. The user must enter the existing key at the hidden
-prompt; no key is saved or requested in chat. The ledger keeps the earlier
-reconciled attempt's full reservation in total exposure.
+The approved 100-review launch uses
+`zsh tools/run_openrouter_benchmark_user.zsh 100` from this checkout. The
+launcher checks the corrected baseline SHA-256 before requesting the key.
+The user enters the existing key at its hidden prompt; no key is saved or
+requested in chat. The ledger keeps the earlier reconciled attempt's full
+reservation in total exposure. If a route or privacy check fails, stop.
 
 After a live run, report observed failures, semantic spot checks, exact
 agreement with Codex (with the non-gold limitation), reasoning-inclusive
