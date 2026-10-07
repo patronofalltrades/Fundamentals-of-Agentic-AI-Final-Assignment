@@ -16,6 +16,7 @@ import re
 from typing import Any, Dict
 
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}\Z")
+ROWS_PER_INSERT = 400  # multi-row INSERT size: 1,200 parameters, below SQLite and Postgres limits
 
 
 def _identity(backend) -> Dict[str, str]:
@@ -26,7 +27,20 @@ def _identity(backend) -> Dict[str, str]:
     return {"source_sha256": meta["file_sha256"], "config_hash": configs[0]}
 
 
-def load_analysis(backend, payload: Dict[str, Any]) -> Dict[str, Any]:
+def multi_row_insert(table: str, columns, rows):
+    """``[(sql, params), ...]`` that insert ``rows`` with one multi-row INSERT per chunk."""
+    rows = list(rows)
+    statements = []
+    placeholder = "(" + ", ".join("?" for _ in columns) + ")"
+    for start in range(0, len(rows), ROWS_PER_INSERT):
+        chunk = rows[start:start + ROWS_PER_INSERT]
+        sql = "INSERT INTO %s (%s) VALUES %s" % (table, ", ".join(columns), ", ".join([placeholder] * len(chunk)))
+        statements.append((sql, tuple(value for row in chunk for value in row)))
+    return statements
+
+
+def load_analysis(backend, payload: Dict[str, Any], extra_statements=()) -> Dict[str, Any]:
+    """Validate and save one analysis run. ``extra_statements`` join the same transaction."""
     identity = _identity(backend)
     if payload.get("source_sha256") != identity["source_sha256"] or payload.get("config_hash") != identity["config_hash"]:
         raise ValueError("analysis source/configuration identity mismatch")
@@ -71,13 +85,12 @@ def load_analysis(backend, payload: Dict[str, Any]) -> Dict[str, Any]:
          "draft_unverified" if recommendations else "pending"))]
     statements += [("INSERT INTO issue (run_id, issue_id, title) VALUES (?, ?, ?)", (run_id, i["issue_id"], i["title"]))
                    for i in issues]
-    statements += [("INSERT INTO issue_membership (run_id, issue_id, row_index) VALUES (?, ?, ?)", m)
-                   for m in memberships]
+    statements += multi_row_insert("issue_membership", ("run_id", "issue_id", "row_index"), memberships)
     for item in recommendations:
         statements.append(("INSERT INTO recommendation (run_id, recommendation_id, text) VALUES (?, ?, ?)",
                            (run_id, item["recommendation_id"], item["text"])))
         statements += [("INSERT INTO recommendation_issue (run_id, recommendation_id, issue_id) VALUES (?, ?, ?)",
                         (run_id, item["recommendation_id"], issue_id)) for issue_id in item["issue_ids"]]
-    backend.run_batch(statements)
+    backend.run_batch(statements + list(extra_statements))
     return {"run_id": run_id, "issues": len(issues), "memberships": len(memberships),
             "recommendations": len(recommendations)}

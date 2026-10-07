@@ -140,3 +140,34 @@ for the backends, the bundle contract and the WSGI entry.
 2. Set `DATABASE_URL` in the Vercel project. Load the bundle.
 3. Deploy a protected preview from this branch.
 4. Port `import-analysis` to the backend interface when accepted issue membership exists.
+
+## Load the pipeline's grading folder (`import-grading`)
+
+The pipeline's grading export (`spotify_pipeline/grading.py`) writes `run.json`, `records.jsonl`,
+`membership.csv`, `ranking.csv`, `claims.csv` and `memo.md`. The dashboard loads that folder as it is:
+
+```sh
+python3 -m dashboard import-grading --folder <grading-folder> --db local/dashboard.db
+python3 -m dashboard import-grading --folder <grading-folder> --postgres-env DATABASE_URL [--issue-names names.json]
+```
+
+Before any write, the command checks that:
+
+1. `run.json` names the same source file hash as the dashboard database.
+2. Every member review has the same source row hash, intent and severity in `records.jsonl` and in the
+   dashboard database. Different values mean a different run.
+3. The ranking recomputed from the dashboard's saved labels equals `ranking.csv` in every field.
+4. `claims.csv` equals the claims derived from `ranking.csv`.
+
+It then saves the run, issues, membership, claims and memo in one transaction. It compares the API ranking
+with `ranking.csv` again after the write. The memo gets `claims_checked` only when it cites every claim ID
+with its saved value on the same line. Otherwise the page warns that the memo is not checked.
+
+`--issue-names` is an optional JSON file such as `{"issue-playback": "Playback failures"}`. Without it, the
+page shows issue IDs. The command only reads the pipeline's files.
+
+New read-only routes: `/api/claims?issue_id=`, `/api/memo`. `/api/issues/{id}` now includes its claims.
+
+**Compatibility check, 7 October 2026:** a grading folder made by the pipeline's own `export_grading`
+(integration branch `fde9262`, synthetic 4-row data) loaded with no error. The ranking matched `ranking.csv`,
+and the memo claim check passed.

@@ -58,7 +58,7 @@ def summary(conn):
         "coverage": {"source_rows": rows, "nonempty_rows": ag.get("source_status", {}).get("nonempty", 0), "distinct_nonempty_texts": distinct, "completed_rows": ag.get("processing_status", {}).get("completed", 0), "empty_rows": ag.get("source_status", {}).get("empty", 0)},
         "raw_labels": {"topic": ag.get("topic", {}), "intent": ag.get("intent", {}), "severity": ag.get("severity", {})},
         "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": "pending"},
-        "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": run["recommendation_status"] if run else "pending", "run_id": run["run_id"] if run else None},
+        "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": run["recommendation_status"] if run else "pending", "memo": memo(conn)["status"], "run_id": run["run_id"] if run else None},
         "target": {"minimum_source_rows": TARGET_MINIMUM_SOURCE_ROWS, "is_demo": rows < TARGET_MINIMUM_SOURCE_ROWS},
         "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
     }
@@ -120,6 +120,37 @@ def issues(conn):
     return {"status": "accepted_membership", "run_id": run["run_id"], "ranking_method": "severity_sum", "items": items}
 
 
+def _has_table(conn, name):
+    try:
+        conn.execute("SELECT 1 FROM %s LIMIT 1" % name).fetchone()
+        return True
+    except Exception:  # older dashboard copies have no claim/memo tables
+        return False
+
+
+def claims(conn, issue_id=None):
+    run = _run(conn)
+    if not run or not _has_table(conn, "claim"):
+        return {"status": "pending", "items": []}
+    sql = "SELECT claim_id, issue_id, metric, value FROM claim WHERE run_id=?"
+    args = [run["run_id"]]
+    if issue_id:
+        sql += " AND issue_id=?"
+        args.append(issue_id)
+    items = [dict(r) for r in conn.execute(sql + " ORDER BY claim_id", args)]
+    return {"status": "saved" if items else "pending", "run_id": run["run_id"], "items": items}
+
+
+def memo(conn):
+    run = _run(conn)
+    row = conn.execute("SELECT text, sha256, claim_check FROM memo WHERE run_id=?", (run["run_id"],)).fetchone() \
+        if run and _has_table(conn, "memo") else None
+    if not row:
+        return {"status": "pending", "text": None}
+    return {"status": "claims_checked" if row["claim_check"] == "passed" else "claim_check_" + row["claim_check"],
+            "run_id": run["run_id"], "text": row["text"], "sha256": row["sha256"]}
+
+
 def recommendations(conn):
     run = _run(conn)
     if not run:
@@ -153,12 +184,18 @@ def _api(conn, path, query):
         return _json_body(200, issues(conn))
     if path == "/api/recommendations":
         return _json_body(200, recommendations(conn))
+    if path == "/api/claims":
+        issue = parse_qs(query).get("issue_id", [None])[0]
+        return _json_body(200, claims(conn, issue))
+    if path == "/api/memo":
+        return _json_body(200, memo(conn))
     match = ISSUE_RE.match(path)
     if match:
         item = next((x for x in issues(conn)["items"] if x["issue_id"] == match.group(1)), None)
         if item is None:
             return _json_body(404, {"error": "issue not found"})
-        return _json_body(200, {**item, "reviews": reviews(conn, issue_id=match.group(1))})
+        return _json_body(200, {**item, "claims": claims(conn, match.group(1))["items"],
+                                "reviews": reviews(conn, issue_id=match.group(1))})
     match = REVIEW_RE.match(path)
     if match:
         result = review(conn, int(match.group(1)))
