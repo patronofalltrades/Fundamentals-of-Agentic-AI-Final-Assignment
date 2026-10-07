@@ -38,6 +38,30 @@ the connection loss and share only the outcome and any charged usage, not
 the key or review text. Reconcile the saved attempt before resuming. Privacy
 compatibility and Groq behavior remain unmeasured.
 
+### Reconcile the uncertain request
+
+The local ledger has attempt **1** (DeepInfra 120B, succeeded) and attempt
+**2** (DeepInfra 120B, uncertain after `URLError`). It saves elapsed durations
+but **no UTC start or end timestamps**. The user's approximate connection-loss
+time is October 7 around 01:16 UTC; do not present that as an exact call time.
+The first attempt has a saved provider generation ID that can help bracket
+activity. The uncertain attempt has **no saved provider request/generation ID**.
+Do not put source review IDs, review text, or credentials in a shared report.
+
+In OpenRouter activity, inspect DeepInfra `openai/gpt-oss-120b` requests near
+that time. For the possible second request, record its UTC creation/completion
+times, provider generation/request ID if present, outcome, prompt tokens,
+completion tokens (including reasoning), reasoning-token breakdown if shown,
+and billed USD amount. Say explicitly if there is no matching bill after
+settlement. Do not infer no charge from a missing immediate dashboard entry.
+The first request's saved usage is 156 input, 49 output including 18 reasoning
+tokens, with a $0.000014102 usage-derived charge; that can help identify it.
+Its response passed strict JSON, exact source-row hash, quote-substring, and
+whole-boundary entity checks when saved and on read-only revalidation. This
+is mechanical validity for one row, not evidence-quality or accuracy proof.
+Keep attempt 2's full reservation and inference block until its billing and
+delivery outcome is established and documented.
+
 ## Fixed comparison
 
 The same manifest-verified `cost_100.csv` rows feed both routes. The frozen
