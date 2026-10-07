@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spotify review evidence</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><span class="eyebrow">LOCAL ANALYSIS • SAVED RESULTS</span><h1>Spotify review evidence</h1><p>Trace a product decision from saved labels to source evidence.</p></header>
+  <main>
+    <div id="error" role="alert"></div>
+    <section aria-labelledby="coverage-title"><h2 id="coverage-title">Coverage</h2><div id="coverage" class="metrics"></div><p id="source-note" class="note"></p></section>
+    <section aria-labelledby="status-title"><h2 id="status-title">Decision status</h2><div id="status" class="status-grid"></div><p class="note">Quality measures remain unknown until independent verification and human evaluation run.</p></section>
+    <section aria-labelledby="topics-title"><div class="section-head"><div><h2 id="topics-title">Raw label mix</h2><p>Classifier topics in this development checkpoint. These are not validated issue clusters.</p></div></div><div id="topics" class="bars"></div></section>
+    <section aria-labelledby="issues-title"><h2 id="issues-title">Issue ranking</h2><p class="note">Accepted membership ranks by complaint and cancellation severity sum. Equal scores sort by issue ID.</p><div id="issues"></div></section>
+    <section aria-labelledby="recommendations-title"><h2 id="recommendations-title">Recommendations</h2><div id="recommendations"></div></section>
+    <section aria-labelledby="reviews-title"><div class="section-head"><div><h2 id="reviews-title">Supporting review evidence</h2><p>Short source-exact quotes; source IDs and full text stay in the local database.</p></div><label>Topic <select id="topic-filter"><option value="">All topics</option></select></label></div><div id="reviews" class="review-list"></div><button id="more" type="button">Load more</button></section>
+  </main>
+  <footer>Local, read-only view. No model requests are made when opening this page.</footer>
+</body>
+</html>
