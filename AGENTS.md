@@ -6,6 +6,37 @@ Build the Final Assignment — Multi Agent Large Data Processing Pipeline.
 Use historical Spotify reviews to support a product-priority recommendation.
 The deadline is October 13, 2026, at 11:59 pm Pacific Time.
 
+## Instructor clarification (user reported October 6 Pacific / October 7 UTC)
+
+Hanif reports an in-class clarification: the minimum run is **100,000 source
+reviews** so costs stay within limits. Preserve every selected source review ID
+and source hash even when exact-text caching reduces model calls. The earlier
+full-corpus plan remains a stretch goal, not the clarified minimum. The
+supplied `GRADING_CONTRACT.md` still describes full-corpus outputs; disclose
+that discrepancy and verify the final grading scope rather than claiming a
+100,000-row run passes the unchanged full-corpus checker.
+
+The instructor's roughly **US$10 for 100,000 reviews** is an expectation, not
+a measured result or new spending approval. The approved OpenRouter extractor
+benchmark remains capped strictly below **US$1 total**. Any scaled paid run
+needs its own measured cost, access, and explicit authorization.
+
+Use Jev for inexpensive fixed-label work and measure a low-cost extractor;
+Haiku is an example, not an authorized provider switch. The final deliverable
+also needs a deployed dashboard, backend, database storing results, and a live
+URL in `README.md`.
+
+For the final run, implement bounded parallel workers, a durable queue,
+configuration-safe exact-text caching, and batches of **10 reviews per model
+request** with traceable per-row results. Save each batch atomically; support
+bounded retries and interruption/resume without repeating settled IDs. Share
+one atomic cost ledger and pre-call reservations across all workers. Ten
+reviews in one request is different from ten concurrent one-review requests.
+Benchmark the 10-review payload for quality, source-ID validation, token and
+completion limits, cost, and recovery before scaling. Do not retrofit these
+requirements onto the serial diagnostic benchmark or launch 100,000 reviews
+without the gates above.
+
 This checkout contains an offline Python foundation under review.
 The runtime pipeline has not classified reviews or produced a decision memo.
 Read `README.md` and `docs/implementation.md` before changing code.
