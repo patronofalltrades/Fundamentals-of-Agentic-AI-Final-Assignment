@@ -344,6 +344,13 @@ def status(db, budget):
     return out
 
 
+def initial_worker_limit(db, stage):
+    prior_overload = db.execute("""SELECT COUNT(*) FROM scale_requests
+        WHERE stage=? AND status='uncertain' AND (error_class LIKE '%:429'
+        OR error_class LIKE '%:529' OR error_class LIKE '%:503')""", (stage,)).fetchone()[0]
+    return max(1, WORKERS // 2) if prior_overload else WORKERS
+
+
 def run_stage(budget, manifest_sha, stage, api_key, trial=False):
     db = budget.db
     assert_resume_safe(db)
@@ -368,7 +375,9 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
     chunks = deque(deque(work[i:i + chunk_size]) for i in range(0, len(work), chunk_size))
     slots = {i: deque() for i in range(WORKERS)}
     active = {}
-    limit, rate_errors, new_uncertain, invalid_streak = WORKERS, 0, 0, 0
+    limit, rate_errors, new_uncertain, invalid_streak = \
+        initial_worker_limit(db, stage), 0, 0, 0
+    stable_successes = 0
     stop, halt = False, None
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         while active or (chunks or any(slots.values())) and not stop:
@@ -419,11 +428,12 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
                 if error and (":401" in error or ":403" in error):
                     stop, halt = True, "authentication or access failure"
                 elif error and any(marker in error for marker in
-                        (":429", ":500", ":502", ":503", ":504",
+                        (":429", ":500", ":502", ":503", ":504", ":529",
                          "Timeout", "URLError", "ConnectionResetError")):
                     if ":429" in error:
                         rate_errors += 1
                     new_uncertain += 1
+                    stable_successes = 0
                     limit = max(1, limit // 2)
                     if new_uncertain >= 2:
                         stop, halt = True, "repeated transient failures; held both requests"
@@ -431,8 +441,14 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
                         time.sleep(min(30, 2 ** min(new_uncertain, 4)))
                 elif state == "uncertain":
                     new_uncertain += 1
+                    stable_successes = 0
                     if new_uncertain >= 2:
                         stop, halt = True, "two new uncertain requests"
+                elif state == "succeeded":
+                    stable_successes += 1
+                    if stable_successes >= 500 and limit < WORKERS:
+                        limit += 1
+                        stable_successes = 0
                 invalid_streak = invalid_streak + 1 if state not in ("succeeded", "uncertain") else 0
                 if state == "quarantined_metered" or invalid_streak >= (3 if stage == "jev" else 5):
                     stop, halt = True, "structural quality gate"

@@ -144,6 +144,19 @@ class ScaleQueueTest(unittest.TestCase):
         self.assertIsNone(response)
         self.assertGreaterEqual(elapsed, 0)
         self.assertEqual(error, "JevHTTPError:429")
+        with patch.object(scale.jev, "post_systemone", side_effect=JevHTTPError(529)):
+            self.assertEqual(scale._call("jev", {}, "synthetic-key")[2], "JevHTTPError:529")
+
+    def test_prior_provider_overload_starts_with_four_of_eight_slots(self):
+        db = sqlite3.connect(":memory:")
+        try:
+            db.execute("CREATE TABLE scale_requests(stage TEXT,status TEXT,error_class TEXT)")
+            self.assertEqual(scale.initial_worker_limit(db, "jev"), 8)
+            db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
+            self.assertEqual(scale.initial_worker_limit(db, "jev"), 4)
+            self.assertEqual(scale.initial_worker_limit(db, "evidence"), 8)
+        finally:
+            db.close()
 
     def test_25_review_trial_uses_four_new_batches_and_full_holds(self):
         with tempfile.TemporaryDirectory() as folder:
