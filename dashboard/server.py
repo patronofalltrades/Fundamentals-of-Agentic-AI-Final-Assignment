@@ -64,14 +64,26 @@ def _mean(total, count):
     return str((Decimal(total) / Decimal(count)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP))
 
 
+MIN_TREND_MONTHS = 3  # below this, use daily totals when the bundle saved them
+
+
 def _trends(ag):
-    """Monthly series from the month aggregates, or ``None`` when the database has none."""
+    """Monthly series from the month aggregates, or ``None`` when the database has none.
+
+    When the data spans fewer than three months and daily totals exist, the series is daily instead.
+    ``months`` then holds YYYY-MM-DD periods and ``granularity`` says so.
+    """
+    granularity = "month"
     reviews_by_month = ag.get("month_reviews", {})
     complaints, severity = ag.get("month_complaints", {}), ag.get("month_severity_sum", {})
+    if len(set(reviews_by_month)) < MIN_TREND_MONTHS and ag.get("day_reviews"):
+        granularity = "day"
+        reviews_by_month = ag["day_reviews"]
+        complaints, severity = ag.get("day_complaints", {}), ag.get("day_severity_sum", {})
     months = sorted(set(reviews_by_month) | set(complaints))
     if not months:
         return None
-    return {"months": months,
+    return {"granularity": granularity, "months": months,
             "reviews": [int(reviews_by_month.get(m, 0)) for m in months],
             "complaints": [int(complaints.get(m, 0)) for m in months],
             "mean_severity": [_mean(severity.get(m, 0), complaints[m]) if complaints.get(m) else None for m in months]}

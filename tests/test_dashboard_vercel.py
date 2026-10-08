@@ -78,6 +78,8 @@ class BackendTests(unittest.TestCase):
 
     def test_from_env_prefers_database_url_and_rejects_bad_url(self):
         self.assertIsInstance(from_env({"DATABASE_URL": "postgres://u:p@h.neon.tech/d"}), NeonHTTPBackend)
+        both = from_env({"DATABASE_URL": "postgres://u:p@h.neon.tech/old", "DASHBOARD_DATABASE_URL": "postgres://u:p@h.neon.tech/new"})
+        self.assertTrue(both._dsn.endswith("/new"))
         with self.assertRaises(ValueError):
             from_env({})
         with self.assertRaises(ValueError):

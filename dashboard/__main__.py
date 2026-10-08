@@ -23,6 +23,11 @@ def main():
     export = sub.add_parser("export-bundle", help="write rows.jsonl + manifest.json (no full review text)")
     export.add_argument("--db", required=True, help="dashboard SQLite copy made by import-checkpoint")
     export.add_argument("--out", required=True, help="new, empty bundle directory")
+    handoff = sub.add_parser("handoff-to-bundle", help="convert the checkpoint dashboard handoff into a bundle (no review text)")
+    handoff.add_argument("--handoff", required=True)
+    handoff.add_argument("--manifest", required=True, help="the checkpoint manifest with every selected row")
+    handoff.add_argument("--source-csv", required=True, help="the source CSV the manifest names (hash-checked)")
+    handoff.add_argument("--out", required=True)
     load = sub.add_parser("load-bundle", help="idempotently load a bundle into SQLite or Postgres")
     load.add_argument("--bundle", required=True)
     target = load.add_mutually_exclusive_group(required=True)
@@ -50,6 +55,10 @@ def main():
         print(json.dumps(import_checkpoint(args.source, args.db), sort_keys=True))
     elif args.command == "export-bundle":
         manifest = export_bundle(args.db, args.out)
+        print(json.dumps({"counts": manifest["counts"], "rows_sha256": manifest["rows_sha256"]}, sort_keys=True))
+    elif args.command == "handoff-to-bundle":
+        from .handoff import handoff_to_bundle
+        manifest = handoff_to_bundle(args.handoff, args.manifest, args.source_csv, args.out)
         print(json.dumps({"counts": manifest["counts"], "rows_sha256": manifest["rows_sha256"]}, sort_keys=True))
     elif args.command == "load-bundle":
         import os

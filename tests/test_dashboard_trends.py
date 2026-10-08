@@ -207,7 +207,7 @@ class TrendTests(unittest.TestCase):
         self.load()
         with SQLiteBackend(self.target) as backend:
             trends = summary(backend)["trends"]
-        self.assertEqual(trends, {"months": ["2022-05", "2022-06", "2022-07"], "reviews": [2, 1, 2],
+        self.assertEqual(trends, {"granularity": "month", "months": ["2022-05", "2022-06", "2022-07"], "reviews": [2, 1, 2],
                                   "complaints": [2, 0, 1], "mean_severity": ["3.500000", None, "5.000000"]})
 
     def test_summary_trends_null_without_month_aggregates(self):

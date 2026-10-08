@@ -2,6 +2,8 @@
 // Islands on one page share module state, so each endpoint is fetched once.
 
 export type Trends = {
+  /** "day" when the data spans fewer than three months; `months` then holds YYYY-MM-DD periods. */
+  granularity?: "month" | "day"
   months: string[]
   reviews: number[]
   complaints: number[]
@@ -142,8 +144,11 @@ export const fmt = {
   int: (n: number) => n.toLocaleString("en-US"),
   pct: (n: number, digits = 0) => `${(n * 100).toFixed(digits)}%`,
   month: (m: string) => {
-    const [y, mm] = m.split("-")
-    return new Date(Number(y), Number(mm) - 1, 1).toLocaleString("en-US", { month: "short", year: "2-digit" })
+    const [y, mm, dd] = m.split("-")
+    const date = new Date(Number(y), Number(mm) - 1, Number(dd ?? 1))
+    return dd
+      ? date.toLocaleString("en-US", { day: "numeric", month: "short" })
+      : date.toLocaleString("en-US", { month: "short", year: "2-digit" })
   },
   label: (s: string) => s.replaceAll("_", " "),
   /** Format a saved metric. Values may arrive as decimal strings to keep their precision. */

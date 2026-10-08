@@ -264,3 +264,22 @@ compared against, its status (measured, partial, estimate or pending) and its li
   and no full review texts in the public database.
 - When the extractor benchmark is final, save its summary as `reports/extractor-benchmark.json`
   (same item shape as the other entries) and rebuild the registry.
+
+## Checkpoint handoff (`handoff-to-bundle`) and the 5,000-review database
+
+The pipeline's `checkpoint5000-dashboard-handoff-v1` file converts to an ordinary bundle:
+
+```sh
+python3 -m dashboard handoff-to-bundle --handoff <handoff.json> --manifest <checkpoint5000_manifest.json> \
+  --source-csv <spotify_reviews_18months.csv> --out <bundle-dir>
+python3 -m dashboard load-bundle --bundle <bundle-dir> --postgres-env DASHBOARD_DATABASE_URL
+```
+
+- The converter checks the CSV hash against the manifest, checks that accepted and excluded IDs split the
+  selected rows exactly, and checks each row hash, text hash, label configuration and exact evidence quote.
+- The bundle holds no review text, rating, likes, app version or timestamp. It adds daily totals (`days`).
+  When the data spans fewer than three months, the trend lines use days instead of months.
+- Production reads `DASHBOARD_DATABASE_URL` first, then the integration's `DATABASE_URL`. Since 8 October 2026
+  it points at the Neon database `dashboard_5000` (4,649 labelled rows; 285 quarantined and 66 uncertain rows
+  are counted but not labelled). The 500-row database `neondb` is unchanged.
+- **Rollback:** remove `DASHBOARD_DATABASE_URL` from the Vercel production environment and redeploy.

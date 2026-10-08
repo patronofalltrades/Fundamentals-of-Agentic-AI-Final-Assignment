@@ -213,9 +213,13 @@ class NeonHTTPBackend:
 
 
 def from_env(environ: Optional[Dict[str, str]] = None):
-    """``DATABASE_URL`` (postgres) wins; else ``DASHBOARD_DB`` (SQLite path, read-only)."""
+    """``DASHBOARD_DATABASE_URL`` wins, then ``DATABASE_URL`` (postgres); else ``DASHBOARD_DB`` (SQLite, read-only).
+
+    ``DASHBOARD_DATABASE_URL`` points the site at another database (for example a newer checkpoint) while the
+    integration-managed ``DATABASE_URL`` stays unchanged. Removing it switches back.
+    """
     environ = os.environ if environ is None else environ
-    url = environ.get("DATABASE_URL") or environ.get("POSTGRES_URL")
+    url = environ.get("DASHBOARD_DATABASE_URL") or environ.get("DATABASE_URL") or environ.get("POSTGRES_URL")
     if url:
         return NeonHTTPBackend(url)
     path = environ.get("DASHBOARD_DB")
