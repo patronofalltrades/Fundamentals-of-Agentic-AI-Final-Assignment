@@ -86,8 +86,9 @@ export type EvalItem = {
   truth: string
   status: "measured" | "partial" | "estimate" | "pending"
   metrics: EvalMetric[]
-  compare?: { columns: string[]; rows: { label: string; format: string; values: (number | string | null)[]; note?: string | null }[] }
+  compare?: { row_header?: string; columns: string[]; rows: { label: string; format: string; values: (number | string | null)[]; note?: string | null }[] }
   decision?: string
+  finding?: string
   limits: string[]
   sources: string[]
 }

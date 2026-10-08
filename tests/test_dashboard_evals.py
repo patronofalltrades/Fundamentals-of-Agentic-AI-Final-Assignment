@@ -42,6 +42,22 @@ class RegistryTests(unittest.TestCase):
                          (rubric["changes"]["field_changed_counts"]["topic"], rubric["source_rows_validated"]))
 
 
+class IntentAccuracyTests(unittest.TestCase):
+    def test_intent_rows_come_from_the_report(self):
+        report = json.loads((ROOT / registry.INTENT).read_text(encoding="utf-8"))
+        item = next(i for i in registry.build()["items"] if i["id"] == "golden-intent")
+        v2 = [r for r in report["runs"] if r["prompt"] == "v2"]
+        rows = {r["label"]: r["values"] for r in item["compare"]["rows"]}
+        self.assertEqual(rows["complaint"][0], str(v2[0]["per_class"]["complaint"]["support"]))
+        self.assertEqual(sum(int(v[0]) for v in rows.values()), report["cases"])
+        self.assertEqual(item["metrics"][0]["value"], "86\u201388%")
+
+    def test_report_holds_aggregates_only(self):
+        text = (ROOT / registry.INTENT).read_text(encoding="utf-8")
+        self.assertNotIn("review_id", text)
+        self.assertNotRegex(text, r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-")
+
+
 class EvalsRouteTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -54,7 +70,7 @@ class EvalsRouteTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["golden"], {"status": "pending"})
         self.assertEqual([i["id"] for i in body["items"]],
-                         ["prompt-v1-v2", "labelling-runs", "projection-100k", "extractor-benchmark"])
+                         ["golden-intent", "prompt-v1-v2", "labelling-runs", "projection-100k", "extractor-benchmark"])
         checks = {c["name"]: c["status"] for c in body["checks"]}
         self.assertEqual(checks["Ranking reproduced from saved labels"], "pending")
         self.assertEqual(checks["Memo numbers match saved claims"], "pending")

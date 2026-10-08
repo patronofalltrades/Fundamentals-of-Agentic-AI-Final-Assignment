@@ -14,9 +14,112 @@
     {
       "path": "reports/jev-checkpoint-500.json",
       "sha256": "67aa25ab0bb00bcc3074ca15396b4634f8548b25841bdd3ea6314fc69acd50b0"
+    },
+    {
+      "path": "reports/golden-50-intent.json",
+      "sha256": "b4c7a8a8da31c0f2eae45f84f8fc4faf2c10a0664294c27b6b518232b04d26f9"
     }
   ],
   "items": [
+    {
+      "id": "golden-intent",
+      "kind": "accuracy",
+      "title": "Measured intent accuracy",
+      "question": "How often does Jev pick the same intent as a person?",
+      "sample": "50 reviews. One person wrote every label before seeing any model output.",
+      "truth": "The original human labels, scored with the course checker's score_gold. Three separate Jev runs per prompt.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Intent accuracy, prompt v2",
+          "value": "86–88%",
+          "format": "text",
+          "note": "3 runs"
+        },
+        {
+          "label": "Intent accuracy, prompt v1",
+          "value": "84–86%",
+          "format": "text",
+          "note": "3 runs"
+        },
+        {
+          "label": "Macro F1, prompt v2",
+          "value": "0.82–0.85",
+          "format": "text",
+          "note": "each intent weighted equally"
+        }
+      ],
+      "compare": {
+        "row_header": "Intent",
+        "columns": [
+          "Human labels",
+          "Jev picked",
+          "Found",
+          "Right when picked"
+        ],
+        "rows": [
+          {
+            "label": "complaint",
+            "format": "text",
+            "values": [
+              "19",
+              "20–21",
+              "89%",
+              "81–85%"
+            ]
+          },
+          {
+            "label": "praise",
+            "format": "text",
+            "values": [
+              "19",
+              "20",
+              "100%",
+              "95%"
+            ]
+          },
+          {
+            "label": "unclear",
+            "format": "text",
+            "values": [
+              "9",
+              "6–7",
+              "56–67%",
+              "83–86%"
+            ]
+          },
+          {
+            "label": "request",
+            "format": "text",
+            "values": [
+              "3",
+              "2",
+              "67%",
+              "100%"
+            ]
+          },
+          {
+            "label": "cancellation",
+            "format": "text",
+            "values": [
+              "0",
+              "1",
+              "—",
+              "0%"
+            ]
+          }
+        ]
+      },
+      "finding": "Jev is strong on praise and complaint. It finds only 56–67% of the reviews a person called unclear. It predicted cancellation once in every run, although the person labelled none.",
+      "limits": [
+        "Line A pipeline. Its prompt v2 ports the topic wording of the production jev-rubric-v2, so the label configuration is close to, but not byte-identical with, the dashboard database. This file holds aggregates only: no review IDs, review texts or human labels.",
+        "50 reviews is a small sample: request has 3 cases, so one review moves its score by 33 points.",
+        "One person labelled the set. There is no second labeller to measure human agreement."
+      ],
+      "sources": [
+        "reports/golden-50-intent.json"
+      ]
+    },
     {
       "id": "prompt-v1-v2",
       "kind": "benchmark",
