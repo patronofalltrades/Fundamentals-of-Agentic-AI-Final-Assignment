@@ -47,6 +47,31 @@ class Next5000CheckpointTest(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT config_sha FROM next5000_evidence LIMIT 1").fetchone()[0],
                          recheck.config_sha())
 
+    def test_four_review_tail_has_own_config_and_exact_id_accounting(self):
+        rows = [{"review_id": str(i), "review_text": "text " + str(i),
+            "source_sha256": "hash" + str(i), "labels": {"topic": "other",
+            "intent": "praise", "severity": 1, "sentiment": 0.5}}
+            for i in range(4)]
+        body = checkpoint.evidence_payload(rows)
+        self.assertEqual(body["response_format"]["json_schema"]["schema"]
+            ["properties"]["results"]["minItems"], 4)
+        self.assertEqual(body["response_format"]["json_schema"]["schema"]
+            ["properties"]["results"]["maxItems"], 4)
+        self.assertEqual(body["provider"], {"only": [recheck.PROVIDER],
+            "allow_fallbacks": False, "require_parameters": True,
+            "data_collection": "deny", "zdr": True})
+        self.assertNotEqual(checkpoint.evidence_config(rows), recheck.config_sha())
+        self.assertRaises(ValueError, checkpoint.evidence_payload, rows[:3])
+        self.assertRaises(ValueError, checkpoint.evidence_payload, rows + rows[:1])
+        items = [{"review_id": r["review_id"], "entities": [],
+            "evidence_quote": r["review_text"]} for r in rows]
+        response = {"choices": [{"finish_reason": "stop", "message": {
+            "content": checkpoint.canonical({"results": items})}}]}
+        self.assertEqual(len(checkpoint.inspect_evidence(response, rows)[0]), 4)
+        items[1]["review_id"] = "0"
+        response["choices"][0]["message"]["content"] = checkpoint.canonical({"results": items})
+        self.assertRaises(ValueError, checkpoint.inspect_evidence, response, rows)
+
 
 if __name__ == "__main__":
     unittest.main()

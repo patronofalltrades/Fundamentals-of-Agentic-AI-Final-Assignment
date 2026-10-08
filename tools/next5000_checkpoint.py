@@ -13,6 +13,7 @@ from pathlib import Path
 import time
 
 from spotify_pipeline.config import config_hash
+from spotify_pipeline.codex_evidence import validate_evidence
 from spotify_pipeline.contract import SOURCE_FIELDS, file_sha256, row_sha256, text_sha256
 from spotify_pipeline import jev
 from spotify_pipeline.jev_pilot import NANODOLLARS_PER_INPUT_TOKEN, RESERVATION_NANODOLLARS
@@ -27,6 +28,8 @@ MANIFEST = Path("local/next5000_manifest.json")
 BUDGET = "local/project_budget.db"
 FIRST = 500
 WORKERS = 2
+TAIL_SIZE = 4
+TAIL_VERSION = "next5000-first500-four-review-tail-v1"
 
 
 def canonical(value):
@@ -138,7 +141,7 @@ def materialize_caches(db, manifest):
                          source["review_id"]))
 
 
-def aliases(db, stage, text, value, origin):
+def aliases(db, stage, text, value, origin, evidence_config=None):
     """Apply a settled result to untouched exact-text source IDs only."""
     table = "next5000_labels" if stage == "jev" else "next5000_evidence"
     for rid, blocked in db.execute("SELECT review_id,blocked FROM next5000_rows WHERE review_text=?", (text,)):
@@ -150,7 +153,7 @@ def aliases(db, stage, text, value, origin):
         else:
             db.execute("INSERT INTO next5000_evidence VALUES (?,?,?,?,?,?,NULL)",
                 (rid, canonical(value["entities"]), value["evidence_quote"],
-                 recheck.config_sha(), "next5000_exact_text_cache", origin))
+                 evidence_config or recheck.config_sha(), "next5000_exact_text_cache", origin))
 
 
 def pending(db, stage):
@@ -189,10 +192,72 @@ def summary(db, budget=None):
     return result
 
 
+def evidence_config(rows):
+    if len(rows) == recheck.BATCH_SIZE:
+        return recheck.config_sha()
+    if len(rows) != TAIL_SIZE:
+        raise ValueError("only a four-review tail is supported")
+    return recheck.digest({"version": TAIL_VERSION, "base_config": recheck.config_sha(),
+        "batch_size": TAIL_SIZE, "min_items": TAIL_SIZE, "max_items": TAIL_SIZE})
+
+
+def evidence_payload(rows):
+    if len(rows) == recheck.BATCH_SIZE:
+        return recheck.payload(rows)
+    if len(rows) != TAIL_SIZE or len({r["review_id"] for r in rows}) != TAIL_SIZE or \
+            len({r["review_text"] for r in rows}) != TAIL_SIZE:
+        raise ValueError("tail requires four distinct source IDs and exact texts")
+    schema = json.loads(canonical(recheck.SCHEMA))
+    schema["properties"]["results"]["minItems"] = TAIL_SIZE
+    schema["properties"]["results"]["maxItems"] = TAIL_SIZE
+    items = [{"review_id": r["review_id"], "source_sha": r["source_sha256"],
+        "labels": {k: r["labels"][k] for k in ("topic", "intent", "severity", "sentiment")},
+        "review_text": r["review_text"]} for r in rows]
+    body = {"model": recheck.MODEL, "messages": [{"role": "user", "content":
+        recheck.INSTRUCTION + json.dumps(items, ensure_ascii=False, separators=(",", ":"))}],
+        "provider": {"only": [recheck.PROVIDER], "allow_fallbacks": False,
+            "require_parameters": True, "data_collection": "deny", "zdr": True},
+        "reasoning": {"effort": "low"}, "max_tokens": recheck.OUTPUT_LIMIT,
+        "response_format": {"type": "json_schema", "json_schema": {
+            "name": "spotify_exact_evidence_first500_tail", "strict": True, "schema": schema}}}
+    if len(canonical(body).encode("utf-8")) + recheck.OUTPUT_LIMIT > \
+            benchmark.ENDPOINT_BOUNDS["deepinfra"][0]:
+        raise ValueError("tail request exceeds conservative context bound")
+    return body
+
+
+def inspect_evidence(response, rows):
+    if len(rows) == recheck.BATCH_SIZE:
+        return recheck.inspect(response, rows)
+    if len(rows) != TAIL_SIZE or response["choices"][0].get("finish_reason") != "stop":
+        raise ValueError("tail result count or finish reason differs")
+    body = json.loads(response["choices"][0]["message"]["content"])
+    if not isinstance(body, dict) or set(body) != {"results"} or \
+            not isinstance(body["results"], list) or len(body["results"]) != TAIL_SIZE:
+        raise ValueError("tail result count or shape differs")
+    expected = {r["review_id"]: r for r in rows}
+    accepted, invalid, seen = {}, {}, set()
+    for item in body["results"]:
+        if not isinstance(item, dict) or set(item) != {"review_id", "entities", "evidence_quote"}:
+            raise ValueError("tail result fields differ")
+        rid = item["review_id"]
+        if not isinstance(rid, str) or rid not in expected or rid in seen:
+            raise ValueError("unknown or repeated tail source ID")
+        seen.add(rid)
+        try:
+            accepted[rid] = validate_evidence(expected[rid]["review_text"],
+                {"entities": item["entities"], "evidence_quote": item["evidence_quote"]})
+        except Exception as exc:
+            invalid[rid] = type(exc).__name__ + ": " + str(exc)
+    if seen != set(expected):
+        raise ValueError("missing tail source ID")
+    return accepted, invalid
+
+
 def request_key(manifest_sha, stage, rows):
     return "next5000-" + recheck.digest({"manifest": manifest_sha, "stage": stage,
         "ids": [r["review_id"] for r in rows], "config":
-        config_hash(jev.label_config()) if stage == "jev" else recheck.config_sha()})
+        config_hash(jev.label_config()) if stage == "jev" else evidence_config(rows)})
 
 
 def _call(stage, body, key):
@@ -222,7 +287,7 @@ def _finish(budget, stage, request_key_value, rows, response, elapsed, error):
         else:
             inp, out, reasoning, charge = recheck.measured_usage(response)
             try:
-                accepted, invalid = recheck.inspect(response, rows)
+                accepted, invalid = inspect_evidence(response, rows)
             except Exception as exc:
                 accepted, invalid = {}, {r["review_id"]: type(exc).__name__ + ": " + str(exc) for r in rows}
     except Exception as exc:
@@ -248,8 +313,8 @@ def _finish(budget, stage, request_key_value, rows, response, elapsed, error):
                     value = accepted[rid]
                     conn.execute("INSERT INTO next5000_evidence VALUES (?,?,?,?,?,?,?)",
                         (rid, canonical(value["entities"]), value["evidence_quote"],
-                         recheck.config_sha(), "deepinfra_direct", None, request_key_value))
-                    aliases(conn, stage, row["review_text"], value, rid)
+                         evidence_config(rows), "deepinfra_direct", None, request_key_value))
+                    aliases(conn, stage, row["review_text"], value, rid, evidence_config(rows))
             else:
                 conn.execute("INSERT INTO next5000_quarantines VALUES (?,?,?)",
                     (rid, invalid[rid], request_key_value))
@@ -257,10 +322,12 @@ def _finish(budget, stage, request_key_value, rows, response, elapsed, error):
     return status, charge
 
 
-def run_stage(budget, manifest_sha, stage, api_key):
+def run_stage(budget, manifest_sha, stage, api_key, tail_only=False):
     db = budget.db
     if db.execute("SELECT 1 FROM next5000_requests WHERE status IN ('reserved','uncertain') LIMIT 1").fetchone():
         raise ValueError("new checkpoint has unresolved request; no further POST")
+    if tail_only and (stage != "evidence" or len(pending(db, "evidence")) != TAIL_SIZE):
+        raise ValueError("tail requires exactly four untouched first-500 texts")
     if stage == "jev":
         verify_jev_price()
         jev.check_model_access(api_key)
@@ -280,14 +347,17 @@ def run_stage(budget, manifest_sha, stage, api_key):
                 if stage == "jev":
                     rows = rows[:1]
                 else:
-                    if len(rows) < recheck.BATCH_SIZE:
+                    if tail_only:
+                        rows = rows[:TAIL_SIZE]
+                    elif len(rows) < recheck.BATCH_SIZE:
                         break
-                    rows = rows[:recheck.BATCH_SIZE]
+                    else:
+                        rows = rows[:recheck.BATCH_SIZE]
                 if not rows:
                     break
-                body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else recheck.payload(rows)
+                body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else evidence_payload(rows)
                 rk = request_key(manifest_sha, stage, rows)
-                cfg = config_hash(jev.label_config()) if stage == "jev" else recheck.config_sha()
+                cfg = config_hash(jev.label_config()) if stage == "jev" else evidence_config(rows)
                 def record(conn):
                     conn.execute("INSERT INTO next5000_requests(request_key,stage,status,config_sha,request_sha) VALUES (?,?,'reserved',?,?)",
                         (rk, stage, cfg, recheck.digest(body)))
@@ -327,6 +397,7 @@ def main():
     mode.add_argument("--dry-run", action="store_true")
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
+    mode.add_argument("--run-tail", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load_manifest()
@@ -340,10 +411,11 @@ def main():
                 result = run_stage(budget, manifest_sha, "jev", key)
             finally:
                 key = None
-        elif args.run_evidence:
+        elif args.run_evidence or args.run_tail:
             key = canary.keychain_secret(timeout_seconds=90)
             try:
-                result = run_stage(budget, manifest_sha, "evidence", key)
+                result = run_stage(budget, manifest_sha, "evidence", key,
+                    tail_only=args.run_tail)
             finally:
                 key = None
         else:

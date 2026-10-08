@@ -86,21 +86,22 @@ def collect(manifest, db):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true")
+    parser.add_argument("--output", type=Path, default=OUT)
     args = parser.parse_args()
     manifest, _ = checkpoint.load_manifest()
     with sqlite3.connect("file:" + os.path.abspath(checkpoint.BUDGET) + "?mode=ro", uri=True) as db:
         result = collect(manifest, db)
     if args.write:
-        if OUT.exists():
+        if args.output.exists():
             raise FileExistsError("private QA pack already frozen")
-        fd = os.open(str(OUT), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        fd = os.open(str(args.output), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
             stream.write(checkpoint.canonical(result) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
     aggregate = {k: v for k, v in result.items() if k not in ("records", "requests")}
     if args.write:
-        aggregate["private_pack_sha256"] = checkpoint.file_sha256(str(OUT))
+        aggregate["private_pack_sha256"] = checkpoint.file_sha256(str(args.output))
     print(checkpoint.canonical(aggregate))
 
 
