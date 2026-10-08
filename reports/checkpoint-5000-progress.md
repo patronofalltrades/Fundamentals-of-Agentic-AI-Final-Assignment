@@ -52,11 +52,15 @@ deferral path preserves that hold, excludes all attempted source texts, and
 keeps the same cumulative budget and two-worker limit. It does not retry the
 uncertain request.
 
-The first authorized deferral resume sent no inference request. The pinned
-`deepinfra/bf16` route had catalog status `-5` at preflight, and two later
-anonymous catalog checks returned the same status. The route remains a
-fail-closed blocker; no fallback or model substitution was used. Counts and
-costs above did not change.
+The first deferral resume sent no inference request. The pinned
+`deepinfra/bf16` route had catalog status `-5` at preflight and on subsequent
+anonymous checks. A later anonymous catalog check at about 01:06 UTC returned
+status `0`. Preflight still showed the same ledger counts and no active
+checkpoint process. Automatic approval review then rejected starting the
+paid resume because it could verify only the earlier 100-review authorization,
+not authorization for the remaining 3,321 rows. No inference request started;
+approval for this remaining stage is pending. No fallback or model
+substitution was used. Counts and costs above did not change.
 
 An ignored, local human audit pack was prepared from the 1,593 currently
 accepted rows. It contains a deterministic hash-ranked random sample of 100
