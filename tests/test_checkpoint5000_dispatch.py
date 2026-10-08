@@ -148,6 +148,32 @@ class DispatcherTest(unittest.TestCase):
                 self.assertEqual(queue.db.execute("SELECT COUNT(*) FROM checkpoint_requests "
                     "WHERE status='partial_succeeded'").fetchone()[0], 1)
 
+    def test_deferred_uncertain_batches_keep_holds_and_stop_repeated_outage(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            path = str(Path(folder) / "project.db")
+            rows = rows5000()
+            label = json.dumps({"topic": "billing", "intent": "complaint",
+                "severity": 3, "sentiment": -0.5, "needs_review": False})
+            seed = {r["review_text"]: (label, "external-" + str(i))
+                    for i, r in enumerate(rows[:100])}
+            with ProjectBudget(path, paths) as budget:
+                queue = CheckpointQueue(budget, rows, "source", "prefix", seed)
+                before = budget.exposure("openrouter")
+                incomplete = {"provider": "DeepInfra", "id": "synthetic-generation"}
+                with mock.patch("tools.checkpoint5000_dispatch.benchmark.verify_route"), \
+                     mock.patch("tools.checkpoint5000_dispatch.canary.verify_project_key"), \
+                     mock.patch("tools.checkpoint5000_dispatch.benchmark.request_json",
+                                return_value=incomplete) as post:
+                    result = run_evidence(queue, "synthetic-key", 25, first_100=True,
+                        max_new_requests=2, defer_uncertain_evidence=True)
+                self.assertEqual(post.call_count, 2)
+                self.assertEqual(result["new_uncertain_requests"], 2)
+                self.assertTrue(result["paused"])
+                self.assertEqual(result["requests"], {"uncertain": 2})
+                self.assertEqual(budget.exposure("openrouter"), before + 2 * 24_903_544)
+                self.assertEqual(len(queue.next_evidence(25, first_100=True)), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -304,11 +304,32 @@ class CheckpointQueue:
                 "openrouter_exposure_nusd": self.budget.exposure("openrouter"),
                 "jev_exposure_nusd": self.budget.exposure("jev")}
 
-    def assert_resume_safe(self, stage):
-        unresolved = self.db.execute("SELECT COUNT(*) FROM checkpoint_requests "
-            "WHERE status IN ('reserved','uncertain')").fetchone()[0]
-        if unresolved:
+    def assert_resume_safe(self, stage, defer_uncertain_evidence=False):
+        if self.db.execute("SELECT 1 FROM checkpoint_requests WHERE status='reserved' LIMIT 1").fetchone():
+            raise ValueError("checkpoint has an active reservation; no duplicate worker")
+        uncertain = list(self.db.execute("""SELECT q.request_key,q.stage,q.batch_limit,
+            b.budget,b.status,b.reserved_nusd,b.charged_nusd
+            FROM checkpoint_requests q LEFT JOIN reservations b USING(request_key)
+            WHERE q.status='uncertain'"""))
+        if uncertain and not defer_uncertain_evidence:
             raise ValueError("checkpoint has unresolved delivery; inspect and reconcile before more calls")
+        if defer_uncertain_evidence:
+            if stage != "evidence":
+                raise ValueError("uncertain delivery deferral applies only to evidence")
+            from spotify_pipeline.deepinfra_batch import reservation_nusd
+            for key, request_stage, batch_limit, budget, status, reserved, charged in uncertain:
+                if (request_stage != "evidence" or batch_limit not in (25, 50) or
+                        budget != "openrouter" or status != "uncertain" or
+                        reserved != reservation_nusd() or charged is not None or
+                        self.db.execute("SELECT COUNT(*) FROM checkpoint_request_members "
+                            "WHERE request_key=?", (key,)).fetchone()[0] == 0):
+                    raise ValueError("uncertain evidence reservation is not fully held")
+                if self.db.execute("""SELECT 1 FROM checkpoint_request_members m
+                    LEFT JOIN checkpoint_evidence e USING(review_id)
+                    LEFT JOIN checkpoint_quarantines q USING(review_id)
+                    WHERE m.request_key=? AND (e.review_id IS NOT NULL OR q.review_id IS NOT NULL)
+                    LIMIT 1""", (key,)).fetchone():
+                    raise ValueError("uncertain evidence member was already settled")
         streak = 0
         for status, in self.db.execute("SELECT status FROM checkpoint_requests "
                                        "WHERE stage=? ORDER BY rowid DESC", (stage,)):

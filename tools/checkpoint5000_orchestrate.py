@@ -63,7 +63,7 @@ def run(args):
         if first100[0] != 100 or first100[1] != 100 or first100[2] + first100[3] != 100:
             raise ValueError("first-100 quality gate is not fully accounted")
         qa_status(args.manifest, args.budget)
-        queue.assert_resume_safe("evidence")
+        queue.assert_resume_safe("evidence", defer_uncertain_evidence=args.defer_uncertain_evidence)
         stages = []
         if queue.next_jev() is not None:
             queue.assert_resume_safe("jev")
@@ -82,10 +82,11 @@ def run(args):
                 return {"status": "paused_after_jev", "stages": stages,
                         "qa": qa_status(args.manifest, args.budget), **queue.summary()}
         if queue.next_evidence(50):
-            queue.assert_resume_safe("evidence")
+            queue.assert_resume_safe("evidence", defer_uncertain_evidence=args.defer_uncertain_evidence)
             key = canary.keychain_secret(timeout_seconds=90)
             try:
-                evidence_result = run_evidence(queue, key, 50)
+                evidence_result = run_evidence(queue, key, 50,
+                    defer_uncertain_evidence=args.defer_uncertain_evidence)
             finally:
                 key = None
             stages.append({"stage": "deepinfra", "admitted": evidence_result["admitted"],
@@ -112,7 +113,11 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--status", action="store_true")
     mode.add_argument("--run", action="store_true")
+    parser.add_argument("--defer-uncertain-evidence", action="store_true",
+                        help="keep full uncertain evidence holds and skip their source texts")
     args = parser.parse_args()
+    if args.defer_uncertain_evidence and not args.run:
+        parser.error("uncertain evidence deferral applies only to --run")
     if args.status:
         budget, queue = open_checkpoint(args)
         try:

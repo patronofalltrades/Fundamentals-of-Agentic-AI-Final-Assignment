@@ -24,7 +24,7 @@ class FakeQueue:
     def summary(self):
         return {"labels": 100, "complete": 96}
 
-    def assert_resume_safe(self, _stage):
+    def assert_resume_safe(self, _stage, defer_uncertain_evidence=False):
         return None
 
 
@@ -49,7 +49,7 @@ class OrchestrateTest(unittest.TestCase):
             events.append("labels")
             return {"admitted": 1, "paused": False, "halt_reason": None}
 
-        def evidence(_queue, _key, limit):
+        def evidence(_queue, _key, limit, defer_uncertain_evidence=False):
             events.append("evidence:" + str(limit))
             return {"admitted": 1, "paused": False, "halt_reason": None}
 
@@ -61,7 +61,8 @@ class OrchestrateTest(unittest.TestCase):
                 mock.patch.object(runner.canary, "keychain_secret", side_effect=secret), \
                 mock.patch.object(runner, "run_labels", side_effect=labels), \
                 mock.patch.object(runner, "run_evidence", side_effect=evidence):
-            result = runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
+            result = runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic",
+                defer_uncertain_evidence=False))
         self.assertEqual(events, ["key:spotify-review-jev", "labels", "key:openrouter",
                                   "evidence:50"])
         self.assertEqual(result["status"], "checkpoint_accounted_with_quarantines")
@@ -78,7 +79,8 @@ class OrchestrateTest(unittest.TestCase):
                 mock.patch.object(runner, "run_labels", return_value={
                     "admitted": 1, "paused": True, "halt_reason": "synthetic pause"}), \
                 mock.patch.object(runner, "run_evidence") as evidence:
-            result = runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
+            result = runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic",
+                defer_uncertain_evidence=False))
         self.assertEqual(result["status"], "paused_after_jev")
         secret.assert_called_once()
         evidence.assert_not_called()
@@ -93,7 +95,8 @@ class OrchestrateTest(unittest.TestCase):
                 mock.patch.object(runner, "verify_jev_price") as price, \
                 mock.patch.object(runner.canary, "keychain_secret") as secret:
             with self.assertRaisesRegex(ValueError, "reserved request"):
-                runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
+                runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic",
+                    defer_uncertain_evidence=False))
         price.assert_not_called()
         secret.assert_not_called()
         budget.close.assert_called_once()
@@ -107,7 +110,8 @@ class OrchestrateTest(unittest.TestCase):
                     "uncertain_rows": 50, "in_flight_rows": 0}), \
                 mock.patch.object(runner.canary, "keychain_secret") as secret:
             with self.assertRaisesRegex(ValueError, "unresolved delivery"):
-                runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
+                runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic",
+                    defer_uncertain_evidence=False))
         secret.assert_not_called()
         budget.close.assert_called_once()
 

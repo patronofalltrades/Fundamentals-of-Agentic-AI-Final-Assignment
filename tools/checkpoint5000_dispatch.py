@@ -204,8 +204,9 @@ def run_labels(queue, key, first_100=False, max_new_requests=None):
             **queue.summary()}
 
 
-def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None):
-    queue.assert_resume_safe("evidence")
+def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None,
+                 defer_uncertain_evidence=False):
+    queue.assert_resume_safe("evidence", defer_uncertain_evidence=defer_uncertain_evidence)
     if batch_limit not in (25, 50) or not key:
         raise ValueError("batch limit or OpenRouter key missing")
     benchmark.verify_route("deepinfra")
@@ -215,7 +216,7 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
         raise ValueError("first 100 Jev labels are incomplete")
     active = {}
     reported = set()
-    admitted = failures = 0
+    admitted = failures = new_uncertain = 0
     stop = False
     halt_reason = None
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -245,7 +246,9 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
                 response, elapsed, error_class = future.result()
                 if response is None:
                     queue.fail(request_key, error_class=error_class, elapsed_seconds=elapsed)
-                    stop, halt_reason = True, "unknown DeepInfra delivery"
+                    new_uncertain += 1
+                    if not defer_uncertain_evidence or error_class == "HTTPError" or new_uncertain >= 2:
+                        stop, halt_reason = True, "unknown DeepInfra delivery or repeated outage"
                     continue
                 try:
                     accepted, invalid, inp, out, reasoning, charge = \
@@ -256,7 +259,11 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
                                error_class=type(error).__name__, response=response,
                                elapsed_seconds=elapsed)
                     failures += 1
-                    if charge is None or failures >= 5:
+                    if charge is None:
+                        new_uncertain += 1
+                    if (failures >= 5 or not defer_uncertain_evidence and charge is None or
+                            new_uncertain >= 2 or charge is None and (
+                                not isinstance(response, dict) or response.get("provider") != "DeepInfra")):
                         stop, halt_reason = True, "DeepInfra invalid response or failure streak"
                     continue
                 try:
@@ -276,6 +283,7 @@ def run_evidence(queue, key, batch_limit, first_100=False, max_new_requests=None
             if stop:
                 continue
     return {"admitted": admitted, "paused": stop, "halt_reason": halt_reason,
+            "new_uncertain_requests": new_uncertain,
             **queue.summary()}
 
 
