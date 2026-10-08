@@ -96,7 +96,7 @@ export default function EvidenceExplorer() {
           </div>
         </form>
       </div>
-      <Reflection className="mt-3">{REFLECTIONS.evidence}</Reflection>
+      <Reflection className="mt-2">{REFLECTIONS.evidence}</Reflection>
       <p className="mt-2 text-[12px] text-muted-foreground">Source-exact quotes. Review IDs and full texts are not shown.</p>
       {error && <div className="mt-4"><LoadError message={error} /></div>}
       <p className="mt-4 text-[13px] text-muted-foreground" aria-live="polite">

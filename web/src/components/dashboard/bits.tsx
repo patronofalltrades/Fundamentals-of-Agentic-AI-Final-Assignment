@@ -22,12 +22,7 @@ export function LoadError({ message }: { message: string }) {
   return <p role="alert" className="text-sm text-negative">Could not load saved results ({message}).</p>
 }
 
-/** A short reflection at the top of a section: what we learned, not what the section shows. */
+/** A short reflection under a section title: what we learned. Same type as every other section subtitle. */
 export function Reflection({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <p className={cn("max-w-[72ch] border-l-2 border-primary/70 pl-3 text-[15px] leading-relaxed text-muted-foreground", className)}>
-      <span className="mr-1.5 text-[12px] tracking-[0.12em] text-primary uppercase">Reflection</span>
-      {children}
-    </p>
-  )
+  return <p className={cn("max-w-[72ch] text-[15px] text-muted-foreground", className)}>{children}</p>
 }

@@ -92,8 +92,8 @@ function EvalCard({ item }: { item: EvalItem }) {
         </div>
       )}
       {item.decision && (
-        <p className="rounded-2xl border-l-2 border-primary bg-primary/5 px-4 py-3 text-[14px]">
-          <span className="text-primary">Decision · </span>{item.decision}
+        <p className="rounded-2xl bg-tile px-4 py-3 text-[14px] text-muted-foreground">
+          <span className="text-foreground">Decision.</span> {item.decision}
         </p>
       )}
       <footer className="mt-auto space-y-3">
@@ -221,7 +221,7 @@ export default function EvalsSection() {
       <div className="flex flex-col gap-4 rounded-3xl bg-card p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-[62ch]">
           <h2 className="text-xl">Evaluations and benchmarks</h2>
-          <Reflection className="mt-3">{REFLECTIONS.evals}</Reflection>
+          <Reflection className="mt-2">{REFLECTIONS.evals}</Reflection>
           <p className="mt-3 text-[12px] text-muted-foreground">Every number below is read from a saved, linked report.</p>
         </div>
         <ul className="flex flex-wrap gap-2" aria-label="Status key">
