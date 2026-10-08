@@ -38,11 +38,13 @@ def make_bundle(manifest_path, budget_path):
         requests = {key: (stage, status, response_id) for key, stage, status, response_id in db.execute(
             "SELECT request_key,stage,status,response_id FROM checkpoint_requests")}
         batches = []
+        batch_members = {}
         for key, (stage, status, _) in requests.items():
             if stage != "evidence":
                 continue
             members = [rid for rid, in db.execute(
                 "SELECT review_id FROM checkpoint_request_members WHERE request_key=? ORDER BY rowid", (key,))]
+            batch_members[key] = set(members)
             batches.append({"batch_id": key, "status": {"reserved": "in_flight",
                 "quarantined_metered": "quarantined"}.get(status, status), "review_ids": members})
         results = []
@@ -52,7 +54,8 @@ def make_bundle(manifest_path, budget_path):
                 source_sha, reason, request_key = quarantines[rid]
                 results.append({"review_id": rid, "review_text": row["review_text"],
                     "source_sha256": source_sha, "batch_id": request_key,
-                    "status": "quarantined", "reason": reason})
+                    "status": "quarantined", "reason": reason,
+                    "is_cached": rid not in batch_members.get(request_key, set())})
                 continue
             if rid not in labels or rid not in evidence:
                 continue

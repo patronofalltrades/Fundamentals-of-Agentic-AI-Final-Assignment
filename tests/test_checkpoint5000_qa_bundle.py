@@ -17,7 +17,7 @@ from tools.checkpoint5000_qa_bundle import make_bundle
 
 
 class QaBundleTest(unittest.TestCase):
-    def test_completed_direct_and_cache_rows_audit_clean(self):
+    def test_completed_and_quarantined_direct_and_cache_rows_audit_clean(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             rows = rows5000()
@@ -53,14 +53,24 @@ class QaBundleTest(unittest.TestCase):
                     "evidence_quote": "premium problem"} for r in chosen}
                 queue.save_evidence(key, chosen, accepted, "config", 100_000,
                     300, 200, 50, "synthetic-gen", 1.2)
+                second = queue.next_evidence(25, first_100=True)
+                second_key = queue.reserve("evidence", second, "config", 24_903_544, 25)
+                accepted = {r["review_id"]: {"entities": ["premium"],
+                    "evidence_quote": "premium problem"} for r in second[1:]}
+                queue.save_evidence(second_key, second, accepted, "config", 100_000,
+                    300, 200, 50, "synthetic-gen-2", 1.2,
+                    invalid={second[0]["review_id"]: "invalid exact quote"})
             with mock.patch("tools.checkpoint5000_dispatch.DATASET", str(root)), \
                  mock.patch("tools.checkpoint5000_qa_bundle.DATASET", str(root)):
                 bundle = make_bundle(str(private), budget_path)
             result, _ = audit(bundle, evidence_prompt="deepinfra-batch-evidence-v3")
             self.assertTrue(result["structurally_clean"], result["failure_reasons"])
-            self.assertEqual(result["accepted_rows"], 50)
-            self.assertEqual(result["cached_rows"], 25)
-            self.assertEqual(result["unresolved_rows"], 4950)
+            self.assertEqual(result["accepted_rows"], 98)
+            self.assertEqual(result["cached_rows"], 49)
+            self.assertEqual(result["counts_by_state"]["quarantined"], 2)
+            self.assertEqual(result["unresolved_rows"], 4902)
+            quarantined = [r for r in bundle["results"] if r["status"] == "quarantined"]
+            self.assertEqual(sorted(r["is_cached"] for r in quarantined), [False, True])
 
 
 if __name__ == "__main__":
