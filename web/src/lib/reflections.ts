@@ -1,10 +1,12 @@
 // Section reflections: what we learned, not what the section shows. Edit the wording here.
-// Every number below comes from a saved report: reports/jev-checkpoint-500.json (500-review checkpoint),
+// Every number below comes from saved data: the 5,000-review checkpoint handoff (4,649 labelled rows, now in the
+// dashboard database), reports/jev-checkpoint-500.json (500-review checkpoint),
 // reports/jev-rubric-v1-v2-100.json (prompt v1 against v2), or the explainer's saved record.
 
 export const REFLECTIONS = {
   issues:
-    "Most reviews are not complaints. At the 500-review checkpoint, 289 reviews landed in topic “other” and 258 had severity 1. " +
+    "Most reviews are not complaints. Of the 4,649 labelled reviews in the 5,000-review checkpoint, 3,037 landed in topic " +
+    "“other” and 3,410 had severity 1. " +
     "We rank by the sum of severities, so both volume and harm count: a frequent mild issue can outrank a rare severe one. " +
     "We kept that trade-off because the course scorer uses the same rule.",
   memo:
@@ -16,8 +18,8 @@ export const REFLECTIONS = {
     "golden set was revised after its author saw Jev's answers, so we score against the original.",
   example:
     "This review taught us to keep three claims apart: accepted, confident and correct. It passed every check, yet its severity " +
-    "confidence was 0.27. Across the 500-review checkpoint, 387 rows fell below the 0.60 threshold, so the review flag is too " +
-    "broad to triage with on its own.",
+    "confidence was 0.27. Across the 5,000-review checkpoint, 3,815 of 4,649 labelled rows carry the review flag, mostly " +
+    "because 3,037 landed in topic “other”. The flag is too broad to triage with on its own.",
   evidence:
     "Labels were cheap; evidence was not. Jev labelled 500 reviews for about $0.016 with 384,476 input tokens. Extracting " +
     "exact quotes for the same reviews used 6,955,138 input tokens. That gap is why we benchmarked cheaper hosted extractors. " +

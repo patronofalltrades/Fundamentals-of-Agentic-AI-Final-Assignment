@@ -86,7 +86,7 @@ export default function KpiTiles() {
           <Tile title="Complaints" value={fmt.int(k.totalComplaints)}
             chart={<Spark id="complaints" label="Complaints" color="var(--chart-2)" data={k.series(k.t.complaints)} />}>
             <Leader label="Share of reviews" value={fmt.pct(k.totalComplaints / s.coverage.completed_rows)} />
-            <Leader label="Peak month" value={fmt.month(k.t.months[k.peakIndex])} />
+            <Leader label={k.t.granularity === "day" ? "Peak day" : "Peak month"} value={fmt.month(k.t.months[k.peakIndex])} />
           </Tile>
           <Tile title="Mean severity" value={k.mean === null ? "—" : k.mean.toFixed(2)}
             chart={<Spark id="severity" label="Mean severity" color="var(--chart-3)" data={k.series(k.t.mean_severity)} />}>

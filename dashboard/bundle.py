@@ -33,7 +33,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .store import MONTH, MONTH_DIMENSIONS, connect, month_aggregates
+from .store import DAY, DAY_DIMENSIONS, MONTH, MONTH_DIMENSIONS, connect, month_aggregates
 
 BUNDLE_VERSION = "dashboard-bundle-v1"
 ROW_FIELDS = ("row_index", "review_id", "row_sha256", "text_sha256", "is_empty", "status", "reason",
@@ -164,28 +164,36 @@ def _read_bundle(bundle_dir: str):
         raise ValueError("review IDs and row indices must be unique")
     if "months" in manifest:
         _check_months(manifest["months"], rows)
+    if "days" in manifest:
+        _check_months(manifest["days"], rows, DAY, "days", "YYYY-MM-DD")
     return manifest, rows
 
 
-def _check_months(months: Any, rows: List[Dict[str, Any]]) -> None:
-    """Month totals must add up to the rows. The rows hold no timestamps, so only totals are checked."""
-    if not isinstance(months, dict) or any(not isinstance(m, str) or not MONTH.fullmatch(m) for m in months):
-        raise ValueError("manifest months must map YYYY-MM to counts")
+def _check_months(months: Any, rows: List[Dict[str, Any]], pattern=MONTH, name="months", shape="YYYY-MM") -> None:
+    """Period totals must add up to the rows. The rows hold no timestamps, so only totals are checked."""
+    if not isinstance(months, dict) or any(not isinstance(m, str) or not pattern.fullmatch(m) for m in months):
+        raise ValueError("manifest %s must map %s to counts" % (name, shape))
     for values in months.values():
         if (not isinstance(values, dict) or set(values) != set(MONTH_DIMENSIONS)
                 or any(type(v) is not int or v < 0 for v in values.values())
                 or values["complaints"] > values["reviews"]):
-            raise ValueError("manifest months must map YYYY-MM to counts")
+            raise ValueError("manifest %s must map %s to counts" % (name, shape))
     complaints = [r for r in rows if r["status"] == "completed" and r["intent"] in ("complaint", "cancellation")]
     totals = {key: sum(v[key] for v in months.values()) for key in MONTH_DIMENSIONS}
     if totals != {"reviews": len(rows), "complaints": len(complaints),
                   "severity_sum": sum(int(r["severity"]) for r in complaints)}:
-        raise ValueError("manifest month totals do not match the rows")
+        raise ValueError("manifest %s totals do not match the rows" % name)
 
 
 def _month_aggregates(manifest: Dict[str, Any]) -> List[tuple]:
     return [(dimension, month, values[key]) for month, values in sorted(manifest.get("months", {}).items())
             for key, dimension in MONTH_DIMENSIONS.items() if values[key]]
+
+
+def _day_aggregates(manifest: Dict[str, Any]) -> List[tuple]:
+    """Optional daily totals, used for the trend lines when the data spans fewer than three months."""
+    return [(dimension, day, values[key]) for day, values in sorted(manifest.get("days", {}).items())
+            for key, dimension in DAY_DIMENSIONS.items() if values[key]]
 
 
 def _meta(backend, table: str) -> Dict[str, str]:
@@ -272,7 +280,7 @@ def load_bundle(backend, bundle_dir: str, chunk_size: int = CHUNK) -> Dict[str, 
     aggregates += [("processing_status", k[:-5], v) for k, v in counts.items()
                    if k.endswith("_rows") and k not in ("source_rows", "nonempty_rows", "empty_rows")]
     aggregates += [(dim, value, n) for dim, values in manifest["labels"].items() for value, n in values.items()]
-    aggregates += _month_aggregates(manifest)
+    aggregates += _month_aggregates(manifest) + _day_aggregates(manifest)
     backend.run_batch([("DELETE FROM dashboard_aggregate", ())] +
                       [("INSERT INTO dashboard_aggregate (dimension, value, count) VALUES (?, ?, ?)", a)
                        for a in aggregates if a[2]] +

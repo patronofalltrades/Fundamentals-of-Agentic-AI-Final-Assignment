@@ -9,6 +9,8 @@ from typing import Any, Dict
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}\Z")
 MONTH = re.compile(r"[0-9]{4}-(0[1-9]|1[0-2])\Z")
 MONTH_DIMENSIONS = {"reviews": "month_reviews", "complaints": "month_complaints", "severity_sum": "month_severity_sum"}
+DAY = re.compile(r"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\Z")
+DAY_DIMENSIONS = {"reviews": "day_reviews", "complaints": "day_complaints", "severity_sum": "day_severity_sum"}
 
 EXTRA_SCHEMA = """
 CREATE TABLE IF NOT EXISTS dashboard_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
