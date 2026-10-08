@@ -45,7 +45,7 @@ export default function IssueTable() {
           </Button>
         )}
       </div>
-      <Reflection className="mt-3">{REFLECTIONS.issues}</Reflection>
+      <Reflection className="mt-2">{REFLECTIONS.issues}</Reflection>
       {!items.length ? (
         <div className="mt-4 space-y-3">
           <PendingNote>

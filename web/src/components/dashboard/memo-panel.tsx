@@ -48,7 +48,7 @@ export default function MemoPanel() {
           </Badge>
         )}
       </div>
-      <Reflection className="mt-3">{REFLECTIONS.memo}</Reflection>
+      <Reflection className="mt-2">{REFLECTIONS.memo}</Reflection>
       <div className="mt-4">
         {memo.data.text ? (
           <MemoText text={memo.data.text} claims={byId} />

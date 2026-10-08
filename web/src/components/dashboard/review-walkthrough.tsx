@@ -23,7 +23,7 @@ function SavedRecord() {
         <div className="max-w-[60ch]">
           <p className="text-[12px] tracking-[0.12em] text-primary uppercase">Walkthrough</p>
           <h2 className="mt-1 text-xl">One review, end to end</h2>
-          <Reflection className="mt-3">{REFLECTIONS.example}</Reflection>
+          <Reflection className="mt-2">{REFLECTIONS.example}</Reflection>
         </div>
         <span className="rounded-full bg-tile px-3 py-1 text-[12px] text-muted-foreground">Saved output · row {REVIEW.row} of {REVIEW.of.toLocaleString("en-US")}</span>
       </header>
@@ -233,7 +233,7 @@ function Meaning() {
           </div>
         ))}
       </div>
-      <p className="rounded-2xl border-l-2 border-primary bg-primary/5 px-4 py-3 text-[14px]">
+      <p className="rounded-2xl bg-tile px-4 py-3 text-[14px]">
         <span className="text-foreground">Accepted, confident and correct are different claims.</span>{" "}
         <span className="text-muted-foreground">This record passed its checks, but its severity still needs review. One review cannot show calibration or an accuracy rate. The Evals section measures those across many reviews.</span>
       </p>
