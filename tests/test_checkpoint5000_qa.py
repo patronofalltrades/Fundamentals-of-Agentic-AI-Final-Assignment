@@ -112,6 +112,31 @@ class CheckpointQaTest(unittest.TestCase):
         self.assertTrue(report["structurally_clean"], report["failure_reasons"])
         self.assertEqual(report["accepted_rows"], 51)
 
+    def test_blocked_exact_text_aliases_follow_uncertain_and_quarantined_origin(self):
+        bundle = fixture(4)
+        for alias_index, origin_index in ((1, 0), (3, 2)):
+            alias = bundle["source_rows"][alias_index]
+            alias["review_text"] = bundle["source_rows"][origin_index]["review_text"]
+            bundle["manifest"][alias_index]["source_sha256"] = row_sha256(
+                [alias[k] for k in SOURCE_FIELDS])
+        bundle["batches"] = [
+            {"batch_id": 0, "status": "uncertain", "review_ids": ["synthetic-000"]},
+            {"batch_id": 1, "status": "quarantined", "review_ids": ["synthetic-002"]},
+        ]
+        bundle["results"] = []
+        bundle["blocked_aliases"] = [
+            {"review_id": "synthetic-001", "source_sha256": bundle["manifest"][1]["source_sha256"],
+             "cache_source_id": "synthetic-000", "batch_id": 0, "status": "uncertain"},
+            {"review_id": "synthetic-003", "source_sha256": bundle["manifest"][3]["source_sha256"],
+             "cache_source_id": "synthetic-002", "batch_id": 1, "status": "quarantined"},
+        ]
+        report, _ = self.check(bundle)
+        self.assertTrue(report["structurally_clean"], report["failure_reasons"])
+        self.assertEqual(report["counts_by_state"], {"quarantined": 2, "uncertain": 2})
+        bundle["blocked_aliases"][0]["cache_source_id"] = "synthetic-002"
+        invalid, _ = self.check(bundle)
+        self.assertIn("invalid_blocked_alias_provenance", invalid["failure_reasons"])
+
 
 if __name__ == "__main__":
     unittest.main()

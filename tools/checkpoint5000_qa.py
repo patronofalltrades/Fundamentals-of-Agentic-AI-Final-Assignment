@@ -37,10 +37,11 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
           evidence_prompt, sample_size=50, seed=5000):
     """Return (aggregate, sample IDs); never mutate input or saved state."""
     if not isinstance(bundle, dict) or not all(isinstance(bundle.get(k), list)
-            for k in ("manifest", "source_rows", "batches", "results")):
+            for k in ("manifest", "source_rows", "batches", "results")) or not isinstance(
+                bundle.get("blocked_aliases", []), list):
         raise ValueError("bundle needs manifest, source_rows, batches and results arrays")
     problems = Counter()
-    source, manifest, batches, membership, results = {}, {}, {}, {}, {}
+    source, manifest, batches, membership, results, blocked_aliases = {}, {}, {}, {}, {}, {}
     invalid_rows = set()
     duplicate = Counter()
     for row in bundle["source_rows"]:
@@ -158,6 +159,32 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
         else:
             _issue(problems, "invalid_result_status")
             invalid_rows.add(rid)
+    for alias in bundle.get("blocked_aliases", []):
+        if not isinstance(alias, dict) or not isinstance(alias.get("review_id"), str):
+            _issue(problems, "malformed_blocked_alias")
+            continue
+        rid = alias["review_id"]
+        if rid in blocked_aliases:
+            _issue(problems, "duplicate_blocked_alias")
+            continue
+        blocked_aliases[rid] = alias
+        row = source.get(rid)
+        origin_id = alias.get("cache_source_id")
+        batch_id = alias.get("batch_id")
+        if not isinstance(origin_id, str) or not isinstance(batch_id, (str, int)) or isinstance(batch_id, bool):
+            _issue(problems, "invalid_blocked_alias_provenance")
+            invalid_rows.add(rid)
+            continue
+        origin = source.get(origin_id)
+        batch = batches.get(batch_id, {})
+        if (row is None or rid in membership or rid in results or
+                origin_id == rid or membership.get(origin_id) != batch_id or
+                origin is None or row["review_text"] != origin["review_text"] or
+                alias.get("source_sha256") != row_sha256([row[k] for k in SOURCE_FIELDS]) or
+                alias.get("status") not in ("uncertain", "quarantined") or
+                batch.get("status") != alias.get("status")):
+            _issue(problems, "invalid_blocked_alias_provenance")
+            invalid_rows.add(rid)
     for rid, rec in results.items():
         if rec.get("status") != "completed" or not rec.get("is_cached"):
             continue
@@ -175,6 +202,8 @@ def audit(bundle, *, label_prompt=LABEL_PROMPT, label_schema=LABEL_SCHEMA,
         rec = results.get(rid)
         if rec is not None:
             state = rec.get("status", "invalid")
+        elif rid in blocked_aliases:
+            state = blocked_aliases[rid].get("status", "invalid")
         else:
             state = batches.get(membership.get(rid), {}).get("status", "pending")
             if state == "succeeded":

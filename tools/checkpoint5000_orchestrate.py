@@ -99,6 +99,8 @@ def run(args):
         status = ("checkpoint_complete" if qa["accepted_rows"] == 5000 else
                   "checkpoint_accounted_with_quarantines" if
                   qa["pending_rows"] == qa["uncertain_rows"] == qa["in_flight_rows"] == 0 else
+                  "checkpoint_accounted_with_unresolved" if
+                  qa["pending_rows"] == qa["in_flight_rows"] == 0 else
                   "checkpoint_incomplete")
         result = {"status": status, "stages": stages, "qa": qa, **queue.summary()}
         return result

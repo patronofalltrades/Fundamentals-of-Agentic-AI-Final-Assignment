@@ -1,6 +1,6 @@
-# First 5,000 source reviews: paused checkpoint
+# First 5,000 source reviews: accounted checkpoint
 
-Measured on 2026-10-08 UTC. This is an interim development run, not the
+Measured on 2026-10-08 UTC. This is a development checkpoint, not the
 instructor's clarified 100,000-source-review minimum or a full-corpus result.
 The dataset and human golden answers were not changed or used for this report.
 
@@ -8,28 +8,37 @@ The dataset and human golden answers were not changed or used for this report.
 | --- | ---: |
 | Selected source IDs and hashes | 5,000 |
 | Jev-labeled source rows | 5,000 |
-| Accepted evidence rows | 1,593 |
-| Quarantined evidence rows | 36 |
-| Pending evidence rows | 3,321 |
+| Accepted evidence rows | 4,649 |
+| Quarantined evidence rows, including exact-text aliases | 285 |
+| Uncertain evidence rows, including exact-text aliases | 66 |
+| Eligible pending evidence rows | 0 |
 | Source rows in one uncertain request | 50 |
 | Jev successful direct requests | 4,099 |
-| DeepInfra successful or partial requests | 19 |
+| DeepInfra successful or partial requests | 83 |
+| DeepInfra charged, wholly quarantined requests | 1 |
 | DeepInfra uncertain requests | 1 |
 
 The states sum to all 5,000 source rows. Exact-text caching retains each
 source ID and source hash. The saved evidence spans passed local exact-source
 validation. Structural QA found no source, membership, or provenance errors.
 This is structural validation, not a human truth evaluation.
+Accepted coverage is 92.98%; quarantined and uncertain shares are 5.70% and
+1.32%, respectively.
 
 | Budget | Measured checkpoint charge | Historical exposure | Held reservation | Cumulative exposure | Cap |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Jev | $0.174531378 | $0.024101700 | $0 | $0.198633078 | $0.60 |
-| OpenRouter | $0.013438407 | $0.726334928 | $0.024903544 | $0.764676879 | $5.00 |
+| OpenRouter | $0.065068805 | $0.726334928 | $0.024903544 | $0.816307277 | $5.00 |
 
 Jev saved usage is 4,155,509 input and 805,251 output tokens across 4,099
-direct requests. DeepInfra saved successful usage is 104,281 input and 56,353
-output tokens, including 5,246 reasoning tokens, across 19 requests. These
-totals exclude the uncertain request's unknown usage and charge.
+direct requests. DeepInfra saved successful or partial usage is 480,644 input
+and 274,018 output tokens, including 39,332 reasoning tokens, across 83
+requests. The charged, wholly quarantined response adds $0.000701917 and is
+included in the measured charge above. The uncertain request's usage and
+charge remain unknown. DeepInfra's 83 accepted or partial requests had 79.65
+seconds mean and 72.52 seconds median elapsed time (22.13–154.88 seconds).
+This is per-request latency; repeated quality-gate pauses prevent a clean
+end-to-end throughput measurement.
 
 One saved 50-review DeepInfra response repeated one source ID and omitted two.
 Offline recovery accepted 47 uniquely identified direct rows and quarantined
@@ -39,7 +48,7 @@ after five consecutive batches contained one or more invalid exact-source
 spans. After review and clean structural QA, a supervised resume used the same
 batch size, route, workers, schema, and budget caps.
 
-The resumed runner stopped on an uncertain 50-review response. It returned a
+An earlier runner stopped on an uncertain 50-review response. It returned a
 DeepInfra generation ID and `finish_reason=stop`, but had no usage fields and
 no message content. Its measured charge is unknown. The full response and
 request membership remain in the ignored local ledger, and the full
@@ -52,15 +61,26 @@ deferral path preserves that hold, excludes all attempted source texts, and
 keeps the same cumulative budget and two-worker limit. It does not retry the
 uncertain request.
 
-The first deferral resume sent no inference request. The pinned
-`deepinfra/bf16` route had catalog status `-5` at preflight and on subsequent
-anonymous checks. A later anonymous catalog check at about 01:06 UTC returned
-status `0`. Preflight still showed the same ledger counts and no active
-checkpoint process. Automatic approval review then rejected starting the
-paid resume because it could verify only the earlier 100-review authorization,
-not authorization for the remaining 3,321 rows. No inference request started;
-approval for this remaining stage is pending. No fallback or model
-substitution was used. Counts and costs above did not change.
+The first deferral resume sent no inference request because the pinned
+`deepinfra/bf16` route had catalog status `-5`. A later anonymous catalog check
+returned status `0`. Automatic approval review initially rejected the paid
+resume because it lacked the main-thread approval context. The coordinating
+agent supplied the exact user approval for processing the remaining 3,321
+rows under the existing caps, excluding the uncertain 50. The same runner
+was accepted on a single retry. No fallback or model substitution was used.
+
+The runner paused repeatedly at its five-consecutive-batches-with-invalid-rows
+gate. Each segment's invalid reasons were reviewed before continuing with the
+same model, prompt, schema, and cap. In total, 234 direct rows were quarantined:
+151 for a quote that was not an exact source substring, 51 for invalid entity
+spans, 17 for missing source IDs, and 15 for repeated source IDs. One separate
+charged 50-review response contained an unknown source ID, so offline recovery
+rejected the whole batch; its one exact-text alias is also quarantined. The
+unresolved request has 50 direct source rows and 16 exact-text aliases. All 66
+remain uncertain, with its full reservation held. No attempted source text was
+sent again. The final 17 rows once shown as pending were these blocked aliases;
+read-only QA now attributes each alias to its original request. No eligible
+pending row or in-flight reservation remains.
 
 An ignored, local human audit pack was prepared from the 1,593 currently
 accepted rows. It contains a deterministic hash-ranked random sample of 100
@@ -77,8 +97,11 @@ rows. Among 50 separate accepted risk cases, it found four likely issues and
 four uncertain judgments. Ten quarantined cases had no accepted output to
 score. Likely issues involved topic, intent, severity, and quote relevance.
 These findings are review signals, not human agreement or golden accuracy.
-The current checkpoint configuration stays fixed for comparability. Before a
-100,000-review run, the team should adjudicate uncertain cases, review the
-severity and praise/request rules, check quote relevance, and run a bounded
-recheck of any targeted change. The 5,000-row checkpoint is incomplete and
-cannot establish readiness for the instructor's 100,000-row minimum.
+The checkpoint configuration stayed fixed for comparability. The structural
+failure rate and model-assisted audit signals block a recommendation to scale
+this evidence configuration. Before a 100,000-review run, the team should
+adjudicate uncertain cases, fix exact-quote and entity-span behavior, review
+the severity and praise/request rules, and run a bounded recheck of any
+targeted change. A separate 10-review payload benchmark and explicit paid-run
+authorization are still required. This 5,000-row checkpoint does not satisfy
+the instructor's 100,000-row minimum or the unchanged full-corpus checker.

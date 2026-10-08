@@ -39,6 +39,8 @@ def make_bundle(manifest_path, budget_path):
             "SELECT request_key,stage,status,response_id FROM checkpoint_requests")}
         batches = []
         batch_members = {}
+        blocked_by_text = {}
+        source_text = {row["review_id"]: row["review_text"] for row in source_rows}
         for key, (stage, status, _) in requests.items():
             if stage != "evidence":
                 continue
@@ -47,7 +49,14 @@ def make_bundle(manifest_path, budget_path):
             batch_members[key] = set(members)
             batches.append({"batch_id": key, "status": {"reserved": "in_flight",
                 "quarantined_metered": "quarantined"}.get(status, status), "review_ids": members})
+            if status in ("uncertain", "quarantined_metered"):
+                for rid in members:
+                    text = source_text[rid]
+                    if text in blocked_by_text and blocked_by_text[text] != (rid, key, status):
+                        raise ValueError("blocked exact text has conflicting request origins")
+                    blocked_by_text[text] = (rid, key, status)
         results = []
+        blocked_aliases = []
         for row in source_rows:
             rid = row["review_id"]
             if rid in quarantines:
@@ -58,6 +67,12 @@ def make_bundle(manifest_path, budget_path):
                     "is_cached": rid not in batch_members.get(request_key, set())})
                 continue
             if rid not in labels or rid not in evidence:
+                origin = blocked_by_text.get(row["review_text"])
+                if origin and rid not in batch_members[origin[1]]:
+                    blocked_aliases.append({"review_id": rid,
+                        "source_sha256": row_sha256([row[k] for k in SOURCE_FIELDS]),
+                        "cache_source_id": origin[0], "batch_id": origin[1],
+                        "status": "uncertain" if origin[2] == "uncertain" else "quarantined"})
                 continue
             label, label_config, label_provenance = labels[rid]
             entities, quote, evidence_config, evidence_provenance, origin, request_key = evidence[rid]
@@ -83,7 +98,8 @@ def make_bundle(manifest_path, budget_path):
                 "label_schema_version": jev.SCHEMA_VERSION,
                 "evidence_prompt_version": deepinfra_batch.PROMPT_VERSION})
         return {"manifest": manifest["rows"], "source_rows": source_rows,
-                "batches": batches, "results": results}
+                "batches": batches, "results": results,
+                "blocked_aliases": blocked_aliases}
     finally:
         db.close()
 
