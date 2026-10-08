@@ -55,7 +55,8 @@ class OrchestrateTest(unittest.TestCase):
 
         with mock.patch.object(runner, "open_checkpoint", return_value=(budget, queue)), \
                 mock.patch.object(runner, "qa_status", return_value={
-                    "accepted_rows": 4996, "quarantined_rows": 4, "pending_rows": 0}), \
+                    "accepted_rows": 4996, "quarantined_rows": 4, "pending_rows": 0,
+                    "uncertain_rows": 0, "in_flight_rows": 0}), \
                 mock.patch.object(runner, "verify_jev_price", return_value={"model": "jev-1.13.0"}), \
                 mock.patch.object(runner.canary, "keychain_secret", side_effect=secret), \
                 mock.patch.object(runner, "run_labels", side_effect=labels), \
@@ -70,7 +71,8 @@ class OrchestrateTest(unittest.TestCase):
         budget, queue = mock.Mock(), FakeQueue()
         with mock.patch.object(runner, "open_checkpoint", return_value=(budget, queue)), \
                 mock.patch.object(runner, "qa_status", return_value={
-                    "accepted_rows": 96, "quarantined_rows": 4, "pending_rows": 4900}), \
+                    "accepted_rows": 96, "quarantined_rows": 4, "pending_rows": 4900,
+                    "uncertain_rows": 0, "in_flight_rows": 0}), \
                 mock.patch.object(runner, "verify_jev_price", return_value={}), \
                 mock.patch.object(runner.canary, "keychain_secret", return_value="synthetic-key") as secret, \
                 mock.patch.object(runner, "run_labels", return_value={
@@ -86,12 +88,26 @@ class OrchestrateTest(unittest.TestCase):
         queue.assert_resume_safe = mock.Mock(side_effect=ValueError("reserved request"))
         with mock.patch.object(runner, "open_checkpoint", return_value=(budget, queue)), \
                 mock.patch.object(runner, "qa_status", return_value={
-                    "accepted_rows": 96, "quarantined_rows": 4, "pending_rows": 4900}), \
+                    "accepted_rows": 96, "quarantined_rows": 4, "pending_rows": 4900,
+                    "uncertain_rows": 0, "in_flight_rows": 0}), \
                 mock.patch.object(runner, "verify_jev_price") as price, \
                 mock.patch.object(runner.canary, "keychain_secret") as secret:
             with self.assertRaisesRegex(ValueError, "reserved request"):
                 runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
         price.assert_not_called()
+        secret.assert_not_called()
+        budget.close.assert_called_once()
+
+    def test_uncertain_request_stops_even_when_no_new_row_is_selectable(self):
+        budget, queue = mock.Mock(), FakeQueue(labels=False, evidence=False)
+        queue.assert_resume_safe = mock.Mock(side_effect=ValueError("unresolved delivery"))
+        with mock.patch.object(runner, "open_checkpoint", return_value=(budget, queue)), \
+                mock.patch.object(runner, "qa_status", return_value={
+                    "accepted_rows": 4950, "quarantined_rows": 0, "pending_rows": 0,
+                    "uncertain_rows": 50, "in_flight_rows": 0}), \
+                mock.patch.object(runner.canary, "keychain_secret") as secret:
+            with self.assertRaisesRegex(ValueError, "unresolved delivery"):
+                runner.run(argparse.Namespace(manifest="synthetic", budget="synthetic"))
         secret.assert_not_called()
         budget.close.assert_called_once()
 

@@ -45,7 +45,9 @@ def qa_status(manifest_path, budget_path):
         raise ValueError("checkpoint QA found structural failures; no paid call")
     return {"accepted_rows": report["accepted_rows"],
             "quarantined_rows": report["counts_by_state"].get("quarantined", 0),
-            "pending_rows": report["counts_by_state"].get("pending", 0)}
+            "pending_rows": report["counts_by_state"].get("pending", 0),
+            "uncertain_rows": report["counts_by_state"].get("uncertain", 0),
+            "in_flight_rows": report["counts_by_state"].get("in_flight", 0)}
 
 
 def run(args):
@@ -61,6 +63,7 @@ def run(args):
         if first100[0] != 100 or first100[1] != 100 or first100[2] + first100[3] != 100:
             raise ValueError("first-100 quality gate is not fully accounted")
         qa_status(args.manifest, args.budget)
+        queue.assert_resume_safe("evidence")
         stages = []
         if queue.next_jev() is not None:
             queue.assert_resume_safe("jev")
@@ -93,7 +96,8 @@ def run(args):
                         "qa": qa_status(args.manifest, args.budget), **queue.summary()}
         qa = qa_status(args.manifest, args.budget)
         status = ("checkpoint_complete" if qa["accepted_rows"] == 5000 else
-                  "checkpoint_accounted_with_quarantines" if qa["pending_rows"] == 0 else
+                  "checkpoint_accounted_with_quarantines" if
+                  qa["pending_rows"] == qa["uncertain_rows"] == qa["in_flight_rows"] == 0 else
                   "checkpoint_incomplete")
         result = {"status": status, "stages": stages, "qa": qa, **queue.summary()}
         return result
