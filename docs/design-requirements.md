@@ -61,14 +61,18 @@ Type scale: card titles 20 px, KPI numbers 32 px light, body and table 15 px, la
 3. **Issues:** ranking table (complaints, severity sum, mean, share; claim IDs on hover) beside the two gauges and
    pipeline readiness (Ingest, Classify, Verify, Group, Rank, Memo).
 4. **Memo:** the pipeline's memo. Claim IDs are highlighted, and each shows its saved value on hover.
-5. **Evidence:** topic filter, quote search, evidence cards, saved-record detail.
-6. **Method:** labels, ranking rule and limits in plain words.
+5. **Example:** one saved review followed end to end: labels with confidence, evidence, review flag, a
+   hypothetical threshold slider and the five pipeline stages. Ported from the Jev explainer handoff.
+6. **Evidence:** topic filter, quote search, evidence cards, saved-record detail.
+7. **Method:** labels, ranking rule and limits in plain words.
 
 ## Rules
 
 1. Show only saved, checked data. Show a designed "pending" state, never sample numbers.
 2. Keep the demo-coverage chip until 100,000 source rows are loaded.
-3. No review IDs or full review texts in the page or the API.
+3. No review IDs or full review texts in the page or the API. One exception (Hanif, 8 October 2026): the
+   "One review, end to end" walkthrough shows a single public Google Play review in full, without its review ID,
+   so it can highlight the evidence quote. Its saved values live in `web/src/lib/walkthrough.ts`.
 4. Strict Content Security Policy: Astro adds hashes for its inline scripts and styles; no `unsafe-inline`. Chart
    colours come from CSS variables, so shadcn's chart style tag is not used. Islands that would server-render style
    attributes render on the client only.
