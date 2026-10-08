@@ -155,6 +155,10 @@ class ScaleQueueTest(unittest.TestCase):
             db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
             self.assertEqual(scale.initial_worker_limit(db, "jev"), 4)
             self.assertEqual(scale.initial_worker_limit(db, "evidence"), 8)
+            self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 8)
+            db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
+            self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 4)
+            self.assertEqual(scale.safe_worker_ceiling(db, "evidence"), 8)
         finally:
             db.close()
 

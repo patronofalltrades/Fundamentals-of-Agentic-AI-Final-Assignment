@@ -351,6 +351,13 @@ def initial_worker_limit(db, stage):
     return max(1, WORKERS // 2) if prior_overload else WORKERS
 
 
+def safe_worker_ceiling(db, stage):
+    """Keep Jev at four after observed provider overload; evidence may use eight."""
+    jev_overload = db.execute("""SELECT COUNT(*) FROM scale_requests
+        WHERE stage='jev' AND status='uncertain' AND error_class LIKE '%:529'""").fetchone()[0]
+    return max(1, WORKERS // 2) if stage == "jev" and jev_overload >= 2 else WORKERS
+
+
 def run_stage(budget, manifest_sha, stage, api_key, trial=False):
     db = budget.db
     assert_resume_safe(db)
@@ -377,6 +384,8 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
     active = {}
     limit, rate_errors, new_uncertain, invalid_streak = \
         initial_worker_limit(db, stage), 0, 0, 0
+    ceiling = safe_worker_ceiling(db, stage)
+    limit = min(limit, ceiling)
     stable_successes = 0
     stop, halt = False, None
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
@@ -446,7 +455,7 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
                         stop, halt = True, "two new uncertain requests"
                 elif state == "succeeded":
                     stable_successes += 1
-                    if stable_successes >= 500 and limit < WORKERS:
+                    if stable_successes >= 500 and limit < ceiling:
                         limit += 1
                         stable_successes = 0
                 invalid_streak = invalid_streak + 1 if state not in ("succeeded", "uncertain") else 0
