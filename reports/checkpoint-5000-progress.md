@@ -66,3 +66,15 @@ batch provenance, and quarantined rows. The random frame digest is
 `5fb675e7008399bcf36e03add02ea7b980760b7528fc73d099688255f7b1febe`.
 The pack contains original review text and IDs and remains outside Git. It
 supports a human audit of model outputs; it does not estimate golden accuracy.
+
+An independent model-assisted review of this frozen pack found five likely
+semantic issues and five uncertain judgments among the 100 random accepted
+rows. Among 50 separate accepted risk cases, it found four likely issues and
+four uncertain judgments. Ten quarantined cases had no accepted output to
+score. Likely issues involved topic, intent, severity, and quote relevance.
+These findings are review signals, not human agreement or golden accuracy.
+The current checkpoint configuration stays fixed for comparability. Before a
+100,000-review run, the team should adjudicate uncertain cases, review the
+severity and praise/request rules, check quote relevance, and run a bounded
+recheck of any targeted change. The 5,000-row checkpoint is incomplete and
+cannot establish readiness for the instructor's 100,000-row minimum.
