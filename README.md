@@ -8,7 +8,7 @@ playback, or billing/support? No recommendation exists yet.
 
 | Item | Value |
 | --- | --- |
-| **Live dashboard** | **https://fundamentals-of-agentic-ai-final-as.vercel.app** — public, read-only, no login. It now shows development data only (500 reviews). See section 6. |
+| **Live dashboard** | **https://hanif-spotify-insights.vercel.app** — public, read-only, no login. It now shows development data only (500 reviews). See section 6. |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Class 7 is on the same day; the time is not known. |
 | Submission | This public repository. Final submission through the course portal is pending. |
 | Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
@@ -32,7 +32,7 @@ playback, or billing/support? No recommendation exists yet.
 | Grading export and self-check | Not started. | — |
 | Cost calculator with measured cold and warm runs | Partial. Only offline replay scaffolding exists. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Scoring has not run in this pipeline. | Section 7 |
-| Dashboard, backend, database, live URL | **Live** with the 500-review development data. Issue ranking and recommendations show pending. | [live dashboard](https://fundamentals-of-agentic-ai-final-as.vercel.app), [dashboard guide](docs/dashboard.md) |
+| Dashboard, backend, database, live URL | **Live** with the 500-review development data. Issue ranking and recommendations show pending. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
 | 100,000-review run | Not started. | — |
 | Full-corpus run (stretch) | Not started. | — |
 
@@ -113,7 +113,7 @@ Use Python 3.9 or newer. Use the standard library only. No installation is neede
 Run all commands from the repository root.
 
 ```sh
-python3 -m unittest discover -s tests -t . -v      # 207 offline tests
+python3 -m unittest discover -s tests -t . -v      # 225 offline tests
 python3 -m spotify_pipeline --help
 ```
 
@@ -149,7 +149,7 @@ approval and a flag such as `--execute`.
 
 ### Dashboard
 
-**Live:** https://fundamentals-of-agentic-ai-final-as.vercel.app
+**Live:** https://hanif-spotify-insights.vercel.app
 
 - Open the link in any browser. No account or login is needed.
 - The page and the API only read saved results. Opening the page makes no model call and spends no credit.
