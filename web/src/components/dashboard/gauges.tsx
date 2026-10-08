@@ -37,7 +37,8 @@ export default function Gauges() {
   const { data: s } = useData(api.summary)
   if (!s) return <div className="space-y-6">{[0, 1].map((i) => <Skeleton key={i} className="h-44 rounded-3xl bg-card" />)}</div>
   const sets = s.evaluation.status === "saved" ? s.evaluation.sets : {}
-  const chosen = sets["adjudicated"] ?? sets["original"] ?? Object.values(sets)[0]
+  // The original human set comes first: the adjudicated set was revised after seeing model output.
+  const chosen = sets["original"] ?? Object.values(sets).find((x) => x.official) ?? Object.values(sets)[0]
   const joint = chosen?.agreement.joint ?? null
   const top = s.top_issue
   return (

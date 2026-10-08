@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/main.astro"
-import { BarChart3, BookOpenText, FileText, House, ListOrdered, ArrowRight } from "lucide-react"
+import { BarChart3, BookOpenText, FileText, FlaskConical, House, ListOrdered, ArrowRight } from "lucide-react"
 import KpiTiles from "@/components/dashboard/kpi-tiles"
 import ProgressStrip from "@/components/dashboard/progress-strip"
 import IssueTable from "@/components/dashboard/issue-table"
@@ -9,11 +9,13 @@ import Readiness from "@/components/dashboard/readiness"
 import MemoPanel from "@/components/dashboard/memo-panel"
 import EvidenceExplorer from "@/components/dashboard/evidence-explorer"
 import HeroStatus from "@/components/dashboard/hero-status"
+import EvalsSection from "@/components/dashboard/evals-section"
 
 const nav = [
   { id: "overview", label: "Overview", icon: House },
   { id: "issues", label: "Issues", icon: ListOrdered },
   { id: "memo", label: "Memo", icon: FileText },
+  { id: "evals", label: "Evals", icon: FlaskConical },
   { id: "evidence", label: "Evidence", icon: BarChart3 },
   { id: "method", label: "Method", icon: BookOpenText },
 ]
@@ -71,6 +73,9 @@ const nav = [
 
         <!-- Memo -->
         <section id="memo" aria-label="Memo" class="scroll-mt-6 rounded-3xl bg-card p-6"><MemoPanel client:visible /></section>
+
+        <!-- Evaluations and benchmarks -->
+        <section id="evals" aria-label="Evaluations and benchmarks" class="scroll-mt-6"><EvalsSection client:only="react" /></section>
 
         <!-- Evidence -->
         <section id="evidence" aria-label="Evidence" class="scroll-mt-6 rounded-3xl bg-card p-6"><EvidenceExplorer client:only="react" /></section>

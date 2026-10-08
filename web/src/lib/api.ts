@@ -76,6 +76,31 @@ export type ReviewDetail = ReviewItem & {
   prompt_version: string | null
 }
 
+export type EvalMetric = { label: string; value: number | string | null; format: string; of?: number; note?: string | null }
+export type EvalItem = {
+  id: string
+  kind: "benchmark" | "run" | "projection" | "accuracy"
+  title: string
+  question: string
+  sample: string
+  truth: string
+  status: "measured" | "partial" | "estimate" | "pending"
+  metrics: EvalMetric[]
+  compare?: { columns: string[]; rows: { label: string; format: string; values: (number | string | null)[]; note?: string | null }[] }
+  decision?: string
+  limits: string[]
+  sources: string[]
+}
+export type EvalCheck = { name: string; status: "passed" | "pending" | "failed"; detail: string }
+export type Evals = {
+  model?: string
+  prompt_version?: string
+  built_from?: { path: string; sha256: string }[]
+  items: EvalItem[]
+  golden: Summary["evaluation"]
+  checks: EvalCheck[]
+}
+
 export const TOPICS = ["access", "usability", "playback", "downloads", "catalog", "billing", "support", "other"] as const
 
 const cache = new Map<string, Promise<unknown>>()
@@ -100,6 +125,7 @@ export const api = {
   issues: () => once<Issues>("/api/issues"),
   claims: () => once<Claims>("/api/claims"),
   memo: () => once<Memo>("/api/memo"),
+  evals: () => once<Evals>("/api/evals"),
   reviews: (params: { topic?: string; q?: string; offset?: number; limit?: number }) => {
     const search = new URLSearchParams()
     if (params.topic) search.set("topic", params.topic)
@@ -119,4 +145,15 @@ export const fmt = {
     return new Date(Number(y), Number(mm) - 1, 1).toLocaleString("en-US", { month: "short", year: "2-digit" })
   },
   label: (s: string) => s.replaceAll("_", " "),
+  /** Format a saved metric. Values may arrive as decimal strings to keep their precision. */
+  value: (v: number | string | null | undefined, format: string) => {
+    if (v === null || v === undefined) return "—"
+    const n = Number(v)
+    if (!Number.isFinite(n)) return String(v)
+    if (format === "usd") return n < 0.1 ? `$${n.toFixed(4)}` : `$${n.toFixed(2)}`
+    if (format === "seconds") return n < 60 ? `${n.toFixed(1)} s` : `${(n / 60).toFixed(1)} min`
+    if (format === "hours") return `${n.toFixed(1)} h`
+    if (format === "ratio") return `${(n * 100).toFixed(0)}%`
+    return n.toLocaleString("en-US")
+  },
 }

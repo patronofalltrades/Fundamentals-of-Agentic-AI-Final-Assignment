@@ -17,6 +17,7 @@ from .store import connect
 STATIC = Path(__file__).with_name("static")
 # The built Astro site (web/dist). When present it replaces the legacy static page.
 DIST = Path(__file__).resolve().parents[1] / "web" / "dist"
+EVALS = Path(__file__).with_name("evals.json")  # built by tools/build_eval_registry.py
 TOPICS = ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other")
 TARGET_MINIMUM_SOURCE_ROWS = 100000  # instructor clarification; see AGENTS.md
 SECURITY_HEADERS = (
@@ -222,6 +223,29 @@ def recommendations(conn):
     return {"status": run["recommendation_status"], "items": result}
 
 
+def _check(name, status, detail):
+    return {"name": name, "status": status, "detail": detail}
+
+
+def evals(conn):
+    """Saved benchmarks (evals.json) plus the live golden evaluation and integrity checks."""
+    registry = json.loads(EVALS.read_text(encoding="utf-8")) if EVALS.exists() else {"items": []}
+    run, saved_memo = _run(conn), memo(conn)
+    source = conn.execute("SELECT value FROM meta WHERE key='file_sha256'").fetchone()
+    memo_state = {"claims_checked": "passed", "pending": "pending"}.get(saved_memo["status"], "failed")
+    checks = [
+        _check("Ranking reproduced from saved labels", "passed" if run else "pending",
+               "The import recomputes the ranking with the course rule and stops on any difference."),
+        _check("Memo numbers match saved claims", memo_state,
+               "Every claim ID in the memo must appear with its saved value."),
+        _check("Source file fingerprint recorded", "passed" if source else "failed",
+               "Each saved label is tied to the SHA-256 of the source file."),
+        _check("Full review texts kept out of the public database", "failed" if _stores_full_text(conn) else "passed",
+               "The deployed database holds labels and short evidence quotes only."),
+    ]
+    return {**registry, "golden": evaluation(conn), "checks": checks}
+
+
 def _json_body(status, value):
     return status, "application/json; charset=utf-8", json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
 
@@ -248,6 +272,8 @@ def _api(conn, path, query):
         return _json_body(200, claims(conn, issue))
     if path == "/api/memo":
         return _json_body(200, memo(conn))
+    if path == "/api/evals":
+        return _json_body(200, evals(conn))
     match = ISSUE_RE.match(path)
     if match:
         item = next((x for x in issues(conn)["items"] if x["issue_id"] == match.group(1)), None)
