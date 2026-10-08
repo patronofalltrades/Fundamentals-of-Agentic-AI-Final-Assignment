@@ -1,0 +1,52 @@
+"""Offline checks for first-500 source identity and durable queue selection."""
+
+import sqlite3
+import unittest
+
+from spotify_pipeline.config import config_hash
+from spotify_pipeline.jev import label_config
+from tools import deepinfra_recheck100 as recheck
+from tools import next5000_checkpoint as checkpoint
+
+
+class Next5000CheckpointTest(unittest.TestCase):
+    def setUp(self):
+        self.db = sqlite3.connect(":memory:")
+        self.db.execute("CREATE TABLE next5000_rows(position INTEGER,review_id TEXT,review_text TEXT,source_sha TEXT,blocked INTEGER)")
+        self.db.execute("CREATE TABLE next5000_labels(review_id TEXT,label_json TEXT,config_sha TEXT,provenance TEXT,origin_id TEXT,request_key TEXT)")
+        self.db.execute("CREATE TABLE next5000_evidence(review_id TEXT,entities_json TEXT,evidence_quote TEXT,config_sha TEXT,provenance TEXT,origin_id TEXT,request_key TEXT)")
+        self.db.execute("CREATE TABLE next5000_requests(request_key TEXT,stage TEXT,status TEXT)")
+        self.db.execute("CREATE TABLE next5000_members(request_key TEXT,review_id TEXT)")
+        self.db.executemany("INSERT INTO next5000_rows VALUES (?,?,?,?,?)", [
+            (5001, "a", "same text", "sha-a", 0),
+            (5002, "b", "same text", "sha-b", 0),
+            (5003, "c", "uncertain text", "sha-c", 1),
+            (5004, "d", "new text", "sha-d", 0)])
+
+    def tearDown(self):
+        self.db.close()
+
+    def test_exact_text_alias_keeps_both_source_ids(self):
+        self.assertEqual([r["review_id"] for r in checkpoint.pending(self.db, "jev")], ["a", "d"])
+        checkpoint.aliases(self.db, "jev", "same text", '{"topic":"other"}', "a")
+        self.assertEqual(dict(self.db.execute("SELECT review_id,origin_id FROM next5000_labels")),
+                         {"a": "a", "b": "a"})
+        self.assertEqual([r["review_id"] for r in checkpoint.pending(self.db, "jev")], ["d"])
+        self.assertEqual(config_hash(label_config()), self.db.execute(
+            "SELECT config_sha FROM next5000_labels LIMIT 1").fetchone()[0])
+
+    def test_attempted_text_and_prior_uncertainty_are_never_selected(self):
+        self.db.execute("INSERT INTO next5000_requests VALUES ('held','jev','uncertain')")
+        self.db.execute("INSERT INTO next5000_members VALUES ('held','a')")
+        self.assertEqual([r["review_id"] for r in checkpoint.pending(self.db, "jev")], ["d"])
+
+    def test_evidence_alias_keeps_exact_span_and_config(self):
+        checkpoint.aliases(self.db, "evidence", "same text",
+            {"entities": [], "evidence_quote": "same text"}, "a")
+        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM next5000_evidence").fetchone()[0], 2)
+        self.assertEqual(self.db.execute("SELECT config_sha FROM next5000_evidence LIMIT 1").fetchone()[0],
+                         recheck.config_sha())
+
+
+if __name__ == "__main__":
+    unittest.main()
