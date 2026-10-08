@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { api, fmt, type Claim } from "@/lib/api"
-import { LoadError, PendingNote } from "./bits"
+import { LoadError, PendingNote, Reflection } from "./bits"
+import { REFLECTIONS } from "@/lib/reflections"
 import { useData } from "./use-data"
 
 const SHOWN = 5
@@ -44,6 +45,7 @@ export default function IssueTable() {
           </Button>
         )}
       </div>
+      <Reflection className="mt-3">{REFLECTIONS.issues}</Reflection>
       {!items.length ? (
         <div className="mt-4 space-y-3">
           <PendingNote>

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { api, fmt, type Claim } from "@/lib/api"
-import { LoadError, PendingNote } from "./bits"
+import { LoadError, PendingNote, Reflection } from "./bits"
+import { REFLECTIONS } from "@/lib/reflections"
 import { useData } from "./use-data"
 
 const CLAIM = /(claim-[A-Za-z0-9_.:-]+)/g
@@ -47,6 +48,7 @@ export default function MemoPanel() {
           </Badge>
         )}
       </div>
+      <Reflection className="mt-3">{REFLECTIONS.memo}</Reflection>
       <div className="mt-4">
         {memo.data.text ? (
           <MemoText text={memo.data.text} claims={byId} />
