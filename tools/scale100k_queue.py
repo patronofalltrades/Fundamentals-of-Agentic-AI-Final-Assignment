@@ -237,7 +237,8 @@ def _call(stage, body, api_key):
                 body, api_key)
         return response, time.monotonic() - started, None
     except Exception as exc:
-        return None, time.monotonic() - started, type(exc).__name__ + ":" + str(getattr(exc, "code", ""))
+        code = getattr(exc, "code", getattr(exc, "status", ""))
+        return None, time.monotonic() - started, type(exc).__name__ + ":" + str(code)
 
 
 def _finish(budget, stage, key, rows, response, elapsed, error):
@@ -434,7 +435,7 @@ def main():
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence:
+    if args.run_jev or args.run_evidence or args.activate_next_gate:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:

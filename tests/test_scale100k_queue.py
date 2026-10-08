@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from spotify_pipeline.config import config_hash
 from spotify_pipeline.jev import label_config
+from spotify_pipeline.jev import JevHTTPError
 from spotify_pipeline.project_budget import ProjectBudget
 from tools import scale100k_queue as scale
 from tests.test_project_budget import fixtures
@@ -136,6 +137,13 @@ class ScaleQueueTest(unittest.TestCase):
             self.assertRaises(ValueError, scale.activate_gate, db, manifest)
         finally:
             db.close()
+
+    def test_jev_rate_status_is_visible_to_adaptive_backoff(self):
+        with patch.object(scale.jev, "post_systemone", side_effect=JevHTTPError(429)):
+            response, elapsed, error = scale._call("jev", {"synthetic": True}, "synthetic-key")
+        self.assertIsNone(response)
+        self.assertGreaterEqual(elapsed, 0)
+        self.assertEqual(error, "JevHTTPError:429")
 
 
 if __name__ == "__main__":
