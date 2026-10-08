@@ -145,6 +145,40 @@ class ScaleQueueTest(unittest.TestCase):
         self.assertGreaterEqual(elapsed, 0)
         self.assertEqual(error, "JevHTTPError:429")
 
+    def test_25_review_trial_uses_four_new_batches_and_full_holds(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            with ProjectBudget(str(Path(folder) / "project.db"), paths) as budget:
+                db = budget.db
+                scale.ensure_tables(db, "synthetic-manifest")
+                db.executemany("INSERT INTO scale_rows VALUES (?,?,?,?,?,NULL)",
+                    ((10001 + i, "id" + str(i), "text" + str(i),
+                      "source" + str(i), "textsha" + str(i)) for i in range(100)))
+                label = '{"topic":"other","intent":"praise","severity":1,"sentiment":0.5}'
+                db.executemany("INSERT INTO scale_labels VALUES (?,?,?,?,NULL,NULL)",
+                    (("id" + str(i), label, config_hash(label_config()), "synthetic")
+                     for i in range(100)))
+                db.commit()
+                gate = Barrier(4)
+
+                def timeout_call(stage, body, key):
+                    gate.wait(timeout=5)
+                    return None, 0.01, "TimeoutError:"
+
+                with patch.object(scale.benchmark, "verify_route"), \
+                     patch.object(scale.canary, "verify_project_key"), \
+                     patch.object(scale, "_call", side_effect=timeout_call), \
+                     patch.object(scale.time, "sleep"):
+                    result = scale.run_stage(budget, "synthetic-manifest", "evidence",
+                        "synthetic-key", trial=True)
+                self.assertEqual(result["batch_size"], 25)
+                self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_requests").fetchone()[0], 4)
+                self.assertEqual([size for size, in db.execute(
+                    "SELECT COUNT(*) FROM scale_members GROUP BY request_key")], [25] * 4)
+                self.assertEqual(db.execute("SELECT SUM(reserved_nusd) FROM reservations").fetchone()[0],
+                    4 * scale.trial25.reservation_nusd())
+                scale.assert_resume_safe(db)
+
 
 if __name__ == "__main__":
     unittest.main()

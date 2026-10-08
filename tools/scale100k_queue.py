@@ -1,8 +1,9 @@
 """Durable rolling 10k queue for source positions 10,001–100,000.
 
-Eight network slots share one atomic project ledger. A slot owns a 500-source
-work chunk, but evidence POSTs remain ten reviews each. No attempted exact
-text is automatically retried after any delivery outcome.
+Eight network slots share one atomic project ledger. A regular slot owns a
+500-source work chunk with ten reviews per evidence POST. A bounded 25-review
+trial has its own configuration. No attempted exact text is automatically
+retried after any delivery outcome.
 """
 
 import argparse
@@ -21,6 +22,7 @@ from spotify_pipeline.jev_pilot import NANODOLLARS_PER_INPUT_TOKEN, RESERVATION_
 from spotify_pipeline.project_budget import ProjectBudget
 from tools import deepinfra_batch10_canary as canary
 from tools import deepinfra_recheck100 as evidence
+from tools import scale100k_batch25 as trial25
 from tools import next5000_checkpoint as previous
 from tools import openrouter_extractor_benchmark as benchmark
 from tools.checkpoint5000_dispatch import legacy_paths
@@ -210,16 +212,19 @@ def aliases(db, stage, row, value, config_sha):
 def assert_resume_safe(db):
     if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
         raise ValueError("shared project has an active reservation; no duplicate runner")
-    for key, stage, status, reserved, charged, members in db.execute("""SELECT
-            q.request_key,q.stage,r.status,r.reserved_nusd,r.charged_nusd,
+    for key, stage, cfg, status, reserved, charged, members in db.execute("""SELECT
+            q.request_key,q.stage,q.config_sha,r.status,r.reserved_nusd,r.charged_nusd,
             (SELECT COUNT(*) FROM scale_members m WHERE m.request_key=q.request_key)
             FROM scale_requests q JOIN reservations r USING(request_key)
             WHERE q.status='uncertain'"""):
-        expected = RESERVATION_NANODOLLARS if stage == "jev" else evidence.reservation_nusd()
+        is_trial = stage == "evidence" and cfg == trial25.config_sha()
+        expected = RESERVATION_NANODOLLARS if stage == "jev" else \
+            trial25.reservation_nusd() if is_trial else evidence.reservation_nusd()
         table = "scale_labels" if stage == "jev" else "scale_evidence"
         if stage not in ("jev", "evidence") or status != "uncertain" or \
                 reserved != expected or charged is not None or \
-                not 1 <= members <= (1 if stage == "jev" else evidence.BATCH_SIZE) or \
+                not 1 <= members <= (1 if stage == "jev" else
+                    trial25.BATCH_SIZE if is_trial else evidence.BATCH_SIZE) or \
                 db.execute("SELECT 1 FROM scale_members m JOIN " + table +
                     " x USING(review_id) WHERE m.request_key=? LIMIT 1", (key,)).fetchone() or \
                 db.execute("SELECT 1 FROM scale_members m JOIN scale_quarantines x "
@@ -241,7 +246,7 @@ def _call(stage, body, api_key):
         return None, time.monotonic() - started, type(exc).__name__ + ":" + str(code)
 
 
-def _finish(budget, stage, key, rows, response, elapsed, error):
+def _finish(budget, stage, key, rows, response, elapsed, error, trial=False):
     db = budget.db
     raw = canonical(response) if response is not None else None
     try:
@@ -255,9 +260,11 @@ def _finish(budget, stage, key, rows, response, elapsed, error):
             charge = inp * NANODOLLARS_PER_INPUT_TOKEN
             accepted, invalid = {rows[0]["review_id"]: parsed.__dict__}, {}
         else:
-            inp, out, reasoning, charge = evidence.measured_usage(response)
+            handler = trial25 if trial else evidence
+            inp, out, reasoning, charge = handler.measured_usage(response)
             try:
-                accepted, invalid = previous.inspect_evidence(response, rows)
+                accepted, invalid = trial25.inspect(response, rows) if trial else \
+                    previous.inspect_evidence(response, rows)
             except Exception as exc:
                 accepted, invalid = {}, {r["review_id"]: type(exc).__name__ + ": " + str(exc) for r in rows}
     except Exception as exc:
@@ -267,7 +274,8 @@ def _finish(budget, stage, key, rows, response, elapsed, error):
         budget.uncertain(key, record)
         return "uncertain", 0
     status = "succeeded" if accepted and not invalid else "quarantined_metered" if not accepted else "partial_succeeded"
-    cfg = config_hash(jev.label_config()) if stage == "jev" else previous.evidence_config(rows)
+    cfg = config_hash(jev.label_config()) if stage == "jev" else \
+        trial25.config_sha() if trial else previous.evidence_config(rows)
     def record(conn):
         conn.execute("""UPDATE scale_requests SET status=?,response_json=?,elapsed_seconds=?,
             input_tokens=?,output_tokens=?,reasoning_tokens=?,charged_nusd=? WHERE request_key=?""",
@@ -336,21 +344,28 @@ def status(db, budget):
     return out
 
 
-def run_stage(budget, manifest_sha, stage, api_key):
+def run_stage(budget, manifest_sha, stage, api_key, trial=False):
     db = budget.db
     assert_resume_safe(db)
+    if trial and stage != "evidence":
+        raise ValueError("25-review trial applies only to evidence")
     if stage == "jev":
         verify_jev_price()
         jev.check_model_access(api_key)
         reservation = RESERVATION_NANODOLLARS
     else:
         benchmark.verify_route("deepinfra")
-        canary.verify_project_key(api_key, evidence.reservation_nusd())
-        reservation = evidence.reservation_nusd()
+        reservation = trial25.reservation_nusd() if trial else evidence.reservation_nusd()
+        canary.verify_project_key(api_key, reservation)
     work = pending(db, stage)
+    if trial:
+        if len(work) < 100:
+            raise ValueError("25-review trial requires 100 untouched labeled texts")
+        work = work[:100]
     # Each slot owns successive 500-source chunks. Main thread alone reserves,
     # saves, and settles each ten-review request before that slot continues.
-    chunks = deque(deque(work[i:i + CHUNK_ROWS]) for i in range(0, len(work), CHUNK_ROWS))
+    chunk_size = trial25.BATCH_SIZE if trial else CHUNK_ROWS
+    chunks = deque(deque(work[i:i + chunk_size]) for i in range(0, len(work), chunk_size))
     slots = {i: deque() for i in range(WORKERS)}
     active = {}
     limit, rate_errors, new_uncertain, invalid_streak = WORKERS, 0, 0, 0
@@ -368,12 +383,14 @@ def run_stage(budget, manifest_sha, stage, api_key):
                     slots[slot] = chunks.popleft()
                 if not slots[slot]:
                     continue
-                batch = 1 if stage == "jev" else evidence.BATCH_SIZE
+                batch = 1 if stage == "jev" else trial25.BATCH_SIZE if trial else evidence.BATCH_SIZE
                 if stage == "evidence" and len(slots[slot]) < batch and chunks:
                     slots[slot].extend(chunks.popleft())
                 rows = [slots[slot].popleft() for _ in range(min(batch, len(slots[slot])))]
-                body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else previous.evidence_payload(rows)
-                cfg = config_hash(jev.label_config()) if stage == "jev" else previous.evidence_config(rows)
+                body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else \
+                    trial25.payload(rows) if trial else previous.evidence_payload(rows)
+                cfg = config_hash(jev.label_config()) if stage == "jev" else \
+                    trial25.config_sha() if trial else previous.evidence_config(rows)
                 key = "scale100k-" + evidence.digest({"manifest": manifest_sha,
                     "stage": stage, "ids": [r["review_id"] for r in rows], "config": cfg})
                 def record(conn):
@@ -395,7 +412,7 @@ def run_stage(budget, manifest_sha, stage, api_key):
             for future in done:
                 slot, key, rows = active.pop(future)
                 response, elapsed, error = future.result()
-                state, charge = _finish(budget, stage, key, rows, response, elapsed, error)
+                state, charge = _finish(budget, stage, key, rows, response, elapsed, error, trial)
                 print(canonical({"stage": stage, "status": state, "rows": len(rows),
                     "charge_nusd": charge, "elapsed_seconds": round(elapsed, 3),
                     "worker_slot": slot}), flush=True)
@@ -420,7 +437,9 @@ def run_stage(budget, manifest_sha, stage, api_key):
                 if state == "quarantined_metered" or invalid_streak >= (3 if stage == "jev" else 5):
                     stop, halt = True, "structural quality gate"
     out = status(db, budget)
-    out.update({"stage": stage, "paused": stop, "halt_reason": halt,
+    out.update({"stage": stage, "batch_size": trial25.BATCH_SIZE if trial else
+        1 if stage == "jev" else evidence.BATCH_SIZE,
+        "paused": stop, "halt_reason": halt,
         "new_uncertain": new_uncertain, "rate_errors": rate_errors,
         "final_worker_limit": limit, "eligible_unique": len(pending(db, stage))})
     return out
@@ -432,10 +451,11 @@ def main():
     mode.add_argument("--activate-next-gate", action="store_true")
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
+    mode.add_argument("--run25-trial", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence or args.activate_next_gate:
+    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:
@@ -455,14 +475,15 @@ def _main_locked(args, manifest, manifest_sha):
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
             result = status(budget.db, budget)
             result["activated_now"] = activated
-        elif args.run_jev or args.run_evidence:
+        elif args.run_jev or args.run_evidence or args.run25_trial:
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
             stage = "jev" if args.run_jev else "evidence"
             api_key = canary.keychain_secret(timeout_seconds=90,
                 service=JEV_SERVICE, account=JEV_ACCOUNT) if stage == "jev" else \
                 canary.keychain_secret(timeout_seconds=90)
             try:
-                result = run_stage(budget, manifest_sha, stage, api_key)
+                result = run_stage(budget, manifest_sha, stage, api_key,
+                    trial=args.run25_trial)
             finally:
                 api_key = None
         else:
