@@ -1,7 +1,10 @@
 """Offline synthetic checks for the separately versioned repair pilot."""
 
 import json
+import sqlite3
+import tempfile
 import unittest
+from unittest import mock
 
 from spotify_pipeline.contract import text_sha256
 from tools import deepinfra_recheck100 as pilot
@@ -18,6 +21,7 @@ def rows():
 
 def response(items):
     return {"id": "synthetic-generation", "provider": "DeepInfra",
+        "model": "openai/gpt-oss-120b",
         "usage": {"prompt_tokens": 1000, "completion_tokens": 500,
             "completion_tokens_details": {"reasoning_tokens": 100}},
         "choices": [{"finish_reason": "stop", "message": {
@@ -63,6 +67,24 @@ class Recheck100Test(unittest.TestCase):
         saved["provider"] = "OtherProvider"
         with self.assertRaisesRegex(ValueError, "route"):
             pilot.measured_usage(saved)
+
+    def test_summary_handles_accepted_rows_without_error_reason(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = folder + "/synthetic.db"
+            with sqlite3.connect(path) as db:
+                db.execute("CREATE TABLE recheck100_batches(batch_index INTEGER,status TEXT,"
+                    "input_tokens INTEGER,output_tokens INTEGER,reasoning_tokens INTEGER,"
+                    "charged_nusd INTEGER,elapsed_seconds REAL)")
+                db.execute("CREATE TABLE recheck100_results(review_id TEXT,batch_index INTEGER,"
+                    "status TEXT,error_reason TEXT)")
+                db.execute("INSERT INTO recheck100_batches VALUES (0,'succeeded',10,20,5,100,1.5)")
+                db.execute("INSERT INTO recheck100_results VALUES ('synthetic',0,'accepted',NULL)")
+            sample = {"rows": [{"review_id": "synthetic", "stratum": "accepted",
+                "before": {"status": "accepted"}}]}
+            with mock.patch.object(pilot, "BUDGET", path):
+                result = pilot.summary(sample)
+            self.assertEqual(result["by_stratum"]["accepted"]["after_accepted"], 1)
+            self.assertEqual(result["by_stratum"]["accepted"]["after_quote_failures"], 0)
 
 
 if __name__ == "__main__":

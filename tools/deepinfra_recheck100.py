@@ -95,6 +95,7 @@ def payload(rows):
 
 def measured_usage(response):
     if not isinstance(response, dict) or response.get("provider") != "DeepInfra" or \
+            response.get("model") != MODEL or \
             not isinstance(response.get("id"), str) or not response["id"]:
         raise ValueError("response route or generation ID missing")
     usage = response.get("usage")
@@ -370,8 +371,10 @@ def summary(sample):
             "after_accepted": sum(s == "accepted" for s, _ in after),
             "after_quarantined": sum(s == "quarantined" for s, _ in after),
             "after_pending": sum(s == "pending" for s, _ in after),
-            "after_quote_failures": sum(reason and "evidence quote" in reason for _, reason in after),
-            "after_entity_failures": sum(reason and "entities must" in reason for _, reason in after)}
+            "after_quote_failures": sum(bool(reason and "evidence quote" in reason)
+                for _, reason in after),
+            "after_entity_failures": sum(bool(reason and "entities must" in reason)
+                for _, reason in after)}
     return {"schema_version": "deepinfra-recheck100-summary-v1",
         "config_sha256": config_sha(), "by_stratum": by_stratum,
         "requests": {status: sum(row[1] == status for row in batches) for status in
