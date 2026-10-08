@@ -187,7 +187,7 @@ class ScaleQueueTest(unittest.TestCase):
                      patch.object(scale, "_call", side_effect=timeout_call), \
                      patch.object(scale.time, "sleep"):
                     result = scale.run_stage(budget, "synthetic-manifest", "evidence",
-                        "synthetic-key", trial=True)
+                        "synthetic-key", trial=True, bounded_trial=True)
                 self.assertEqual(result["batch_size"], 25)
                 self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_requests").fetchone()[0], 4)
                 self.assertEqual([size for size, in db.execute(

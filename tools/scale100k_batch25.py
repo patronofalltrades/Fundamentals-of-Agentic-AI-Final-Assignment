@@ -15,13 +15,26 @@ SCHEMA["properties"]["results"]["minItems"] = BATCH_SIZE
 SCHEMA["properties"]["results"]["maxItems"] = BATCH_SIZE
 
 
-def config_sha():
-    return base.digest({"version": VERSION, "model": base.MODEL,
+def schema_for_size(size):
+    if not 1 <= size <= BATCH_SIZE:
+        raise ValueError("evidence batch size outside 1–25")
+    schema = json.loads(base.canonical(SCHEMA))
+    schema["properties"]["results"]["minItems"] = size
+    schema["properties"]["results"]["maxItems"] = size
+    return schema
+
+
+def config_for_size(size):
+    return base.digest({"version": VERSION if size == BATCH_SIZE else VERSION + "-tail-v1", "model": base.MODEL,
         "provider": base.PROVIDER, "prompt": base.INSTRUCTION,
-        "schema": SCHEMA, "batch_size": BATCH_SIZE,
+        "schema": schema_for_size(size), "batch_size": size,
         "max_tokens": OUTPUT_LIMIT, "reasoning": "low",
         "privacy": {"only": [base.PROVIDER], "allow_fallbacks": False,
             "require_parameters": True, "data_collection": "deny", "zdr": True}})
+
+
+def config_sha():
+    return config_for_size(BATCH_SIZE)
 
 
 def reservation_nusd():
@@ -31,9 +44,11 @@ def reservation_nusd():
 
 
 def payload(rows):
-    if len(rows) != BATCH_SIZE or len({r["review_id"] for r in rows}) != BATCH_SIZE or \
-            len({r["review_text"] for r in rows}) != BATCH_SIZE:
-        raise ValueError("trial requires 25 distinct IDs and exact texts")
+    size = len(rows)
+    schema = schema_for_size(size)
+    if len({r["review_id"] for r in rows}) != size or \
+            len({r["review_text"] for r in rows}) != size:
+        raise ValueError("batch requires distinct IDs and exact texts")
     items = [{"review_id": r["review_id"], "source_sha": r["source_sha256"],
         "labels": {key: r["labels"][key] for key in
             ("topic", "intent", "severity", "sentiment")},
@@ -44,8 +59,9 @@ def payload(rows):
             "require_parameters": True, "data_collection": "deny", "zdr": True},
         "reasoning": {"effort": "low"}, "max_tokens": OUTPUT_LIMIT,
         "response_format": {"type": "json_schema", "json_schema": {
-            "name": "spotify_exact_evidence_25_trial", "strict": True,
-            "schema": SCHEMA}}}
+            "name": "spotify_exact_evidence_25_trial" if size == BATCH_SIZE else
+                "spotify_exact_evidence_25_tail", "strict": True,
+            "schema": schema}}}
     if len(base.canonical(body).encode("utf-8")) + OUTPUT_LIMIT > \
             benchmark.ENDPOINT_BOUNDS["deepinfra"][0]:
         raise ValueError("trial request exceeds conservative context bound")
@@ -74,11 +90,13 @@ def measured_usage(response):
 
 
 def inspect(response, rows):
-    if len(rows) != BATCH_SIZE or response["choices"][0].get("finish_reason") != "stop":
+    size = len(rows)
+    schema_for_size(size)
+    if response["choices"][0].get("finish_reason") != "stop":
         raise ValueError("trial result count or finish reason differs")
     body = json.loads(response["choices"][0]["message"]["content"])
     if not isinstance(body, dict) or set(body) != {"results"} or \
-            not isinstance(body["results"], list) or len(body["results"]) != BATCH_SIZE:
+            not isinstance(body["results"], list) or len(body["results"]) != size:
         raise ValueError("trial result count or shape differs")
     expected = {r["review_id"]: r for r in rows}
     accepted, invalid, seen = {}, {}, set()

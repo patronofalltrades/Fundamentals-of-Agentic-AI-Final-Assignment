@@ -1,8 +1,8 @@
 """Durable rolling 10k queue for source positions 10,001–100,000.
 
 Eight network slots share one atomic project ledger. A regular slot owns a
-500-source work chunk with ten reviews per evidence POST. A bounded 25-review
-trial has its own configuration. No attempted exact text is automatically
+500-source work chunk. Evidence uses ten reviews per POST until a measured
+25-review trial is adopted. No attempted exact text is automatically
 retried after any delivery outcome.
 """
 
@@ -69,8 +69,11 @@ def ensure_tables(db, manifest_sha):
         "evidence_config_sha": evidence.config_sha(),
         "worker_slots": str(WORKERS), "chunk_rows": str(CHUNK_ROWS)}
     saved = dict(db.execute("SELECT key,value FROM scale_meta"))
-    if saved and saved != expected:
+    if saved and ({key: saved.get(key) for key in expected} != expected or
+            set(saved) - set(expected) - {"active_evidence_config_sha"}):
         raise ValueError("scale queue identity or configuration changed")
+    if saved.get("active_evidence_config_sha") not in (None, trial25.config_sha()):
+        raise ValueError("unknown adopted evidence configuration")
     if not saved:
         with db:
             db.executemany("INSERT INTO scale_meta VALUES (?,?)", expected.items())
@@ -121,9 +124,43 @@ def _label_tuple(value):
     return tuple(value[k] for k in ("topic", "intent", "severity", "sentiment"))
 
 
+def active_evidence_config(db):
+    row = db.execute("SELECT value FROM scale_meta WHERE key='active_evidence_config_sha'").fetchone()
+    return row[0] if row else evidence.config_sha()
+
+
+def adopt_25(db):
+    """Pin the measured 200-review trial before changing future batches."""
+    if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
+        raise ValueError("active paid reservation")
+    trials = list(db.execute("""SELECT request_key,status,config_sha,response_json
+        FROM scale_requests WHERE stage='evidence' AND config_sha=?""",
+        (trial25.config_sha(),)))
+    if len(trials) != 8 or any(status not in ('succeeded', 'partial_succeeded')
+            or not raw for _, status, _, raw in trials):
+        raise ValueError("eight settled 25-review trial batches required")
+    accepted = 0
+    for key, _, _, raw in trials:
+        members = db.execute("SELECT COUNT(*) FROM scale_members WHERE request_key=?", (key,)).fetchone()[0]
+        if members != 25:
+            raise ValueError("trial membership differs")
+        response = json.loads(raw)
+        if response['choices'][0].get('finish_reason') != 'stop':
+            raise ValueError("trial finish differs")
+        accepted += db.execute("""SELECT COUNT(*) FROM scale_members m
+            JOIN scale_evidence e USING(review_id) WHERE m.request_key=?
+            AND e.request_key=?""", (key, key)).fetchone()[0]
+    if accepted < 190:
+        raise ValueError("trial structural acceptance below 95 percent")
+    with db:
+        db.execute("INSERT INTO scale_meta(key,value) VALUES ('active_evidence_config_sha',?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (trial25.config_sha(),))
+    return {"trial_direct_accepted": accepted, "trial_direct_total": 200}
+
+
 def materialize_caches(db, historical_texts=()):
     """Exact text and matching model/prompt/schema; preserve every target ID."""
-    jcfg, ecfg = config_hash(jev.label_config()), evidence.config_sha()
+    jcfg, ecfg = config_hash(jev.label_config()), active_evidence_config(db)
     held_texts = uncertain_texts(db, historical_texts)
     labels = {}
     for table in ("checkpoint", "next5000", "scale"):
@@ -134,7 +171,7 @@ def materialize_caches(db, historical_texts=()):
             if cfg == jcfg:
                 labels.setdefault(text, (value, rid))
     cached_evidence = {}
-    if evidence.SAMPLE.exists():
+    if ecfg == evidence.config_sha() and evidence.SAMPLE.exists():
         sample = evidence.load_sample()
         if sample["config_sha256"] != ecfg:
             raise ValueError("revised evidence pilot configuration changed")
@@ -145,7 +182,7 @@ def materialize_caches(db, historical_texts=()):
             if found and found[2] == ecfg:
                 cached_evidence.setdefault(source["review_text"],
                     (source["labels"], found[0], found[1], source["review_id"]))
-    for table in ("next5000", "scale"):
+    for table in (("next5000", "scale") if ecfg == evidence.config_sha() else ("scale",)):
         for rid, text, entities, quote, cfg, label_json in db.execute("SELECT "
                 "r.review_id,r.review_text,e.entities_json,e.evidence_quote,e.config_sha,l.label_json "
                 "FROM " + table + "_rows r JOIN " + table + "_evidence e USING(review_id) "
@@ -217,7 +254,8 @@ def assert_resume_safe(db):
             (SELECT COUNT(*) FROM scale_members m WHERE m.request_key=q.request_key)
             FROM scale_requests q JOIN reservations r USING(request_key)
             WHERE q.status='uncertain'"""):
-        is_trial = stage == "evidence" and cfg == trial25.config_sha()
+        is_trial = stage == "evidence" and 1 <= members <= trial25.BATCH_SIZE and \
+            cfg == trial25.config_for_size(members)
         expected = RESERVATION_NANODOLLARS if stage == "jev" else \
             trial25.reservation_nusd() if is_trial else evidence.reservation_nusd()
         table = "scale_labels" if stage == "jev" else "scale_evidence"
@@ -275,7 +313,7 @@ def _finish(budget, stage, key, rows, response, elapsed, error, trial=False):
         return "uncertain", 0
     status = "succeeded" if accepted and not invalid else "quarantined_metered" if not accepted else "partial_succeeded"
     cfg = config_hash(jev.label_config()) if stage == "jev" else \
-        trial25.config_sha() if trial else previous.evidence_config(rows)
+        trial25.config_for_size(len(rows)) if trial else previous.evidence_config(rows)
     def record(conn):
         conn.execute("""UPDATE scale_requests SET status=?,response_json=?,elapsed_seconds=?,
             input_tokens=?,output_tokens=?,reasoning_tokens=?,charged_nusd=? WHERE request_key=?""",
@@ -340,6 +378,7 @@ def status(db, budget):
         "requests": dict(db.execute("SELECT stage||':'||status,COUNT(*) FROM scale_requests GROUP BY stage,status")),
         "charges_nusd": dict(db.execute("SELECT stage,COALESCE(SUM(charged_nusd),0) FROM scale_requests GROUP BY stage")),
         "exposure_nusd": {name: budget.exposure(name) for name in ("jev", "openrouter")},
+        "active_evidence_batch_size": 25 if active_evidence_config(db) == trial25.config_sha() else 10,
         "source_states": dict(states)}
     return out
 
@@ -358,7 +397,7 @@ def safe_worker_ceiling(db, stage):
     return max(1, WORKERS // 2) if stage == "jev" and jev_overload >= 2 else WORKERS
 
 
-def run_stage(budget, manifest_sha, stage, api_key, trial=False):
+def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=False):
     db = budget.db
     assert_resume_safe(db)
     if trial and stage != "evidence":
@@ -372,13 +411,13 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
         reservation = trial25.reservation_nusd() if trial else evidence.reservation_nusd()
         canary.verify_project_key(api_key, reservation)
     work = pending(db, stage)
-    if trial:
+    if bounded_trial:
         if len(work) < 100:
             raise ValueError("25-review trial requires 100 untouched labeled texts")
         work = work[:100]
     # Each slot owns successive 500-source chunks. Main thread alone reserves,
     # saves, and settles each ten-review request before that slot continues.
-    chunk_size = trial25.BATCH_SIZE if trial else CHUNK_ROWS
+    chunk_size = trial25.BATCH_SIZE if bounded_trial else CHUNK_ROWS
     chunks = deque(deque(work[i:i + chunk_size]) for i in range(0, len(work), chunk_size))
     slots = {i: deque() for i in range(WORKERS)}
     active = {}
@@ -408,7 +447,7 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False):
                 body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else \
                     trial25.payload(rows) if trial else previous.evidence_payload(rows)
                 cfg = config_hash(jev.label_config()) if stage == "jev" else \
-                    trial25.config_sha() if trial else previous.evidence_config(rows)
+                    trial25.config_for_size(len(rows)) if trial else previous.evidence_config(rows)
                 key = "scale100k-" + evidence.digest({"manifest": manifest_sha,
                     "stage": stage, "ids": [r["review_id"] for r in rows], "config": cfg})
                 def record(conn):
@@ -477,10 +516,11 @@ def main():
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
     mode.add_argument("--run25-trial", action="store_true")
+    mode.add_argument("--adopt25", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate:
+    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate or args.adopt25:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:
@@ -500,7 +540,14 @@ def _main_locked(args, manifest, manifest_sha):
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
             result = status(budget.db, budget)
             result["activated_now"] = activated
+        elif args.adopt25:
+            metrics = adopt_25(budget.db)
+            materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
+            result = status(budget.db, budget)
+            result.update(metrics)
         elif args.run_jev or args.run_evidence or args.run25_trial:
+            if args.run25_trial and active_evidence_config(budget.db) == trial25.config_sha():
+                raise ValueError("25-review trial is complete; use adopted evidence mode")
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
             stage = "jev" if args.run_jev else "evidence"
             api_key = canary.keychain_secret(timeout_seconds=90,
@@ -508,7 +555,9 @@ def _main_locked(args, manifest, manifest_sha):
                 canary.keychain_secret(timeout_seconds=90)
             try:
                 result = run_stage(budget, manifest_sha, stage, api_key,
-                    trial=args.run25_trial)
+                    trial=args.run25_trial or args.run_evidence and
+                        active_evidence_config(budget.db) == trial25.config_sha(),
+                    bounded_trial=args.run25_trial)
             finally:
                 api_key = None
         else:

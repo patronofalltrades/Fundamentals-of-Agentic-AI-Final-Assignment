@@ -23,7 +23,11 @@ class Batch25Test(unittest.TestCase):
             "data_collection": "deny", "zdr": True})
         self.assertNotEqual(trial.config_sha(), base.config_sha())
         self.assertGreater(trial.reservation_nusd(), base.reservation_nusd())
-        self.assertRaises(ValueError, trial.payload, self.rows()[:24])
+        tail = trial.payload(self.rows()[:24])
+        self.assertEqual(tail["response_format"]["json_schema"]["schema"]
+            ["properties"]["results"]["maxItems"], 24)
+        self.assertNotEqual(trial.config_for_size(24), trial.config_sha())
+        self.assertRaises(ValueError, trial.payload, [])
 
     def test_exact_ids_spans_and_usage_including_reasoning(self):
         rows = self.rows()
