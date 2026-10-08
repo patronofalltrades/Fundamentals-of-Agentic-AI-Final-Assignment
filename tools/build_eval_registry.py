@@ -24,6 +24,7 @@ OUT = ROOT / "dashboard" / "evals.json"
 PILOT = "reports/jev-pilot-100.json"
 RUBRIC = "reports/jev-rubric-v1-v2-100.json"
 CHECKPOINT = "reports/jev-checkpoint-500.json"
+INTENT = "reports/golden-50-intent.json"
 EXTRACTOR = "reports/extractor-benchmark.json"  # optional; written by the extractor benchmark when final
 
 
@@ -145,6 +146,52 @@ def projection(c):
     }
 
 
+def _span(values, fmt):
+    lo, hi = min(values), max(values)
+    show = (lambda v: "%d" % round(v * 100)) if fmt == "pct" else (lambda v: "%.2f" % v) if fmt == "dec" else str
+    unit = "%" if fmt == "pct" else ""
+    return show(lo) + unit if lo == hi else "%s\u2013%s%s" % (show(lo), show(hi), unit)
+
+
+def intent_accuracy(g):
+    """Per-intent accuracy against the 50 human golden labels. Shown in the Jev walkthrough, not the Evals grid."""
+    v2 = [r for r in g["runs"] if r["prompt"] == "v2"]
+    v1 = [r for r in g["runs"] if r["prompt"] == "v1"]
+    order = ["complaint", "praise", "unclear", "request", "cancellation"]
+    rows = []
+    for name in order:
+        c = [r["per_class"][name] for r in v2]
+        recall = [x["recall"] for x in c if x["recall"] is not None]
+        precision = [x["precision"] for x in c if x["precision"] is not None and x["predicted"]]
+        rows.append({"label": name, "format": "text", "values": [
+            str(c[0]["support"]), _span([x["predicted"] for x in c], "int"),
+            _span(recall, "pct") if recall else "\u2014", _span(precision, "pct") if precision else "\u2014"]})
+    return {
+        "id": "golden-intent",
+        "kind": "accuracy",
+        "title": "Measured intent accuracy",
+        "question": "How often does Jev pick the same intent as a person?",
+        "sample": "50 reviews. One person wrote every label before seeing any model output.",
+        "truth": "The original human labels, scored with the course checker's score_gold. Three separate Jev runs per prompt.",
+        "status": "measured",
+        "metrics": [
+            {"label": "Intent accuracy, prompt v2", "value": _span([r["accuracy"] for r in v2], "pct"), "format": "text",
+             "note": "3 runs"},
+            {"label": "Intent accuracy, prompt v1", "value": _span([r["accuracy"] for r in v1], "pct"), "format": "text",
+             "note": "3 runs"},
+            {"label": "Macro F1, prompt v2", "value": _span([r["macro_f1"] for r in v2], "dec"), "format": "text",
+             "note": "each intent weighted equally"},
+        ],
+        "compare": {"row_header": "Intent", "columns": ["Human labels", "Jev picked", "Found", "Right when picked"],
+                    "rows": rows},
+        "finding": "Jev is strong on praise and complaint. It finds only 56\u201367% of the reviews a person called unclear. "
+                    "It predicted cancellation once in every run, although the person labelled none.",
+        "limits": [g["note"], "50 reviews is a small sample: request has 3 cases, so one review moves its score by 33 points.",
+                   "One person labelled the set. There is no second labeller to measure human agreement."],
+        "sources": [INTENT],
+    }
+
+
 def extractor(sources):
     if (ROOT / EXTRACTOR).exists():
         item = _load(EXTRACTOR, sources)
@@ -167,8 +214,8 @@ def extractor(sources):
 def build():
     sources = []
     pilot, rubric, checkpoint = _load(PILOT, sources), _load(RUBRIC, sources), _load(CHECKPOINT, sources)
-    items = [rubric_benchmark(rubric, sources), run_benchmark(pilot, checkpoint), projection(checkpoint),
-             extractor(sources)]
+    items = [intent_accuracy(_load(INTENT, sources)), rubric_benchmark(rubric, sources), run_benchmark(pilot, checkpoint),
+             projection(checkpoint), extractor(sources)]
     return {"version": 1, "model": checkpoint["model"], "prompt_version": checkpoint["prompt_version"],
             "built_from": sources, "items": items}
 

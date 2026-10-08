@@ -4,7 +4,11 @@ import { Check, CircleHelp, ExternalLink, RotateCcw } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { REFLECTIONS } from "@/lib/reflections"
 import { cn } from "@/lib/utils"
-import { Reflection } from "./bits"
+import { Skeleton } from "@/components/ui/skeleton"
+import { api } from "@/lib/api"
+import { LoadError, Reflection } from "./bits"
+import { EvalCard } from "./evals-section"
+import { useData } from "./use-data"
 import {
   CONCEPTS, CONFIDENCE_COPY, FIELDS, POLICY_THRESHOLD, REVIEW, SAVED_NEEDS_REVIEW, SOURCES, STEPS, reviewAt, type FieldKey,
 } from "@/lib/walkthrough"
@@ -258,11 +262,21 @@ function Meaning() {
   )
 }
 
+/** One review cannot show accuracy; this card shows the measured intent accuracy across the golden set. */
+function IntentAccuracy() {
+  const { data, error } = useData(api.evals)
+  if (error) return <LoadError message={error} />
+  const item = data?.items.find((i) => i.id === "golden-intent")
+  if (!data) return <Skeleton className="h-96 rounded-3xl bg-card" />
+  return item ? <EvalCard item={item} /> : null
+}
+
 export default function ReviewWalkthrough() {
   return (
     <div className="space-y-6">
       <SavedRecord />
       <Inspector />
+      <IntentAccuracy />
       <div className="grid items-start gap-6 xl:grid-cols-2">
         <Pipeline />
         <Meaning />

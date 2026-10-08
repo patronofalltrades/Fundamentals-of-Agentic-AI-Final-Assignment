@@ -52,7 +52,7 @@ function Facts({ item }: { item: EvalItem }) {
   )
 }
 
-function EvalCard({ item }: { item: EvalItem }) {
+export function EvalCard({ item }: { item: EvalItem }) {
   return (
     <article className="flex min-w-0 flex-col gap-5 rounded-3xl bg-card p-6">
       <header className="flex items-start justify-between gap-3">
@@ -73,7 +73,7 @@ function EvalCard({ item }: { item: EvalItem }) {
           <Table>
             <TableHeader>
               <TableRow className="border-0 hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Measure</TableHead>
+                <TableHead className="text-muted-foreground">{item.compare.row_header ?? "Measure"}</TableHead>
                 {item.compare.columns.map((c) => <TableHead key={c} className="text-right text-muted-foreground">{c}</TableHead>)}
               </TableRow>
             </TableHeader>
@@ -91,9 +91,9 @@ function EvalCard({ item }: { item: EvalItem }) {
           </Table>
         </div>
       )}
-      {item.decision && (
+      {(item.decision || item.finding) && (
         <p className="rounded-2xl bg-tile px-4 py-3 text-[14px] text-muted-foreground">
-          <span className="text-foreground">Decision.</span> {item.decision}
+          <span className="text-foreground">{item.decision ? "Decision." : "Finding."}</span> {item.decision ?? item.finding}
         </p>
       )}
       <footer className="mt-auto space-y-3">
@@ -239,7 +239,7 @@ export default function EvalsSection() {
             <ChecksCard checks={data.checks} />
           </div>
           <div className="grid gap-6 xl:grid-cols-2">
-            {data.items.map((item) => <EvalCard key={item.id} item={item} />)}
+            {data.items.filter((item) => item.kind !== "accuracy").map((item) => <EvalCard key={item.id} item={item} />)}
           </div>
           {data.model && (
             <p className="px-2 text-[13px] text-muted-foreground">
