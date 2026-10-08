@@ -360,11 +360,34 @@ def _finish(budget, stage, request_key_value, rows, response, elapsed, error):
     return status, charge
 
 
-def run_stage(budget, manifest_sha, stage, api_key, tail_only=False,
-              allow_partial=False):
-    db = budget.db
-    if db.execute("SELECT 1 FROM next5000_requests WHERE status IN ('reserved','uncertain') LIMIT 1").fetchone():
+def assert_resume_safe(db, stage, defer_uncertain_evidence=False):
+    if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
+        raise ValueError("shared project has an active reservation")
+    unresolved = list(db.execute("""SELECT q.request_key,q.stage,r.budget,r.status,
+        r.reserved_nusd,r.charged_nusd,
+        (SELECT COUNT(*) FROM next5000_members m WHERE m.request_key=q.request_key)
+        FROM next5000_requests q JOIN reservations r USING(request_key)
+        WHERE q.status='uncertain'"""))
+    if unresolved and (stage != "evidence" or not defer_uncertain_evidence):
         raise ValueError("new checkpoint has unresolved request; no further POST")
+    for key, saved_stage, budget, status, reservation, charge, members in unresolved:
+        if saved_stage != "evidence" or budget != "openrouter" or status != "uncertain" or \
+                reservation != recheck.reservation_nusd() or charge is not None or \
+                not 1 <= members <= recheck.BATCH_SIZE:
+            raise ValueError("uncertain evidence hold or membership differs; no POST")
+        if db.execute("""SELECT 1 FROM next5000_members m JOIN next5000_rows r
+                USING(review_id) WHERE m.request_key=? AND (EXISTS(
+                SELECT 1 FROM next5000_evidence e WHERE e.review_id=r.review_id) OR EXISTS(
+                SELECT 1 FROM next5000_quarantines q WHERE q.review_id=r.review_id)) LIMIT 1""",
+                (key,)).fetchone():
+            raise ValueError("uncertain request has settled member; no POST")
+    return len(unresolved)
+
+
+def run_stage(budget, manifest_sha, stage, api_key, tail_only=False,
+              allow_partial=False, defer_uncertain_evidence=False):
+    db = budget.db
+    old_uncertain = assert_resume_safe(db, stage, defer_uncertain_evidence)
     if tail_only and (stage != "evidence" or len(pending(db, "evidence")) != TAIL_SIZE):
         raise ValueError("tail requires exactly four untouched first-500 texts")
     if stage == "jev":
@@ -426,6 +449,7 @@ def run_stage(budget, manifest_sha, stage, api_key, tail_only=False,
     result = summary(db, budget)
     result["paused"] = stop
     result["halt_reason"] = halt_reason or ("uncertain or invalid response streak" if stop else None)
+    result["deferred_existing_uncertain_requests"] = old_uncertain
     return result
 
 
@@ -440,7 +464,10 @@ def main():
     mode.add_argument("--extend-remaining", action="store_true")
     mode.add_argument("--run-remainder-evidence", action="store_true")
     mode.add_argument("--status", action="store_true")
+    parser.add_argument("--defer-uncertain-evidence", action="store_true")
     args = parser.parse_args()
+    if args.defer_uncertain_evidence and not args.run_remainder_evidence:
+        raise ValueError("uncertain deferral is only for untouched remainder evidence")
     manifest, manifest_sha = load_manifest()
     with ProjectBudget(BUDGET, legacy_paths()) as budget:
         ensure_tables(budget.db, manifest, manifest_sha)
@@ -462,7 +489,8 @@ def main():
             key = canary.keychain_secret(timeout_seconds=90)
             try:
                 result = run_stage(budget, manifest_sha, "evidence", key,
-                    tail_only=args.run_tail, allow_partial=args.run_remainder_evidence)
+                    tail_only=args.run_tail, allow_partial=args.run_remainder_evidence,
+                    defer_uncertain_evidence=args.defer_uncertain_evidence)
             finally:
                 key = None
         else:

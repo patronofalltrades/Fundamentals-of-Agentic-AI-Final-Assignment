@@ -94,6 +94,21 @@ class Next5000CheckpointTest(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM next5000_rows").fetchone()[0], 5000)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM next5000_evidence WHERE request_key='old'").fetchone()[0], 500)
 
+    def test_uncertain_deferral_keeps_full_hold_and_excludes_attempted_text(self):
+        self.db.execute("CREATE TABLE next5000_quarantines(review_id TEXT,reason TEXT,request_key TEXT)")
+        self.db.execute("CREATE TABLE reservations(request_key TEXT,budget TEXT,status TEXT,reserved_nusd INTEGER,charged_nusd INTEGER)")
+        self.db.execute("INSERT INTO next5000_requests VALUES ('held','evidence','uncertain')")
+        self.db.execute("INSERT INTO next5000_members VALUES ('held','a')")
+        self.db.execute("INSERT INTO reservations VALUES ('held','openrouter','uncertain',?,NULL)",
+            (recheck.reservation_nusd(),))
+        self.assertEqual(checkpoint.assert_resume_safe(self.db, "evidence", True), 1)
+        self.assertRaises(ValueError, checkpoint.assert_resume_safe, self.db, "evidence")
+        self.db.execute("INSERT INTO next5000_labels VALUES ('a','{}','cfg','direct',NULL,'old')")
+        self.db.execute("INSERT INTO next5000_labels VALUES ('d','{}','cfg','direct',NULL,'old')")
+        self.assertEqual([r["review_id"] for r in checkpoint.pending(self.db, "evidence")], ["d"])
+        self.db.execute("UPDATE reservations SET reserved_nusd=1 WHERE request_key='held'")
+        self.assertRaises(ValueError, checkpoint.assert_resume_safe, self.db, "evidence", True)
+
 
 if __name__ == "__main__":
     unittest.main()
