@@ -11,7 +11,9 @@ import os
 import sqlite3
 from contextlib import closing
 
-CAPS = {"openrouter": 5_000_000_000, "jev": 600_000_000}
+CAPS = {"openrouter": 5_000_000_000, "jev": 5_000_000_000}
+PREVIOUS_CAPS = {"openrouter": 5_000_000_000, "jev": 600_000_000}
+MAX_GLOBAL_INFLIGHT = 8
 SOURCES = ("benchmark", "batch_v1", "batch_v2", "jev_checkpoint")
 
 
@@ -78,7 +80,7 @@ class ProjectBudget:
         self.db.execute("BEGIN IMMEDIATE")
         try:
             current_caps = dict(self.db.execute("SELECT budget,cap_nusd FROM caps"))
-            if current_caps and current_caps != CAPS:
+            if current_caps and current_caps not in (CAPS, PREVIOUS_CAPS):
                 raise ValueError("project budget caps changed")
             if not current_caps:
                 self.db.executemany("INSERT INTO caps VALUES (?,?)", CAPS.items())
@@ -89,6 +91,13 @@ class ProjectBudget:
             if not saved:
                 self.db.executemany("INSERT INTO legacy_sources VALUES (?,?,?,?)",
                     ((name,) + self.snapshots[name] for name in SOURCES))
+            if current_caps == PREVIOUS_CAPS:
+                # User-approved cumulative Jev increase. Preserve every charge,
+                # hold, source digest, and the unchanged OpenRouter cap.
+                changed = self.db.execute("UPDATE caps SET cap_nusd=? WHERE budget='jev' AND cap_nusd=?",
+                    (CAPS["jev"], PREVIOUS_CAPS["jev"])).rowcount
+                if changed != 1:
+                    raise ValueError("approved Jev cap migration did not update one row")
             self.db.commit()
         except BaseException:
             self.db.rollback()
@@ -128,6 +137,8 @@ class ProjectBudget:
             self._check_sources()
             if self.db.execute("SELECT 1 FROM reservations WHERE request_key=?", (request_key,)).fetchone():
                 raise ValueError("request already reserved or settled; no duplicate call")
+            if self.db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0] >= MAX_GLOBAL_INFLIGHT:
+                raise ValueError("eight global paid requests are already in flight")
             if self.exposure(budget) + amount_nusd >= CAPS[budget]:
                 raise ValueError("cumulative project cap would be reached")
             self.db.execute("INSERT INTO reservations(request_key,budget,status,reserved_nusd)"

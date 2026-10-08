@@ -78,10 +78,74 @@ class ProjectBudgetTest(unittest.TestCase):
             with ProjectBudget(budget_path, paths) as budget:
                 self.assertEqual(budget.exposure("openrouter"), 2_525_540_000)
                 with self.assertRaisesRegex(ValueError, "cap"):
-                    budget.reserve("jev-too-much", "jev", 590_000_000)
+                    budget.reserve("jev-too-much", "jev", 4_990_000_000)
                 budget.reserve("jev-one", "jev", 100_000_000)
                 budget.settle("jev-one", "quarantined_metered", 30_000)
                 self.assertEqual(budget.exposure("jev"), 23_721_254)
+
+    def test_approved_jev_cap_migration_preserves_holds_and_eight_global_slots(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            budget_path = str(Path(folder) / "project.db")
+            with ProjectBudget(budget_path, paths) as budget:
+                budget.reserve("old-hold", "openrouter", 10_000_000)
+                budget.uncertain("old-hold")
+                budget.db.execute("UPDATE caps SET cap_nusd=600000000 WHERE budget='jev'")
+                budget.db.commit()
+            with ProjectBudget(budget_path, paths) as budget:
+                self.assertEqual(dict(budget.db.execute("SELECT budget,cap_nusd FROM caps")),
+                    {"jev": 5_000_000_000, "openrouter": 5_000_000_000})
+                self.assertEqual(budget.exposure("openrouter"), 35_540_000)
+                for number in range(8):
+                    budget.reserve("active-" + str(number), "jev", 2_688_000)
+                with self.assertRaisesRegex(ValueError, "eight global"):
+                    budget.reserve("ninth", "openrouter", 5_545_984)
+                with self.assertRaisesRegex(ValueError, "duplicate"):
+                    budget.reserve("active-0", "jev", 2_688_000)
+                budget.uncertain("active-0")
+                budget.reserve("after-hold", "openrouter", 5_545_984)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0], 8)
+
+    def test_twelve_process_connections_admit_only_eight_unique_requests(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            budget_path = str(Path(folder) / "project.db")
+            with ProjectBudget(budget_path, paths):
+                pass
+
+            def try_reserve(number):
+                with ProjectBudget(budget_path, paths) as budget:
+                    try:
+                        budget.reserve("parallel-" + str(number), "jev", 2_688_000)
+                        return True
+                    except ValueError as error:
+                        self.assertIn("eight global", str(error))
+                        return False
+
+            with ThreadPoolExecutor(max_workers=12) as pool:
+                self.assertEqual(sum(pool.map(try_reserve, range(12))), 8)
+            with ProjectBudget(budget_path, paths) as budget:
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0], 8)
+                self.assertEqual(budget.exposure("jev"), 23_691_254 + 8 * 2_688_000)
+
+    def test_concurrent_identical_request_key_is_admitted_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            budget_path = str(Path(folder) / "project.db")
+            with ProjectBudget(budget_path, paths):
+                pass
+
+            def try_same_key(_):
+                with ProjectBudget(budget_path, paths) as budget:
+                    try:
+                        budget.reserve("same-source-request", "openrouter", 5_545_984)
+                        return True
+                    except ValueError as error:
+                        self.assertIn("duplicate", str(error))
+                        return False
+
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                self.assertEqual(sum(pool.map(try_same_key, range(4))), 1)
 
 
 if __name__ == "__main__":
