@@ -113,6 +113,56 @@ def inspect_response(response, rows, batch_limit):
     return accepted, invalid, inp, out, reasoning, charge
 
 
+def inspect_saved_response_for_recovery(response, rows, batch_limit):
+    """Salvage unique IDs from one saved, fully metered response without a POST.
+
+    The live response validator remains strict. Duplicate and missing source IDs
+    become terminal quarantines, never guesses about which text the model meant.
+    """
+    if response.get("provider") != "DeepInfra" or not response.get("id"):
+        raise ValueError("saved response route or generation ID differs")
+    choice = response["choices"][0]
+    usage = response["usage"]
+    inp, out = usage["prompt_tokens"], usage["completion_tokens"]
+    reasoning = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")
+    if any(type(v) is not int or v < 0 for v in (inp, out)) or (
+            reasoning is not None and (type(reasoning) is not int or not 0 <= reasoning <= out)):
+        raise ValueError("saved response token usage invalid")
+    if inp > benchmark.ENDPOINT_BOUNDS["deepinfra"][0] or out > LIMITS[batch_limit] or \
+            choice.get("finish_reason") != "stop":
+        raise ValueError("saved response truncated or outside token bounds")
+    body = json.loads(choice["message"]["content"])
+    if not isinstance(body, dict) or set(body) != {"results"} or \
+            not isinstance(body["results"], list) or len(body["results"]) != len(rows):
+        raise ValueError("saved response shape or count differs")
+    expected = {row["review_id"]: row for row in rows}
+    items = {}
+    for item in body["results"]:
+        if not isinstance(item, dict) or set(item) != {"review_id", "entities", "evidence_quote"}:
+            raise ValueError("saved row result has missing or extra fields")
+        rid = item["review_id"]
+        if not isinstance(rid, str) or rid not in expected:
+            raise ValueError("saved response has unknown source ID")
+        items.setdefault(rid, []).append(item)
+    if len(items) == len(rows):
+        raise ValueError("saved response needs ordinary exact-source validation")
+    accepted = {}
+    invalid = {}
+    for rid, row in expected.items():
+        matches = items.get(rid, [])
+        if len(matches) != 1:
+            invalid[rid] = "missing source ID" if not matches else "repeated source ID"
+            continue
+        item = matches[0]
+        try:
+            accepted[rid] = validate_evidence(row["review_text"],
+                {"entities": item["entities"], "evidence_quote": item["evidence_quote"]})
+        except ValidationError as error:
+            invalid[rid] = type(error).__name__ + ": " + str(error)
+    charge = benchmark.money_nusd(Decimal(inp) * INPUT_RATE + Decimal(out) * OUTPUT_RATE)
+    return accepted, invalid, inp, out, reasoning, charge
+
+
 def validate_response(response, rows, batch_limit):
     accepted, invalid, inp, out, reasoning, charge = inspect_response(
         response, rows, batch_limit)

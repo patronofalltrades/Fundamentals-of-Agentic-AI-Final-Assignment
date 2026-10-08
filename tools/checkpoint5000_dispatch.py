@@ -298,8 +298,12 @@ def recover_metered_evidence(queue):
             "review_text": result[1], "source_sha256": result[2],
             "text_sha256": result[3]})
     response = json.loads(raw)
-    accepted, invalid, inp, out, reasoning, charge = \
-        deepinfra_batch.inspect_response(response, rows, batch_limit)
+    try:
+        accepted, invalid, inp, out, reasoning, charge = \
+            deepinfra_batch.inspect_response(response, rows, batch_limit)
+    except ValueError:
+        accepted, invalid, inp, out, reasoning, charge = \
+            deepinfra_batch.inspect_saved_response_for_recovery(response, rows, batch_limit)
     if not accepted or not invalid:
         raise ValueError("saved response is not an isolated partial-evidence failure")
     queue.recover_metered_evidence(key, rows, accepted, invalid, config, charge,
