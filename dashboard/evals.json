@@ -1,0 +1,297 @@
+{
+  "version": 1,
+  "model": "jev-1.13.0",
+  "prompt_version": "jev-rubric-v2",
+  "built_from": [
+    {
+      "path": "reports/jev-pilot-100.json",
+      "sha256": "f7715cbe22bb73914b76e7b4dda5eec57e539bab6c1975259016732a869347df"
+    },
+    {
+      "path": "reports/jev-rubric-v1-v2-100.json",
+      "sha256": "24cf0398e950b697e986906671c6492a1b915de02c04b8bac316423e273824d4"
+    },
+    {
+      "path": "reports/jev-checkpoint-500.json",
+      "sha256": "67aa25ab0bb00bcc3074ca15396b4634f8548b25841bdd3ea6314fc69acd50b0"
+    }
+  ],
+  "items": [
+    {
+      "id": "prompt-v1-v2",
+      "kind": "benchmark",
+      "title": "Prompt benchmark: rubric v1 against v2",
+      "question": "Does the revised labelling prompt change the labels, and what does it cost?",
+      "sample": "100 reviews from the course cost sample, labelled twice with the same model",
+      "truth": "None. This compares two prompts with each other. It shows how much labels move, not which prompt is right.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Topic changed",
+          "value": 32,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Intent changed",
+          "value": 0,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Severity changed",
+          "value": 1,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Review flag changed",
+          "value": 16,
+          "format": "count",
+          "of": 100
+        }
+      ],
+      "compare": {
+        "columns": [
+          "v1",
+          "v2"
+        ],
+        "rows": [
+          {
+            "label": "Input tokens",
+            "format": "int",
+            "values": [
+              87887,
+              101487
+            ]
+          },
+          {
+            "label": "Output tokens",
+            "format": "int",
+            "values": [
+              19656,
+              19652
+            ]
+          },
+          {
+            "label": "Cost (USD)",
+            "format": "usd",
+            "values": [
+              "0.003691254",
+              "0.004262454"
+            ]
+          },
+          {
+            "label": "Summed request time",
+            "format": "seconds",
+            "values": [
+              42.076869542,
+              37.275935833
+            ]
+          },
+          {
+            "label": "Retries",
+            "format": "int",
+            "values": [
+              0,
+              0
+            ]
+          },
+          {
+            "label": "Flagged for human review",
+            "format": "int",
+            "values": [
+              73,
+              75
+            ]
+          },
+          {
+            "label": "Topic “other”",
+            "format": "int",
+            "values": [
+              47,
+              58
+            ]
+          }
+        ]
+      },
+      "decision": "v2 is the production prompt. It moved 32 of 100 topics and almost no severities, so the ranking input is stable across the prompt change.",
+      "limits": [
+        "Usage-derived cost is not independently reconciled with account credit debit.",
+        "Summed request durations are not end-to-end wall time.",
+        "The v2 launcher's cross-process monotonic clock produced an invalid negative wall time.",
+        "Saved evidence is compatible only where all four labels match; it was not copied into v2.",
+        "Topic changes and manual development judgments are not gold accuracy measurements."
+      ],
+      "sources": [
+        "reports/jev-rubric-v1-v2-100.json"
+      ]
+    },
+    {
+      "id": "labelling-runs",
+      "kind": "run",
+      "title": "Labelling runs: cost, speed and reliability",
+      "question": "Can the labelling step run cheaply, without errors, and be replayed without new model calls?",
+      "sample": "Pilot: 100 reviews (prompt v1). Checkpoint: 500 reviews (prompt v2).",
+      "truth": "Structural checks only: schema, source identity and exact evidence quotes. Not label accuracy.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Checkpoint reviews labelled",
+          "value": 500,
+          "format": "count",
+          "of": 500
+        },
+        {
+          "label": "Duplicate texts reused from cache",
+          "value": 21,
+          "format": "count",
+          "of": 500
+        },
+        {
+          "label": "Retries",
+          "value": 0,
+          "format": "int"
+        },
+        {
+          "label": "New model calls on replay",
+          "value": 0,
+          "format": "int",
+          "note": "500 saved records re-validated offline"
+        }
+      ],
+      "compare": {
+        "columns": [
+          "Pilot 100",
+          "Checkpoint 500"
+        ],
+        "rows": [
+          {
+            "label": "Reviews",
+            "format": "int",
+            "values": [
+              100,
+              500
+            ]
+          },
+          {
+            "label": "Model calls",
+            "format": "int",
+            "values": [
+              100,
+              379
+            ]
+          },
+          {
+            "label": "Cache reuses",
+            "format": "int",
+            "values": [
+              0,
+              21
+            ]
+          },
+          {
+            "label": "Retries",
+            "format": "int",
+            "values": [
+              0,
+              0
+            ]
+          },
+          {
+            "label": "Schema or identity errors",
+            "format": "int",
+            "values": [
+              0,
+              null
+            ],
+            "note": "The checkpoint report does not count this field."
+          },
+          {
+            "label": "Input tokens",
+            "format": "int",
+            "values": [
+              87887,
+              384476
+            ]
+          },
+          {
+            "label": "Cost (USD)",
+            "format": "usd",
+            "values": [
+              "0.003691254",
+              "0.016147992"
+            ]
+          },
+          {
+            "label": "Label stage time",
+            "format": "seconds",
+            "values": [
+              42.076869542,
+              127.023306667
+            ],
+            "note": "Pilot: summed request time. Checkpoint: measured wall time."
+          }
+        ]
+      },
+      "limits": [
+        "Cost is computed from returned usage at the published rate; the account debit was not independently checked.",
+        "Summed request time is not total wall time. The runner did not persist cold wall time.",
+        "Labels and evidence have not been verified against human answers; structural checks do not establish semantic accuracy."
+      ],
+      "sources": [
+        "reports/jev-pilot-100.json",
+        "reports/jev-checkpoint-500.json"
+      ]
+    },
+    {
+      "id": "projection-100k",
+      "kind": "projection",
+      "title": "Projection: the 100,000-review run",
+      "question": "What will the required 100,000-review run cost and how long will labelling take?",
+      "sample": "The first 100,000 rows of the full review file, counted before any model call",
+      "truth": "Linear estimate from the 500-review checkpoint. Not a measurement.",
+      "status": "estimate",
+      "metrics": [
+        {
+          "label": "Distinct review texts",
+          "value": 75894,
+          "format": "int",
+          "note": "of 99,999 non-empty rows; duplicates reuse one label"
+        },
+        {
+          "label": "Estimated labelling cost",
+          "value": "3.227894126",
+          "format": "usd"
+        },
+        {
+          "label": "Estimated labelling time",
+          "value": "7.0531",
+          "format": "hours",
+          "note": "serial; parallel requests reduce it"
+        }
+      ],
+      "limits": [
+        "The estimate scales the checkpoint linearly. Retries, rate limits and parallelism change it.",
+        "Evidence extraction is a separate stage with its own cost."
+      ],
+      "sources": [
+        "reports/jev-checkpoint-500.json"
+      ]
+    },
+    {
+      "id": "extractor-benchmark",
+      "kind": "benchmark",
+      "title": "Evidence extractor benchmark",
+      "question": "Which hosted model extracts exact evidence quotes and product entities most reliably and cheaply?",
+      "sample": "The same 100 development reviews, sent to each candidate route",
+      "truth": "Agreement with saved development evidence, plus exact-quote checks against the source text.",
+      "status": "pending",
+      "metrics": [],
+      "limits": [
+        "Results appear here when the benchmark saves its final report."
+      ],
+      "sources": []
+    }
+  ]
+}

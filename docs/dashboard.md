@@ -248,3 +248,19 @@ Tests: `tests/test_dashboard_trends.py` (synthetic rows only).
 **Evaluation reports must name the configuration hash.** In the canonical checkpoint, `classifications.label_config`
 holds the configuration hash (for the 500-row checkpoint: `0bda2b8478fab805…`). `import-evaluation` accepts a report
 only when its `label_configs` list contains that exact value. A report from a different classifier is refused.
+
+## Evaluations and benchmarks (`/api/evals`)
+
+The page's Evals section shows how the pipeline is tested. Each card states its sample, what it is
+compared against, its status (measured, partial, estimate or pending) and its limits.
+
+- `tools/build_eval_registry.py` reads the saved reports in `reports/` and writes `dashboard/evals.json`.
+  It copies values only; it records the SHA-256 of each report it read. Run it after a report changes.
+  `--check` fails when `dashboard/evals.json` is out of date; a test runs this check.
+- The human golden evaluation is not in the registry. The API reads it live from the database after
+  `import-evaluation`. The page prefers the `original` human set, because the adjudicated set was
+  revised after its author saw model output.
+- The integrity checks run on every request: ranking reproduced, memo claims, source fingerprint,
+  and no full review texts in the public database.
+- When the extractor benchmark is final, save its summary as `reports/extractor-benchmark.json`
+  (same item shape as the other entries) and rebuild the registry.
