@@ -46,6 +46,23 @@ request membership remain in the ignored local ledger, and the full
 $0.024903544 reservation remains held. An authenticated, read-only OpenRouter
 generation lookup returned HTTP 404 for this generation and a known successful
 generation under the same key. This does not establish that the uncertain
-generation was free. No further inference request or automatic retry is
-permitted until provider activity or a receipt reconciles its charge and
-delivery.
+generation was free. The user authorized processing untouched source rows
+while this request stays isolated with its full reservation. The new explicit
+deferral path preserves that hold, excludes all attempted source texts, and
+keeps the same cumulative budget and two-worker limit. It does not retry the
+uncertain request.
+
+The first authorized deferral resume sent no inference request. The pinned
+`deepinfra/bf16` route had catalog status `-5` at preflight, and two later
+anonymous catalog checks returned the same status. The route remains a
+fail-closed blocker; no fallback or model substitution was used. Counts and
+costs above did not change.
+
+An ignored, local human audit pack was prepared from the 1,593 currently
+accepted rows. It contains a deterministic hash-ranked random sample of 100
+accepted source rows and six separate sets of ten risk cases: low Jev
+confidence, `needs_review`, high severity, exact-text cached evidence, partial
+batch provenance, and quarantined rows. The random frame digest is
+`5fb675e7008399bcf36e03add02ea7b980760b7528fc73d099688255f7b1febe`.
+The pack contains original review text and IDs and remains outside Git. It
+supports a human audit of model outputs; it does not estimate golden accuracy.
