@@ -444,7 +444,7 @@ def run_stage(budget, manifest_sha, stage, api_key, tail_only=False,
                 if status == "uncertain":
                     stop = True
                 invalid_streak = invalid_streak + 1 if status != "succeeded" else 0
-                if invalid_streak >= (3 if stage == "jev" else 5):
+                if status == "quarantined_metered" or invalid_streak >= (3 if stage == "jev" else 5):
                     stop = True
     result = summary(db, budget)
     result["paused"] = stop
