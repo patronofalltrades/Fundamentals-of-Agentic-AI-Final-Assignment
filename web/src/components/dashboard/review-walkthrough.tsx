@@ -2,7 +2,9 @@ import { useState } from "react"
 import { Check, CircleHelp, ExternalLink, RotateCcw } from "lucide-react"
 
 import { Progress } from "@/components/ui/progress"
+import { REFLECTIONS } from "@/lib/reflections"
 import { cn } from "@/lib/utils"
+import { Reflection } from "./bits"
 import {
   CONCEPTS, CONFIDENCE_COPY, FIELDS, POLICY_THRESHOLD, REVIEW, SAVED_NEEDS_REVIEW, SOURCES, STEPS, reviewAt, type FieldKey,
 } from "@/lib/walkthrough"
@@ -21,9 +23,7 @@ function SavedRecord() {
         <div className="max-w-[60ch]">
           <p className="text-[12px] tracking-[0.12em] text-primary uppercase">Walkthrough</p>
           <h2 className="mt-1 text-xl">One review, end to end</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">
-            A real record from the run: the original words, Jev's saved labels, the extracted evidence and the review flag.
-          </p>
+          <Reflection className="mt-3">{REFLECTIONS.example}</Reflection>
         </div>
         <span className="rounded-full bg-tile px-3 py-1 text-[12px] text-muted-foreground">Saved output · row {REVIEW.row} of {REVIEW.of.toLocaleString("en-US")}</span>
       </header>

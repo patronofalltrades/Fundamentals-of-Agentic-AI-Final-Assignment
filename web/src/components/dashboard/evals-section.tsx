@@ -4,8 +4,9 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, fmt, type EvalCheck, type EvalItem, type EvalMetric, type EvaluationSet, type Evals } from "@/lib/api"
+import { REFLECTIONS } from "@/lib/reflections"
 import { cn } from "@/lib/utils"
-import { LoadError } from "./bits"
+import { LoadError, Reflection } from "./bits"
 import { useData } from "./use-data"
 
 const REPO = "https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/blob/main/"
@@ -220,10 +221,8 @@ export default function EvalsSection() {
       <div className="flex flex-col gap-4 rounded-3xl bg-card p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-[62ch]">
           <h2 className="text-xl">Evaluations and benchmarks</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">
-            How the pipeline is tested. Each card says what it measures, what it is compared against, and what it cannot show.
-            Every number is read from a saved report, and each report is linked.
-          </p>
+          <Reflection className="mt-3">{REFLECTIONS.evals}</Reflection>
+          <p className="mt-3 text-[12px] text-muted-foreground">Every number below is read from a saved, linked report.</p>
         </div>
         <ul className="flex flex-wrap gap-2" aria-label="Status key">
           {Object.entries(STATUS).map(([key, s]) => (

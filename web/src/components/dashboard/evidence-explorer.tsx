@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, fmt, TOPICS, type ReviewDetail, type ReviewItem } from "@/lib/api"
-import { LoadError } from "./bits"
+import { REFLECTIONS } from "@/lib/reflections"
+import { LoadError, Reflection } from "./bits"
 
 const PAGE = 12
 const ALL = "all"
@@ -79,10 +80,7 @@ export default function EvidenceExplorer() {
   return (
     <div>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl">Supporting evidence</h2>
-          <p className="text-[13px] text-muted-foreground">Source-exact quotes. Review IDs and full texts are not shown.</p>
-        </div>
+        <h2 className="text-xl">Supporting evidence</h2>
         <form className="flex flex-col gap-2 sm:flex-row" role="search" onSubmit={(e) => { e.preventDefault(); setSubmitted(query.trim()) }}>
           <Select value={topic} onValueChange={setTopic}>
             <SelectTrigger className="w-full rounded-full bg-tile sm:w-40" aria-label="Topic"><SelectValue /></SelectTrigger>
@@ -98,6 +96,8 @@ export default function EvidenceExplorer() {
           </div>
         </form>
       </div>
+      <Reflection className="mt-3">{REFLECTIONS.evidence}</Reflection>
+      <p className="mt-2 text-[12px] text-muted-foreground">Source-exact quotes. Review IDs and full texts are not shown.</p>
       {error && <div className="mt-4"><LoadError message={error} /></div>}
       <p className="mt-4 text-[13px] text-muted-foreground" aria-live="polite">
         {total === null ? "Loading…" : `${fmt.int(total)} matching reviews`}
