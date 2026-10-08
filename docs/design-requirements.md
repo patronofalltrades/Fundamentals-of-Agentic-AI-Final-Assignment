@@ -10,7 +10,7 @@ language, not its assets. Colours were sampled from the 1600 × 1200 original on
 | Framework | Astro (static HTML) with React islands for data and interaction |
 | Components | shadcn/ui (`new-york`, Radix): Card, Table, Badge, Progress, Chart, Tooltip, Skeleton, Input, Select, Button |
 | Font | Inter Tight, self-hosted (`@fontsource-variable/inter-tight`) |
-| Hero visual | CSS orb (layered gradients). It stops rotating when the reader asks for reduced motion. |
+| Hero visual | CSS vinyl record in Spotify green, turning slowly (was a CSS orb). A generic record, not the Spotify logo: Spotify's guidelines forbid rotating or animating the logo. It stops when the reader asks for reduced motion. |
 | Layout | One long scrolling page: Overview, Issues, Memo, Evidence, Method |
 | Trend lines | Real monthly data: reviews, complaints and mean severity per month |
 | Gauges | Both: golden agreement (saved evaluation) and the top issue's mean severity |
@@ -21,7 +21,7 @@ language, not its assets. Colours were sampled from the 1600 × 1200 original on
 - One accent colour for every "active" or "progress" element.
 - Pastel chart colours. Large, light numbers with small grey labels.
 - Large radii, pill buttons, round bar caps, dotted leaders ("Target ······ 100,000").
-- One showpiece: the orb. Everything else stays quiet.
+- One showpiece: the turning record. Everything else stays quiet.
 
 ## Tokens (`web/src/styles/global.css`)
 

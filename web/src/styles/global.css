@@ -124,39 +124,60 @@
   }
 }
 
-/* The hero orb: layered gradients only, no image asset. */
-.orb {
+/*
+ * The hero record: a generic vinyl record in Spotify green, CSS only (no Spotify logo; see
+ * docs/design-requirements.md). The disc turns; the light sheen stays still, as on a real turntable.
+ * The waveform mark on the label makes the rotation visible. Reduced motion stops it.
+ */
+.record-wrap {
   position: relative;
   width: 11rem;
   aspect-ratio: 1;
-  border-radius: 46% 54% 52% 48% / 50% 44% 56% 50%;
-  background:
-    radial-gradient(circle at 32% 28%, #eafff1 0 6%, transparent 18%),
-    radial-gradient(circle at 70% 70%, #03260f 0 18%, transparent 46%),
-    conic-gradient(from 210deg, #128a40, #1ed760, #04381a, #19b452, #b8f5cd, #128a40);
-  box-shadow:
-    inset -18px -22px 40px rgba(0, 20, 8, 0.85),
-    inset 14px 12px 30px rgba(190, 255, 215, 0.5),
-    0 30px 80px -20px rgba(30, 215, 96, 0.45);
-  filter: saturate(1.15);
-  animation: orb-turn 18s linear infinite;
+  border-radius: 50%;
+  box-shadow: 0 30px 80px -20px rgba(30, 215, 96, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
-.orb::after {
-  content: "";
+.record {
   position: absolute;
-  inset: 14%;
-  border-radius: inherit;
-  background: conic-gradient(from 40deg, transparent, rgba(255, 255, 255, 0.35), transparent 30%);
-  mix-blend-mode: screen;
-  filter: blur(6px);
+  inset: 0;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, #0b0b0b 0 1.5px, #151515 1.5px 3px),
+    #0b0b0b;
+  display: grid;
+  place-items: center;
+  animation: record-turn 4.8s linear infinite;
 }
-@keyframes orb-turn {
+.record-label {
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #000 0 6%, #1ed760 6.5% 100%);
+  display: grid;
+  place-items: center;
+  color: #000;
+  box-shadow: 0 0 0 3px #0b0b0b, 0 0 0 4px rgba(30, 215, 96, 0.35);
+}
+.record-label svg {
+  width: 58%;
+  transform: translateY(-14%);
+}
+.record-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    conic-gradient(from 300deg, transparent 0deg, rgba(255, 255, 255, 0.14) 20deg, transparent 50deg,
+      transparent 180deg, rgba(255, 255, 255, 0.08) 205deg, transparent 235deg);
+  mix-blend-mode: screen;
+}
+@keyframes record-turn {
   to {
     transform: rotate(360deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .orb {
+  .record {
     animation: none;
   }
 }
