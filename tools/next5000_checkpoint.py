@@ -30,6 +30,7 @@ FIRST = 500
 WORKERS = 2
 TAIL_SIZE = 4
 TAIL_VERSION = "next5000-first500-four-review-tail-v1"
+REMAINDER_TAIL_VERSION = "next5000-remainder-partial-batch-v1"
 
 
 def canonical(value):
@@ -88,12 +89,33 @@ def ensure_tables(db, manifest, manifest_sha):
         r["source_sha256"], r["text_sha256"], int(r["blocked_prior_uncertainty"]))
         for r in manifest["rows"][:FIRST]]
     existing = list(db.execute("SELECT * FROM next5000_rows ORDER BY position"))
-    if existing and existing != rows:
+    if existing and (len(existing) not in (FIRST, 5000) or existing !=
+            [(r["source_position"], r["review_id"], r["review_text"],
+              r["source_sha256"], r["text_sha256"], int(r["blocked_prior_uncertainty"]))
+             for r in manifest["rows"][:len(existing)]]):
         raise ValueError("checkpoint source rows changed")
     if not saved:
         with db:
             db.executemany("INSERT INTO next5000_meta VALUES (?,?)", identity.items())
             db.executemany("INSERT INTO next5000_rows VALUES (?,?,?,?,?,?)", rows)
+
+
+def extend_remaining(db, manifest):
+    """Activate the frozen remaining 4,500 only after first-500 QA approval."""
+    count = db.execute("SELECT COUNT(*) FROM next5000_rows").fetchone()[0]
+    if count == 5000:
+        return 0
+    if count != FIRST or db.execute("SELECT COUNT(*) FROM next5000_labels").fetchone()[0] != FIRST or \
+            sum(db.execute("SELECT COUNT(*) FROM " + table).fetchone()[0]
+                for table in ("next5000_evidence", "next5000_quarantines")) != FIRST or \
+            db.execute("SELECT 1 FROM next5000_requests WHERE status IN ('reserved','uncertain') LIMIT 1").fetchone():
+        raise ValueError("first-500 QA gate is not fully accounted")
+    rows = [(r["source_position"], r["review_id"], r["review_text"],
+        r["source_sha256"], r["text_sha256"], int(r["blocked_prior_uncertainty"]))
+        for r in manifest["rows"][FIRST:]]
+    with db:
+        db.executemany("INSERT INTO next5000_rows VALUES (?,?,?,?,?,?)", rows)
+    return len(rows)
 
 
 def _label_tuple(value):
@@ -110,6 +132,11 @@ def materialize_caches(db, manifest):
             JOIN checkpoint_labels l USING(review_id) ORDER BY r.position"""):
         if cfg == label_cfg:
             labels.setdefault(text, (value, rid))
+    for rid, text, value, cfg in db.execute("""SELECT r.review_id,r.review_text,
+            l.label_json,l.config_sha FROM next5000_rows r
+            JOIN next5000_labels l USING(review_id) ORDER BY r.position"""):
+        if cfg == label_cfg:
+            labels.setdefault(text, (value, rid))
     # The revised 100-review pilot is the only compatible evidence cache.
     pilot = {}
     sample_path = recheck.SAMPLE
@@ -124,6 +151,13 @@ def materialize_caches(db, manifest):
                 (source["review_id"],)).fetchone()
             if result and result[2] == evidence_cfg:
                 pilot.setdefault(source["review_text"], (source, result[0], result[1]))
+    for rid, text, entities, quote, cfg, label_json in db.execute("""SELECT
+            r.review_id,r.review_text,e.entities_json,e.evidence_quote,e.config_sha,
+            l.label_json FROM next5000_rows r JOIN next5000_evidence e USING(review_id)
+            JOIN next5000_labels l USING(review_id) ORDER BY r.position"""):
+        if cfg == evidence_cfg:
+            pilot.setdefault(text, ({"review_id": rid, "labels": json.loads(label_json)},
+                entities, quote))
     with db:
         for rid, text, blocked in db.execute("SELECT review_id,review_text,blocked FROM next5000_rows").fetchall():
             if blocked:
@@ -195,21 +229,24 @@ def summary(db, budget=None):
 def evidence_config(rows):
     if len(rows) == recheck.BATCH_SIZE:
         return recheck.config_sha()
-    if len(rows) != TAIL_SIZE:
-        raise ValueError("only a four-review tail is supported")
-    return recheck.digest({"version": TAIL_VERSION, "base_config": recheck.config_sha(),
-        "batch_size": TAIL_SIZE, "min_items": TAIL_SIZE, "max_items": TAIL_SIZE})
+    size = len(rows)
+    if not 1 <= size < recheck.BATCH_SIZE:
+        raise ValueError("partial batch must contain one through nine reviews")
+    return recheck.digest({"version": TAIL_VERSION if size == TAIL_SIZE else
+        REMAINDER_TAIL_VERSION, "base_config": recheck.config_sha(),
+        "batch_size": size, "min_items": size, "max_items": size})
 
 
 def evidence_payload(rows):
     if len(rows) == recheck.BATCH_SIZE:
         return recheck.payload(rows)
-    if len(rows) != TAIL_SIZE or len({r["review_id"] for r in rows}) != TAIL_SIZE or \
-            len({r["review_text"] for r in rows}) != TAIL_SIZE:
-        raise ValueError("tail requires four distinct source IDs and exact texts")
+    size = len(rows)
+    if not 1 <= size < recheck.BATCH_SIZE or len({r["review_id"] for r in rows}) != size or \
+            len({r["review_text"] for r in rows}) != size:
+        raise ValueError("partial batch requires one through nine distinct IDs and texts")
     schema = json.loads(canonical(recheck.SCHEMA))
-    schema["properties"]["results"]["minItems"] = TAIL_SIZE
-    schema["properties"]["results"]["maxItems"] = TAIL_SIZE
+    schema["properties"]["results"]["minItems"] = size
+    schema["properties"]["results"]["maxItems"] = size
     items = [{"review_id": r["review_id"], "source_sha": r["source_sha256"],
         "labels": {k: r["labels"][k] for k in ("topic", "intent", "severity", "sentiment")},
         "review_text": r["review_text"]} for r in rows]
@@ -229,11 +266,12 @@ def evidence_payload(rows):
 def inspect_evidence(response, rows):
     if len(rows) == recheck.BATCH_SIZE:
         return recheck.inspect(response, rows)
-    if len(rows) != TAIL_SIZE or response["choices"][0].get("finish_reason") != "stop":
+    size = len(rows)
+    if not 1 <= size < recheck.BATCH_SIZE or response["choices"][0].get("finish_reason") != "stop":
         raise ValueError("tail result count or finish reason differs")
     body = json.loads(response["choices"][0]["message"]["content"])
     if not isinstance(body, dict) or set(body) != {"results"} or \
-            not isinstance(body["results"], list) or len(body["results"]) != TAIL_SIZE:
+            not isinstance(body["results"], list) or len(body["results"]) != size:
         raise ValueError("tail result count or shape differs")
     expected = {r["review_id"]: r for r in rows}
     accepted, invalid, seen = {}, {}, set()
@@ -322,7 +360,8 @@ def _finish(budget, stage, request_key_value, rows, response, elapsed, error):
     return status, charge
 
 
-def run_stage(budget, manifest_sha, stage, api_key, tail_only=False):
+def run_stage(budget, manifest_sha, stage, api_key, tail_only=False,
+              allow_partial=False):
     db = budget.db
     if db.execute("SELECT 1 FROM next5000_requests WHERE status IN ('reserved','uncertain') LIMIT 1").fetchone():
         raise ValueError("new checkpoint has unresolved request; no further POST")
@@ -349,7 +388,7 @@ def run_stage(budget, manifest_sha, stage, api_key, tail_only=False):
                 else:
                     if tail_only:
                         rows = rows[:TAIL_SIZE]
-                    elif len(rows) < recheck.BATCH_SIZE:
+                    elif len(rows) < recheck.BATCH_SIZE and not allow_partial:
                         break
                     else:
                         rows = rows[:recheck.BATCH_SIZE]
@@ -398,11 +437,19 @@ def main():
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
     mode.add_argument("--run-tail", action="store_true")
+    mode.add_argument("--extend-remaining", action="store_true")
+    mode.add_argument("--run-remainder-evidence", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load_manifest()
     with ProjectBudget(BUDGET, legacy_paths()) as budget:
         ensure_tables(budget.db, manifest, manifest_sha)
+        if args.extend_remaining:
+            result = {"activated_rows": extend_remaining(budget.db, manifest)}
+            materialize_caches(budget.db, manifest)
+            result.update(summary(budget.db, budget))
+            print(canonical(result), flush=True)
+            return
         materialize_caches(budget.db, manifest)
         if args.run_jev:
             key = canary.keychain_secret(timeout_seconds=90, service=JEV_SERVICE,
@@ -411,11 +458,11 @@ def main():
                 result = run_stage(budget, manifest_sha, "jev", key)
             finally:
                 key = None
-        elif args.run_evidence or args.run_tail:
+        elif args.run_evidence or args.run_tail or args.run_remainder_evidence:
             key = canary.keychain_secret(timeout_seconds=90)
             try:
                 result = run_stage(budget, manifest_sha, "evidence", key,
-                    tail_only=args.run_tail)
+                    tail_only=args.run_tail, allow_partial=args.run_remainder_evidence)
             finally:
                 key = None
         else:
