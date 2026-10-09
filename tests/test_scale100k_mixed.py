@@ -234,7 +234,12 @@ class MixedSchedulerTest(unittest.TestCase):
     def test_explicit_eight_and_twelve_jev_ramp_stays_within_global_limit(self):
         for global_workers, jev_workers, minimum in ((8, 8, 5), (12, 12, 9)):
             with self.subTest(global_workers=global_workers), tempfile.TemporaryDirectory() as folder:
-                with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder),
+                paths = fixtures(folder)
+                db_path = str(Path(folder) / "project.db")
+                if global_workers == 12:
+                    with ProjectBudget(db_path, paths) as admin:
+                        admin.configure_global_inflight(12)
+                with ProjectBudget(db_path, paths,
                                    max_global_inflight=global_workers) as budget:
                     seed(budget.db, rows(40), labels=False)
                     adopt(budget.db)

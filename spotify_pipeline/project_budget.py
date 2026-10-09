@@ -6,6 +6,7 @@ its full amount until a separate, evidence-backed reconciliation.
 """
 
 import hashlib
+import fcntl
 import json
 import os
 import sqlite3
@@ -61,14 +62,19 @@ def snapshot(name, path):
 
 class ProjectBudget:
     def __init__(self, path, legacy_paths, max_global_inflight=MAX_GLOBAL_INFLIGHT):
-        if type(max_global_inflight) is not int or not 1 <= max_global_inflight <= MAX_CONFIGURED_GLOBAL_INFLIGHT:
+        if max_global_inflight is not None and (type(max_global_inflight) is not int or
+                not 1 <= max_global_inflight <= MAX_CONFIGURED_GLOBAL_INFLIGHT):
             raise ValueError("global in-flight limit must be an integer from 1 through 12")
-        self.max_global_inflight = max_global_inflight
         if set(legacy_paths) != set(SOURCES):
             raise ValueError("all four historical cost ledgers are required")
         self.legacy_paths = dict(legacy_paths)
         self.snapshots = {name: snapshot(name, self.legacy_paths[name]) for name in SOURCES}
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        # All current budget users hold a shared lease for their full lifetime.
+        # Reconfiguration needs its exclusive form, so another dispatcher
+        # cannot start between the zero-reservation check and the update.
+        self.lease = open(path + "-admission.lock", "a+b")
+        fcntl.flock(self.lease.fileno(), fcntl.LOCK_SH)
         self.db = sqlite3.connect(path, timeout=30, check_same_thread=False)
         self.db.execute("PRAGMA busy_timeout=30000")
         self.db.execute("CREATE TABLE IF NOT EXISTS caps(budget TEXT PRIMARY KEY, cap_nusd INTEGER NOT NULL)")
@@ -80,9 +86,22 @@ class ProjectBudget:
             reserved_nusd INTEGER NOT NULL, charged_nusd INTEGER,
             created_utc TEXT NOT NULL DEFAULT (datetime('now')),
             settled_utc TEXT)""")
+        self.db.execute("CREATE TABLE IF NOT EXISTS coordination(key TEXT PRIMARY KEY,value INTEGER NOT NULL)")
         self.db.commit()
         self.db.execute("BEGIN IMMEDIATE")
         try:
+            saved_limit = self.db.execute("SELECT value FROM coordination WHERE key='global_inflight_limit'").fetchone()
+            if saved_limit is None:
+                # Existing ledgers migrate to the conservative eight-slot
+                # ceiling, even if this caller asked for more.
+                self.db.execute("INSERT INTO coordination VALUES ('global_inflight_limit',?)",
+                    (MAX_GLOBAL_INFLIGHT,))
+                saved_limit = (MAX_GLOBAL_INFLIGHT,)
+            if type(saved_limit[0]) is not int or not 1 <= saved_limit[0] <= MAX_CONFIGURED_GLOBAL_INFLIGHT:
+                raise ValueError("saved global paid-request limit is invalid")
+            if max_global_inflight is not None and saved_limit[0] != max_global_inflight:
+                raise ValueError("global paid-request limit differs from shared ledger")
+            self.max_global_inflight = saved_limit[0]
             current_caps = dict(self.db.execute("SELECT budget,cap_nusd FROM caps"))
             if current_caps and current_caps not in (CAPS, PREVIOUS_CAPS):
                 raise ValueError("project budget caps changed")
@@ -106,10 +125,38 @@ class ProjectBudget:
         except BaseException:
             self.db.rollback()
             self.db.close()
+            self.lease.close()
             raise
 
     def close(self):
         self.db.close()
+        self.lease.close()
+
+    def configure_global_inflight(self, new_limit):
+        """Change the shared ceiling only with no active work or other users."""
+        if type(new_limit) is not int or not 1 <= new_limit <= MAX_CONFIGURED_GLOBAL_INFLIGHT:
+            raise ValueError("global in-flight limit must be an integer from 1 through 12")
+        try:
+            fcntl.flock(self.lease.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ValueError("another budget user is connected; cannot change global limit") from exc
+        try:
+            self.db.execute("BEGIN IMMEDIATE")
+            try:
+                if self.db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
+                    raise ValueError("active reservations prevent global limit change")
+                saved = self.db.execute("SELECT value FROM coordination WHERE key='global_inflight_limit'").fetchone()
+                if saved != (self.max_global_inflight,):
+                    raise ValueError("shared global limit changed unexpectedly")
+                self.db.execute("UPDATE coordination SET value=? WHERE key='global_inflight_limit'",
+                    (new_limit,))
+                self.db.commit()
+                self.max_global_inflight = new_limit
+            except BaseException:
+                self.db.rollback()
+                raise
+        finally:
+            fcntl.flock(self.lease.fileno(), fcntl.LOCK_SH)
 
     def __enter__(self):
         return self
