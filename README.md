@@ -13,7 +13,7 @@ playback, or billing/support? No recommendation exists yet.
 | Submission | This public repository. Final submission through the course portal is pending. |
 | Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
 | Budget | Strictly below US$50. The ceiling is US$49.99. The ceiling is not permission to spend. The instructor expects about US$10 for 100,000 reviews. |
-| Status date | 7 October 2026 |
+| Status date | 9 October 2026 |
 
 ## 1. Status
 
@@ -33,7 +33,7 @@ playback, or billing/support? No recommendation exists yet.
 | Cost calculator with measured cold and warm runs | Partial. Only offline replay scaffolding exists. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Scoring has not run in this pipeline. | Section 7 |
 | Dashboard, backend, database, live URL | **Live** with the 500-review development data. Issue ranking and recommendations show pending. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
-| 100,000-review run | Not started. | — |
+| 100,000-review run | **In progress.** The first 20,000 source positions are selected; inference is incomplete and paused for a tested code update. | [scale progress](reports/scale100k-progress.md) |
 | Full-corpus run (stretch) | Not started. | — |
 
 ## 2. Decisions
