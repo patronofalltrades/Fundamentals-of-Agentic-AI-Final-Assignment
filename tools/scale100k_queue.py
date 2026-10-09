@@ -645,7 +645,8 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
 
 
 def run_mixed(budget, manifest_sha, jev_key, evidence_key,
-              global_workers=WORKERS, jev_workers=DEFAULT_JEV_WORKERS):
+              global_workers=WORKERS, jev_workers=DEFAULT_JEV_WORKERS,
+              stop_requested=None):
     """Use one eight-slot pool for Jev and already-labeled 25-review evidence.
 
     The main thread alone reserves, saves and settles. Provider throttles and
@@ -705,6 +706,8 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key,
 
     with ThreadPoolExecutor(max_workers=global_workers) as pool:
         while active or jev_queue or evidence_queue or not stop:
+            if stop_requested is not None and stop_requested():
+                stop, halt = True, "operator interrupt; in-flight requests drained"
             if not stop:
                 try:
                     jev_remaining = bool(jev_queue or active_count("jev"))
@@ -861,7 +864,7 @@ def main():
         _main_locked(args, manifest, manifest_sha)
 
 
-def _main_locked(args, manifest, manifest_sha):
+def _main_locked(args, manifest, manifest_sha, stop_requested=None):
     with ProjectBudget(BUDGET, legacy_paths(),
                        max_global_inflight=None if args.status or
                            args.set_global_workers is not None else args.global_workers) as budget:
@@ -892,7 +895,8 @@ def _main_locked(args, manifest, manifest_sha):
                 jev_key or pending(budget.db, "evidence")) else None
             try:
                 result = run_mixed(budget, manifest_sha, jev_key, evidence_key,
-                    global_workers=args.global_workers, jev_workers=args.jev_workers)
+                    global_workers=args.global_workers, jev_workers=args.jev_workers,
+                    stop_requested=stop_requested)
             finally:
                 jev_key = evidence_key = None
         elif args.run_jev or args.run_evidence or args.run25_trial:
@@ -915,6 +919,7 @@ def _main_locked(args, manifest, manifest_sha):
             result["jev_eligible_unique"] = len(pending(budget.db, "jev"))
             result["evidence_eligible_unique"] = len(pending(budget.db, "evidence"))
         print(canonical(result), flush=True)
+        return result
 
 
 if __name__ == "__main__":

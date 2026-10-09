@@ -38,6 +38,38 @@ def adopt(db):
 
 
 class MixedSchedulerTest(unittest.TestCase):
+    def test_interrupt_drains_reserved_calls_and_resume_never_replays(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder)) as budget:
+                seed(budget.db, rows(20), labels=False)
+                adopt(budget.db)
+                interrupt = {"requested": False}
+                calls = [0]
+
+                def transport(stage, body, key):
+                    calls[0] += 1
+                    interrupt["requested"] = True
+                    time.sleep(0.006)
+                    return fixture_response(), 0.006, None
+
+                with patch.object(scale, "verify_jev_price"), \
+                     patch.object(scale.jev, "check_model_access"), \
+                     patch.object(scale.benchmark, "verify_route"), \
+                     patch.object(scale.canary, "verify_project_key"), \
+                     patch.object(scale, "_call", side_effect=transport):
+                    drained = scale.run_mixed(budget, "synthetic-manifest",
+                        "jev-key", "evidence-key",
+                        stop_requested=lambda: interrupt["requested"])
+                self.assertTrue(drained["paused"])
+                self.assertIn("drained", drained["halt_reason"])
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations "
+                    "WHERE status='reserved'").fetchone()[0], 0)
+                attempted = budget.db.execute("SELECT COUNT(*) FROM scale_requests").fetchone()[0]
+                self.assertGreater(attempted, 0)
+                self.assertLessEqual(attempted, 8)
+                self.assertEqual(attempted, calls[0])
+                scale.assert_resume_safe(budget.db)
+
     def test_ready_evidence_overlaps_jev_and_all_rows_settle_once(self):
         with tempfile.TemporaryDirectory() as folder:
             with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder)) as budget:
