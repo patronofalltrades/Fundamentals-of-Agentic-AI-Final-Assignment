@@ -33,9 +33,11 @@ from tools.scale100k_manifest import load
 BUDGET = "local/project_budget.db"
 LOCK = Path("local/scale100k_paid_run.lock")
 WORKERS = 8
+DEFAULT_JEV_WORKERS = 4
+MAX_CONFIGURED_WORKERS = 12
+RAMP_SUCCESSES = 500
 CHUNK_ROWS = 500
 GATE_ROWS = 10000
-JEV_SLOT_ENV = "SPOTIFY_JEV_MAX_SLOTS"
 
 
 def canonical(value):
@@ -448,18 +450,15 @@ def initial_worker_limit(db, stage):
 
 
 def safe_worker_ceiling(db, stage):
-    """Default Jev to four; an explicit bounded setting may change its ceiling."""
-    if stage != "jev":
-        return WORKERS
-    try:
-        configured = int(os.environ.get(JEV_SLOT_ENV, "4"))
-    except ValueError as exc:
-        raise ValueError("invalid Jev slot setting") from exc
-    if not 1 <= configured <= WORKERS:
-        raise ValueError("Jev slot setting outside shared worker cap")
-    jev_overload = db.execute("""SELECT COUNT(*) FROM scale_requests
-        WHERE stage='jev' AND status='uncertain' AND error_class LIKE '%:529'""").fetchone()[0]
-    return min(configured, max(1, WORKERS // 2)) if jev_overload >= 2 else configured
+    """Conservative defaults for legacy single-stage commands."""
+    return DEFAULT_JEV_WORKERS if stage == "jev" else WORKERS
+
+
+def validate_mixed_limits(global_workers, jev_workers):
+    if type(global_workers) is not int or not WORKERS <= global_workers <= MAX_CONFIGURED_WORKERS:
+        raise ValueError("mixed global workers must be an integer from 8 through 12")
+    if type(jev_workers) is not int or not DEFAULT_JEV_WORKERS <= jev_workers <= global_workers:
+        raise ValueError("mixed Jev workers must be an integer from 4 through the global limit")
 
 
 def _context_limit_error(exc):
@@ -629,7 +628,7 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
                         stop, halt = True, "two new uncertain requests"
                 elif state == "succeeded":
                     stable_successes += 1
-                    if stable_successes >= 500 and limit < ceiling:
+                    if stable_successes >= RAMP_SUCCESSES and limit < ceiling:
                         limit += 1
                         stable_successes = 0
                 invalid_streak = invalid_streak + 1 if state not in ("succeeded", "uncertain") else 0
@@ -645,13 +644,17 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
     return out
 
 
-def run_mixed(budget, manifest_sha, jev_key, evidence_key):
+def run_mixed(budget, manifest_sha, jev_key, evidence_key,
+              global_workers=WORKERS, jev_workers=DEFAULT_JEV_WORKERS):
     """Use one eight-slot pool for Jev and already-labeled 25-review evidence.
 
     The main thread alone reserves, saves and settles. Provider throttles and
     cooldowns remain independent; no failed paid POST is dispatched again.
     """
     db = budget.db
+    validate_mixed_limits(global_workers, jev_workers)
+    if budget.max_global_inflight != global_workers:
+        raise ValueError("ledger admission limit differs from mixed worker setting")
     assert_resume_safe(db)
     if active_evidence_config(db) != trial25.config_sha():
         raise ValueError("mixed runner requires adopted 25-review evidence")
@@ -664,10 +667,13 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key):
         canary.verify_project_key(evidence_key, trial25.reservation_nusd())
     evidence_queue, planned_texts = deque(), set()
     active = {}
-    limits = {stage: min(initial_worker_limit(db, stage),
-        safe_worker_ceiling(db, stage)) for stage in ("jev", "evidence")}
-    ceilings = {stage: safe_worker_ceiling(db, stage)
-        for stage in ("jev", "evidence")}
+    limits = {"jev": DEFAULT_JEV_WORKERS,
+        "evidence": min(initial_worker_limit(db, "evidence"), WORKERS)}
+    ceilings = {"jev": jev_workers, "evidence": WORKERS}
+    print(canonical({"kind": "effective_worker_limits", "global": global_workers,
+        "jev_start": limits["jev"], "jev_ceiling": ceilings["jev"],
+        "evidence_start": limits["evidence"], "evidence_ceiling": ceilings["evidence"]}),
+        flush=True)
     cooldown_until = {"jev": 0.0, "evidence": 0.0}
     uncertain = {"jev": 0, "evidence": 0}
     stable = {"jev": 0, "evidence": 0}
@@ -697,7 +703,7 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key):
     def active_count(stage):
         return sum(item[0] == stage for item in active.values())
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+    with ThreadPoolExecutor(max_workers=global_workers) as pool:
         while active or jev_queue or evidence_queue or not stop:
             if not stop:
                 try:
@@ -708,7 +714,7 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key):
                 except Exception as exc:
                     stop, halt = True, "evidence planning failed: " + type(exc).__name__ + ": " + str(exc)
 
-            while not stop and len(active) < WORKERS:
+            while not stop and len(active) < global_workers:
                 now = time.monotonic()
                 jev_ready = bool(jev_queue) and now >= cooldown_until["jev"]
                 evidence_ready = bool(evidence_queue) and now >= cooldown_until["evidence"]
@@ -798,7 +804,7 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key):
                         stop, halt = True, "two new uncertain requests"
                 elif state == "succeeded":
                     stable[stage] += 1
-                    if stable[stage] >= 500 and limits[stage] < ceilings[stage]:
+                    if stable[stage] >= RAMP_SUCCESSES and limits[stage] < ceilings[stage]:
                         limits[stage] += 1
                         stable[stage] = 0
                 invalid_streak[stage] = invalid_streak[stage] + 1 if state not in (
@@ -811,6 +817,9 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key):
 
     out = status(db, budget)
     out.update({"stage": "mixed", "paused": stop, "halt_reason": halt,
+        "effective_worker_limits": {"global": global_workers,
+            "jev_start": DEFAULT_JEV_WORKERS, "jev_ceiling": jev_workers,
+            "evidence_ceiling": WORKERS},
         "new_uncertain": uncertain, "final_worker_limits": limits,
         "malformed_batches": malformed, "oversized_evidence_rows": oversized,
         "jev_eligible_unique": len(pending(db, "jev")),
@@ -825,11 +834,17 @@ def main():
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
     mode.add_argument("--run-mixed", action="store_true")
+    parser.add_argument("--global-workers", type=int, default=WORKERS)
+    parser.add_argument("--jev-workers", type=int, default=DEFAULT_JEV_WORKERS)
     mode.add_argument("--run25-trial", action="store_true")
     mode.add_argument("--adopt25", action="store_true")
     mode.add_argument("--recover-metered", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
+    validate_mixed_limits(args.global_workers, args.jev_workers)
+    if not args.run_mixed and (args.global_workers != WORKERS or
+            args.jev_workers != DEFAULT_JEV_WORKERS):
+        parser.error("worker overrides apply only to --run-mixed")
     manifest, manifest_sha = load()
     if args.run_jev or args.run_evidence or args.run_mixed or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
         LOCK.touch(mode=0o600, exist_ok=True)
@@ -844,7 +859,8 @@ def main():
 
 
 def _main_locked(args, manifest, manifest_sha):
-    with ProjectBudget(BUDGET, legacy_paths()) as budget:
+    with ProjectBudget(BUDGET, legacy_paths(),
+                       max_global_inflight=args.global_workers) as budget:
         ensure_tables(budget.db, manifest_sha)
         if args.activate_next_gate:
             activated = activate_gate(budget.db, manifest)
@@ -867,7 +883,8 @@ def _main_locked(args, manifest, manifest_sha):
             evidence_key = canary.keychain_secret(timeout_seconds=90) if (
                 jev_key or pending(budget.db, "evidence")) else None
             try:
-                result = run_mixed(budget, manifest_sha, jev_key, evidence_key)
+                result = run_mixed(budget, manifest_sha, jev_key, evidence_key,
+                    global_workers=args.global_workers, jev_workers=args.jev_workers)
             finally:
                 jev_key = evidence_key = None
         elif args.run_jev or args.run_evidence or args.run25_trial:

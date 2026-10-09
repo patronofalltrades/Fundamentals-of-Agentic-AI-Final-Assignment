@@ -14,6 +14,7 @@ from contextlib import closing
 CAPS = {"openrouter": 5_000_000_000, "jev": 5_000_000_000}
 PREVIOUS_CAPS = {"openrouter": 5_000_000_000, "jev": 600_000_000}
 MAX_GLOBAL_INFLIGHT = 8
+MAX_CONFIGURED_GLOBAL_INFLIGHT = 12
 SOURCES = ("benchmark", "batch_v1", "batch_v2", "jev_checkpoint")
 
 
@@ -59,7 +60,10 @@ def snapshot(name, path):
 
 
 class ProjectBudget:
-    def __init__(self, path, legacy_paths):
+    def __init__(self, path, legacy_paths, max_global_inflight=MAX_GLOBAL_INFLIGHT):
+        if type(max_global_inflight) is not int or not 1 <= max_global_inflight <= MAX_CONFIGURED_GLOBAL_INFLIGHT:
+            raise ValueError("global in-flight limit must be an integer from 1 through 12")
+        self.max_global_inflight = max_global_inflight
         if set(legacy_paths) != set(SOURCES):
             raise ValueError("all four historical cost ledgers are required")
         self.legacy_paths = dict(legacy_paths)
@@ -137,8 +141,8 @@ class ProjectBudget:
             self._check_sources()
             if self.db.execute("SELECT 1 FROM reservations WHERE request_key=?", (request_key,)).fetchone():
                 raise ValueError("request already reserved or settled; no duplicate call")
-            if self.db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0] >= MAX_GLOBAL_INFLIGHT:
-                raise ValueError("eight global paid requests are already in flight")
+            if self.db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0] >= self.max_global_inflight:
+                raise ValueError("configured global paid-request limit is already in flight")
             if self.exposure(budget) + amount_nusd >= CAPS[budget]:
                 raise ValueError("cumulative project cap would be reached")
             self.db.execute("INSERT INTO reservations(request_key,budget,status,reserved_nusd)"

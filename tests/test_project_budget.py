@@ -98,7 +98,7 @@ class ProjectBudgetTest(unittest.TestCase):
                 self.assertEqual(budget.exposure("openrouter"), 35_540_000)
                 for number in range(8):
                     budget.reserve("active-" + str(number), "jev", 2_688_000)
-                with self.assertRaisesRegex(ValueError, "eight global"):
+                with self.assertRaisesRegex(ValueError, "global paid-request limit"):
                     budget.reserve("ninth", "openrouter", 5_545_984)
                 with self.assertRaisesRegex(ValueError, "duplicate"):
                     budget.reserve("active-0", "jev", 2_688_000)
@@ -119,7 +119,7 @@ class ProjectBudgetTest(unittest.TestCase):
                         budget.reserve("parallel-" + str(number), "jev", 2_688_000)
                         return True
                     except ValueError as error:
-                        self.assertIn("eight global", str(error))
+                        self.assertIn("global paid-request limit", str(error))
                         return False
 
             with ThreadPoolExecutor(max_workers=12) as pool:

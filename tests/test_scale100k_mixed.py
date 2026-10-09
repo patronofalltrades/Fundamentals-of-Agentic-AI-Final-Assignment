@@ -73,6 +73,7 @@ class MixedSchedulerTest(unittest.TestCase):
                 self.assertTrue(overlap[0])
                 self.assertLessEqual(maximum[0], scale.WORKERS)
                 self.assertLessEqual(max_jev[0], 4)
+                self.assertEqual(result["effective_worker_limits"]["jev_ceiling"], 4)
                 self.assertEqual(seen, {"jev": 60, "evidence": 3})
                 self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_labels").fetchone()[0], 60)
                 self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_evidence").fetchone()[0], 60)
@@ -229,6 +230,56 @@ class MixedSchedulerTest(unittest.TestCase):
                 self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM "
                     "scale_labels").fetchone()[0], 2)
                 scale.assert_resume_safe(budget.db)
+
+    def test_explicit_eight_and_twelve_jev_ramp_stays_within_global_limit(self):
+        for global_workers, jev_workers, minimum in ((8, 8, 5), (12, 12, 9)):
+            with self.subTest(global_workers=global_workers), tempfile.TemporaryDirectory() as folder:
+                with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder),
+                                   max_global_inflight=global_workers) as budget:
+                    seed(budget.db, rows(40), labels=False)
+                    adopt(budget.db)
+                    lock = Lock()
+                    in_flight = {"jev": 0, "evidence": 0}
+                    max_jev, max_global = [0], [0]
+
+                    def transport(stage, body, key):
+                        with lock:
+                            in_flight[stage] += 1
+                            max_jev[0] = max(max_jev[0], in_flight["jev"])
+                            max_global[0] = max(max_global[0], sum(in_flight.values()))
+                        time.sleep(0.01 if stage == "jev" else 0.02)
+                        with lock:
+                            in_flight[stage] -= 1
+                        return (fixture_response() if stage == "jev" else
+                            evidence_response(body)), 0.01, None
+
+                    with patch.object(scale, "verify_jev_price"), \
+                         patch.object(scale.jev, "check_model_access"), \
+                         patch.object(scale.benchmark, "verify_route"), \
+                         patch.object(scale.canary, "verify_project_key"), \
+                         patch.object(scale, "RAMP_SUCCESSES", 1), \
+                         patch.object(scale, "_call", side_effect=transport):
+                        result = scale.run_mixed(budget, "synthetic-manifest",
+                            "jev-key", "evidence-key", global_workers, jev_workers)
+                    self.assertFalse(result["paused"])
+                    self.assertGreaterEqual(max_jev[0], minimum)
+                    self.assertLessEqual(max_jev[0], jev_workers)
+                    self.assertLessEqual(max_global[0], global_workers)
+                    self.assertEqual(result["effective_worker_limits"]["jev_start"], 4)
+                    self.assertEqual(result["effective_worker_limits"]["jev_ceiling"], jev_workers)
+                    self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM "
+                        "reservations WHERE status='reserved'").fetchone()[0], 0)
+
+    def test_invalid_or_mismatched_worker_limits_are_rejected_before_dispatch(self):
+        for pair in ((7, 4), (13, 4), (8, 3), (8, 9), (True, 4)):
+            with self.subTest(pair=pair), self.assertRaises(ValueError):
+                scale.validate_mixed_limits(*pair)
+        with tempfile.TemporaryDirectory() as folder:
+            with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder)) as budget:
+                seed(budget.db, rows(2), labels=False)
+                adopt(budget.db)
+                with self.assertRaisesRegex(ValueError, "ledger admission limit"):
+                    scale.run_mixed(budget, "synthetic-manifest", "unused", "unused", 12, 12)
 
 
 if __name__ == "__main__":

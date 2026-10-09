@@ -54,7 +54,7 @@ class ScaleQueueTest(unittest.TestCase):
         self.db.execute("INSERT INTO scale_members VALUES ('held','a')")
         self.assertEqual([r["review_id"] for r in scale.pending(self.db, "evidence")], ["d"])
 
-    def test_eight_network_slots_share_one_ledger_and_never_repeat_held_ids(self):
+    def test_four_default_jev_slots_share_one_ledger_and_never_repeat_held_ids(self):
         with tempfile.TemporaryDirectory() as folder:
             paths = fixtures(folder)
             with ProjectBudget(str(Path(folder) / "project.db"), paths) as budget:
@@ -64,7 +64,7 @@ class ScaleQueueTest(unittest.TestCase):
                     ((10001 + i, "id" + str(i), "text" + str(i),
                       "source" + str(i), "textsha" + str(i)) for i in range(4000)))
                 db.commit()
-                gate = Barrier(scale.WORKERS)
+                gate = Barrier(scale.DEFAULT_JEV_WORKERS)
 
                 def timeout_call(stage, body, key):
                     gate.wait(timeout=5)
@@ -73,14 +73,13 @@ class ScaleQueueTest(unittest.TestCase):
                 with patch.object(scale, "verify_jev_price"), \
                      patch.object(scale.jev, "check_model_access"), \
                      patch.object(scale, "_call", side_effect=timeout_call), \
-                     patch.object(scale.time, "sleep"), \
-                     patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "8"}):
+                     patch.object(scale.time, "sleep"):
                     result = scale.run_stage(budget, "synthetic-manifest", "jev", "synthetic-key")
                 self.assertTrue(result["paused"])
-                self.assertEqual(result["new_uncertain"], scale.WORKERS)
-                self.assertEqual(db.execute("SELECT COUNT(*) FROM reservations WHERE status='uncertain'").fetchone()[0], scale.WORKERS)
-                self.assertEqual(db.execute("SELECT COUNT(DISTINCT review_id) FROM scale_members").fetchone()[0], scale.WORKERS)
-                self.assertEqual(len(scale.pending(db, "jev")), 4000 - scale.WORKERS)
+                self.assertEqual(result["new_uncertain"], scale.DEFAULT_JEV_WORKERS)
+                self.assertEqual(db.execute("SELECT COUNT(*) FROM reservations WHERE status='uncertain'").fetchone()[0], scale.DEFAULT_JEV_WORKERS)
+                self.assertEqual(db.execute("SELECT COUNT(DISTINCT review_id) FROM scale_members").fetchone()[0], scale.DEFAULT_JEV_WORKERS)
+                self.assertEqual(len(scale.pending(db, "jev")), 4000 - scale.DEFAULT_JEV_WORKERS)
                 scale.assert_resume_safe(db)
 
     def test_eight_evidence_slots_keep_ten_reviews_per_post(self):
@@ -158,13 +157,9 @@ class ScaleQueueTest(unittest.TestCase):
             self.assertEqual(scale.initial_worker_limit(db, "jev"), 4)
             self.assertEqual(scale.initial_worker_limit(db, "evidence"), 8)
             self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 4)
-            with patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "6"}):
-                self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 6)
             db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
             self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 4)
             self.assertEqual(scale.safe_worker_ceiling(db, "evidence"), 8)
-            with patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "9"}):
-                self.assertRaises(ValueError, scale.safe_worker_ceiling, db, "jev")
         finally:
             db.close()
 
