@@ -1,9 +1,10 @@
 """Durable rolling 10k queue for source positions 10,001–100,000.
 
-Eight network slots share one atomic project ledger. A regular slot owns a
-500-source work chunk. Evidence uses ten reviews per POST until a measured
-25-review trial is adopted. No attempted exact text is automatically
-retried after any delivery outcome.
+Eight network slots share one atomic project ledger. The original stage
+runner owns 500-source chunks; mixed mode draws ready Jev and evidence work
+from shared queues. Evidence uses ten reviews per POST until a measured
+25-review trial is adopted. No attempted exact text is automatically retried
+after any delivery outcome.
 """
 
 import argparse
@@ -635,19 +636,193 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
     return out
 
 
+def run_mixed(budget, manifest_sha, jev_key, evidence_key):
+    """Use one eight-slot pool for Jev and already-labeled 25-review evidence.
+
+    The main thread alone reserves, saves and settles. Provider throttles and
+    cooldowns remain independent; no failed paid POST is dispatched again.
+    """
+    db = budget.db
+    assert_resume_safe(db)
+    if active_evidence_config(db) != trial25.config_sha():
+        raise ValueError("mixed runner requires adopted 25-review evidence")
+    jev_queue = deque(pending(db, "jev"))
+    if jev_queue:
+        verify_jev_price()
+        jev.check_model_access(jev_key)
+    if jev_queue or pending(db, "evidence"):
+        benchmark.verify_route("deepinfra")
+        canary.verify_project_key(evidence_key, trial25.reservation_nusd())
+    evidence_queue, planned_texts = deque(), set()
+    active = {}
+    limits = {stage: min(initial_worker_limit(db, stage),
+        safe_worker_ceiling(db, stage)) for stage in ("jev", "evidence")}
+    ceilings = {stage: safe_worker_ceiling(db, stage)
+        for stage in ("jev", "evidence")}
+    cooldown_until = {"jev": 0.0, "evidence": 0.0}
+    uncertain = {"jev": 0, "evidence": 0}
+    stable = {"jev": 0, "evidence": 0}
+    invalid_streak = {"jev": 0, "evidence": 0}
+    malformed = 0
+    oversized = 0
+    newly_labelled = 25
+    stop, halt = False, None
+
+    def refresh_evidence(force_tail=False):
+        nonlocal newly_labelled, oversized
+        newly_labelled = 0
+        ready = [row for row in pending(db, "evidence")
+            if row["review_text"] not in planned_texts]
+        if not force_tail:
+            ready = ready[:len(ready) // trial25.BATCH_SIZE * trial25.BATCH_SIZE]
+        if not ready:
+            return
+        chunks, over = plan_evidence_chunks(ready, trial=True)
+        block_oversized_evidence(db, over)
+        oversized += len(over)
+        for chunk in chunks:
+            for plan in chunk:
+                evidence_queue.append(plan)
+                planned_texts.update(row["review_text"] for row in plan[0])
+
+    def active_count(stage):
+        return sum(item[0] == stage for item in active.values())
+
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        while active or jev_queue or evidence_queue or not stop:
+            if not stop:
+                try:
+                    jev_remaining = bool(jev_queue or active_count("jev"))
+                    if newly_labelled >= 25 or not jev_remaining and (
+                            newly_labelled or not evidence_queue):
+                        refresh_evidence(force_tail=not jev_remaining)
+                except Exception as exc:
+                    stop, halt = True, "evidence planning failed: " + type(exc).__name__ + ": " + str(exc)
+
+            while not stop and len(active) < WORKERS:
+                now = time.monotonic()
+                jev_ready = bool(jev_queue) and now >= cooldown_until["jev"]
+                evidence_ready = bool(evidence_queue) and now >= cooldown_until["evidence"]
+                jcount, ecount = active_count("jev"), active_count("evidence")
+                if jev_ready and jcount < min(2, limits["jev"]):
+                    stage = "jev"
+                elif evidence_ready and ecount < limits["evidence"]:
+                    stage = "evidence"
+                elif jev_ready and jcount < limits["jev"]:
+                    stage = "jev"
+                else:
+                    break
+                if stage == "jev":
+                    row = jev_queue.popleft()
+                    rows = [row]
+                    body = jev.build_request(row["review_text"])
+                    cfg = config_hash(jev.label_config())
+                    reservation, api_key = RESERVATION_NANODOLLARS, jev_key
+                else:
+                    rows, body, cfg = evidence_queue.popleft()
+                    reservation, api_key = trial25.reservation_nusd(), evidence_key
+                key = "scale100k-" + evidence.digest({"manifest": manifest_sha,
+                    "stage": stage, "ids": [r["review_id"] for r in rows], "config": cfg})
+                def record(conn):
+                    conn.execute("INSERT INTO scale_requests(request_key,stage,status,config_sha,request_sha) VALUES (?,?,'reserved',?,?)",
+                        (key, stage, cfg, evidence.digest(body)))
+                    conn.executemany("INSERT INTO scale_members VALUES (?,?)",
+                        ((key, row["review_id"]) for row in rows))
+                try:
+                    budget.reserve(key, "jev" if stage == "jev" else "openrouter", reservation, record)
+                except Exception as exc:
+                    stop, halt = True, type(exc).__name__ + ": " + str(exc)
+                    if stage == "jev":
+                        jev_queue.appendleft(rows[0])
+                    else:
+                        evidence_queue.appendleft((rows, body, cfg))
+                    break
+                future = pool.submit(_call, stage, body, api_key)
+                active[future] = (stage, key, rows)
+
+            if not active:
+                if stop:
+                    break
+                if not (jev_queue or evidence_queue):
+                    break
+                waits = [cooldown_until[stage] - time.monotonic()
+                    for stage, queue in (("jev", jev_queue), ("evidence", evidence_queue))
+                    if queue and cooldown_until[stage] > time.monotonic()]
+                if waits:
+                    time.sleep(min(waits))
+                    continue
+                stop, halt = True, "no admissible worker slot"
+                break
+
+            waits = [cooldown_until[stage] - time.monotonic()
+                for stage, queue in (("jev", jev_queue), ("evidence", evidence_queue))
+                if queue and cooldown_until[stage] > time.monotonic()]
+            done, _ = wait(active, timeout=min(waits) if waits else None,
+                return_when=FIRST_COMPLETED)
+            for future in done:
+                stage, key, rows = active.pop(future)
+                response, elapsed, error = future.result()
+                state, charge = _finish(budget, stage, key, rows, response, elapsed,
+                    error, trial=stage == "evidence")
+                print(canonical({"stage": stage, "status": state, "rows": len(rows),
+                    "charge_nusd": charge, "elapsed_seconds": round(elapsed, 3),
+                    "shared_slots_in_flight": len(active)}), flush=True)
+                if stage == "jev" and state == "succeeded":
+                    newly_labelled += 1
+                if error and (":401" in error or ":403" in error):
+                    stop, halt = True, "authentication or access failure"
+                elif error and any(marker in error for marker in
+                        (":429", ":500", ":502", ":503", ":504", ":529",
+                         "Timeout", "URLError", "ConnectionResetError")):
+                    uncertain[stage] += 1
+                    stable[stage] = 0
+                    limits[stage] = max(1, limits[stage] // 2)
+                    if uncertain[stage] >= 2:
+                        stop, halt = True, "repeated transient failures; held requests"
+                    else:
+                        cooldown_until[stage] = max(cooldown_until[stage],
+                            time.monotonic() + backoff_seconds(uncertain[stage]))
+                elif state == "uncertain":
+                    uncertain[stage] += 1
+                    stable[stage] = 0
+                    if uncertain[stage] >= 2:
+                        stop, halt = True, "two new uncertain requests"
+                elif state == "succeeded":
+                    stable[stage] += 1
+                    if stable[stage] >= 500 and limits[stage] < ceilings[stage]:
+                        limits[stage] += 1
+                        stable[stage] = 0
+                invalid_streak[stage] = invalid_streak[stage] + 1 if state not in (
+                    "succeeded", "uncertain") else 0
+                if state == "quarantined_metered":
+                    malformed += 1
+                if malformed >= 3 or invalid_streak[stage] >= (
+                        3 if stage == "jev" else 5):
+                    stop, halt = True, "structural quality gate"
+
+    out = status(db, budget)
+    out.update({"stage": "mixed", "paused": stop, "halt_reason": halt,
+        "new_uncertain": uncertain, "final_worker_limits": limits,
+        "malformed_batches": malformed, "oversized_evidence_rows": oversized,
+        "jev_eligible_unique": len(pending(db, "jev")),
+        "evidence_eligible_unique": len(pending(db, "evidence"))})
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--activate-next-gate", action="store_true")
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
+    mode.add_argument("--run-mixed", action="store_true")
     mode.add_argument("--run25-trial", action="store_true")
     mode.add_argument("--adopt25", action="store_true")
     mode.add_argument("--recover-metered", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
+    if args.run_jev or args.run_evidence or args.run_mixed or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:
@@ -676,6 +851,16 @@ def _main_locked(args, manifest, manifest_sha):
             metrics = recover_metered(budget.db)
             result = status(budget.db, budget)
             result.update(metrics)
+        elif args.run_mixed:
+            materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
+            jev_key = canary.keychain_secret(timeout_seconds=90,
+                service=JEV_SERVICE, account=JEV_ACCOUNT) if pending(budget.db, "jev") else None
+            evidence_key = canary.keychain_secret(timeout_seconds=90) if (
+                jev_key or pending(budget.db, "evidence")) else None
+            try:
+                result = run_mixed(budget, manifest_sha, jev_key, evidence_key)
+            finally:
+                jev_key = evidence_key = None
         elif args.run_jev or args.run_evidence or args.run25_trial:
             if args.run25_trial and active_evidence_config(budget.db) == trial25.config_sha():
                 raise ValueError("25-review trial is complete; use adopted evidence mode")
