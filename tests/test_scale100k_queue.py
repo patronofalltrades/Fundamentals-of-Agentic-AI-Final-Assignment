@@ -1,6 +1,7 @@
 """Synthetic identity and duplicate-prevention checks; no paid calls."""
 
 import sqlite3
+import json
 from pathlib import Path
 import tempfile
 from threading import Barrier
@@ -195,6 +196,43 @@ class ScaleQueueTest(unittest.TestCase):
                 self.assertEqual(db.execute("SELECT SUM(reserved_nusd) FROM reservations").fetchone()[0],
                     4 * scale.trial25.reservation_nusd())
                 scale.assert_resume_safe(db)
+
+    def test_offline_recovery_accepts_only_unique_expected_exact_spans(self):
+        db = sqlite3.connect(":memory:")
+        try:
+            scale.ensure_tables(db, "synthetic-manifest")
+            db.execute("CREATE TABLE reservations(request_key TEXT,status TEXT,charged_nusd INTEGER)")
+            rows = [(10001 + i, "id" + str(i), "text" + str(i), "sha" + str(i),
+                "textsha" + str(i), None) for i in range(25)]
+            rows.append((10026, "alias0", "text0", "alias-sha", "textsha0", None))
+            db.executemany("INSERT INTO scale_rows VALUES (?,?,?,?,?,?)", rows)
+            items = [{"review_id": "id" + str(i), "entities": [],
+                "evidence_quote": "text" + str(i)} for i in range(24)]
+            items.append({"review_id": "unknown", "entities": [], "evidence_quote": "text24"})
+            response = {"id": "synthetic-generation", "provider": "DeepInfra",
+                "model": scale.evidence.MODEL, "usage": {"prompt_tokens": 100,
+                "completion_tokens": 100}, "choices": [{"finish_reason": "stop",
+                "message": {"content": json.dumps({"results": items})}}]}
+            charge = scale.trial25.measured_usage(response)[-1]
+            db.execute("""INSERT INTO scale_requests(request_key,stage,status,config_sha,
+                request_sha,response_json,charged_nusd) VALUES (?,?,?,?,?,?,?)""",
+                ("batch", "evidence", "quarantined_metered",
+                 scale.trial25.config_sha(), "synthetic", json.dumps(response), charge))
+            db.execute("INSERT INTO reservations VALUES (?,?,?)",
+                ("batch", "quarantined_metered", charge))
+            db.executemany("INSERT INTO scale_members VALUES (?,?)",
+                (("batch", "id" + str(i)) for i in range(25)))
+            db.executemany("INSERT INTO scale_quarantines VALUES (?,?,?)",
+                (("id" + str(i), "structural", "batch") for i in range(25)))
+            db.commit()
+            result = scale.recover_metered(db)
+            self.assertEqual(result, {"batches": 1, "new_accepted": 24,
+                "remaining_quarantined": 1})
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_evidence").fetchone()[0], 25)
+            self.assertEqual(db.execute("SELECT review_id FROM scale_quarantines").fetchone()[0], "id24")
+            self.assertEqual(scale.recover_metered(db)["new_accepted"], 0)
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":

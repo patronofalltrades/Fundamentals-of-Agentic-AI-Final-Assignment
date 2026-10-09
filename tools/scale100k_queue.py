@@ -158,6 +158,61 @@ def adopt_25(db):
     return {"trial_direct_accepted": accepted, "trial_direct_total": 200}
 
 
+def recover_metered(db):
+    """Recover uniquely identified exact-span rows from saved charged responses."""
+    if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
+        raise ValueError("active request; offline recovery deferred")
+    total = {"batches": 0, "new_accepted": 0, "remaining_quarantined": 0}
+    batches = list(db.execute("""SELECT q.request_key,q.response_json,q.config_sha,
+        r.charged_nusd,r.status FROM scale_requests q JOIN reservations r
+        USING(request_key) WHERE q.stage='evidence' AND q.status='quarantined_metered'"""))
+    for key, raw, cfg, charged, reservation_status in batches:
+        rows = {r["review_id"]: r for r in ({"review_id": rid, "review_text": text,
+            "text_sha256": text_sha} for rid, text, text_sha in db.execute("""SELECT
+            r.review_id,r.review_text,r.text_sha FROM scale_rows r JOIN
+            scale_members m USING(review_id) WHERE m.request_key=?""", (key,)))}
+        if not raw or reservation_status != "quarantined_metered" or charged is None or \
+                cfg != trial25.config_for_size(len(rows)):
+            raise ValueError("metered response, charge, or configuration differs")
+        response = json.loads(raw)
+        if trial25.measured_usage(response)[-1] != charged or \
+                response["choices"][0].get("finish_reason") != "stop":
+            raise ValueError("saved response charge or finish differs")
+        body = json.loads(response["choices"][0]["message"]["content"])
+        items = body.get("results") if isinstance(body, dict) else None
+        if not isinstance(items, list) or len(items) != len(rows):
+            raise ValueError("saved malformed result count differs")
+        counts = Counter(item.get("review_id") for item in items if isinstance(item, dict))
+        accepted = {}
+        for item in items:
+            if not isinstance(item, dict) or set(item) != {"review_id", "entities", "evidence_quote"}:
+                continue
+            rid = item["review_id"]
+            if not isinstance(rid, str) or rid not in rows or counts[rid] != 1:
+                continue
+            try:
+                accepted[rid] = validate_evidence(rows[rid]["review_text"],
+                    {"entities": item["entities"], "evidence_quote": item["evidence_quote"]})
+            except Exception:
+                continue
+        with db:
+            for rid, value in accepted.items():
+                if db.execute("SELECT 1 FROM scale_evidence WHERE review_id=?", (rid,)).fetchone():
+                    continue
+                if db.execute("DELETE FROM scale_quarantines WHERE review_id=? AND request_key=?",
+                        (rid, key)).rowcount != 1:
+                    raise ValueError("recoverable row is not directly quarantined")
+                db.execute("INSERT INTO scale_evidence VALUES (?,?,?,?,?,?,?)",
+                    (rid, canonical(value["entities"]), value["evidence_quote"], cfg,
+                     "deepinfra_offline_recovery", None, key))
+                aliases(db, "evidence", rows[rid], value, cfg)
+                total["new_accepted"] += 1
+        total["batches"] += 1
+        total["remaining_quarantined"] += db.execute(
+            "SELECT COUNT(*) FROM scale_quarantines WHERE request_key=?", (key,)).fetchone()[0]
+    return total
+
+
 def materialize_caches(db, historical_texts=()):
     """Exact text and matching model/prompt/schema; preserve every target ID."""
     jcfg, ecfg = config_hash(jev.label_config()), active_evidence_config(db)
@@ -517,10 +572,11 @@ def main():
     mode.add_argument("--run-evidence", action="store_true")
     mode.add_argument("--run25-trial", action="store_true")
     mode.add_argument("--adopt25", action="store_true")
+    mode.add_argument("--recover-metered", action="store_true")
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate or args.adopt25:
+    if args.run_jev or args.run_evidence or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:
@@ -543,6 +599,10 @@ def _main_locked(args, manifest, manifest_sha):
         elif args.adopt25:
             metrics = adopt_25(budget.db)
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
+            result = status(budget.db, budget)
+            result.update(metrics)
+        elif args.recover_metered:
+            metrics = recover_metered(budget.db)
             result = status(budget.db, budget)
             result.update(metrics)
         elif args.run_jev or args.run_evidence or args.run25_trial:
