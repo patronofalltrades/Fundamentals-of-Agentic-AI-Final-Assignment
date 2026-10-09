@@ -1,6 +1,12 @@
 # 100,000-review scale checkpoint — October 9, 2026
 
-This report records saved provider results and conservative budget exposure. It does not claim completion of the 100,000-review assignment or human-label accuracy.
+This report records saved provider results and conservative budget exposure. It does not claim completion of the assignment or human-label accuracy. **Hanif's October 9 objective is at least 100,000 accepted evidence rows for distinct source IDs**, which may require more than 100,000 selected IDs. Quarantined, uncertain, invalid, empty-text, and synthetic rows do not count. Semantic flags remain separate from structural acceptance and exclude flagged rows from representative examples pending human review. The separate $5 Jev and $5 OpenRouter caps remain unchanged.
+
+## Latest drained checkpoint and output-limit blocker
+
+At the latest drained stop, 90,000 source IDs had been selected: 80,000 in the scale queue plus the earlier 10,000 checkpoint. Accepted evidence was 84,943 distinct source IDs: 75,377 in the scale queue plus the earlier 9,566, counted once. This leaves 15,057 accepted rows to the current target. The scale queue had 1,904 untouched Jev texts and 187 untouched evidence texts eligible, with zero reservations. Its 35 evidence and seven Jev uncertain requests retained full holds. Cumulative exposure including all charges and holds was $2.892071868/$5 Jev and $2.286472425/$5 OpenRouter.
+
+One charged 25-review response ended at the 12,288-output-token limit with `finish_reason=length`. Saved usage and its $0.002206509 charge match. All 25 rows remain quarantined; no retry is authorized. The original offline recovery helper stopped on that response after draining requests. The revised helper has passed an offline regression test: it leaves truncated responses charged and quarantined while recovering other uniquely identified exact-span rows. No additional source gate had been activated at this checkpoint.
 
 ## Terminal-launched reviewed segment and next gate
 

@@ -227,10 +227,54 @@ class ScaleQueueTest(unittest.TestCase):
             db.commit()
             result = scale.recover_metered(db)
             self.assertEqual(result, {"batches": 1, "new_accepted": 24,
-                "remaining_quarantined": 1})
+                "remaining_quarantined": 1, "truncated_batches": 0})
             self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_evidence").fetchone()[0], 25)
             self.assertEqual(db.execute("SELECT review_id FROM scale_quarantines").fetchone()[0], "id24")
             self.assertEqual(scale.recover_metered(db)["new_accepted"], 0)
+        finally:
+            db.close()
+
+    def test_truncated_metered_batch_stays_charged_and_quarantined(self):
+        db = sqlite3.connect(":memory:")
+        try:
+            scale.ensure_tables(db, "synthetic-manifest")
+            db.execute("CREATE TABLE reservations(request_key TEXT,status TEXT,charged_nusd INTEGER)")
+            db.executemany("INSERT INTO scale_rows VALUES (?,?,?,?,?,NULL)", [
+                (10001, "truncated", "text one", "sha1", "textsha1"),
+                (10002, "valid", "text two", "sha2", "textsha2")])
+            truncated = {"id": "synthetic-truncated", "provider": "DeepInfra",
+                "model": scale.evidence.MODEL,
+                "usage": {"prompt_tokens": 100, "completion_tokens": 12288},
+                "choices": [{"finish_reason": "length", "message": {"content": "incomplete"}}]}
+            valid = {"id": "synthetic-valid", "provider": "DeepInfra",
+                "model": scale.evidence.MODEL,
+                "usage": {"prompt_tokens": 100, "completion_tokens": 100},
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps({
+                    "results": [{"review_id": "valid", "entities": [],
+                        "evidence_quote": "text two"}]})}}]}
+            for key, response in (("truncated", truncated), ("valid", valid)):
+                charge = scale.trial25.measured_usage(response)[-1]
+                db.execute("""INSERT INTO scale_requests(request_key,stage,status,config_sha,
+                    request_sha,response_json,charged_nusd) VALUES (?,?,?,?,?,?,?)""",
+                    (key, "evidence", "quarantined_metered",
+                    scale.trial25.config_for_size(1), "synthetic", json.dumps(response), charge))
+                db.execute("INSERT INTO reservations VALUES (?,?,?)",
+                    (key, "quarantined_metered", charge))
+                db.execute("INSERT INTO scale_members VALUES (?,?)", (key, key))
+                db.execute("INSERT INTO scale_quarantines VALUES (?,?,?)",
+                    (key, "synthetic structural failure", key))
+            result = scale.recover_metered(db)
+            self.assertEqual(result, {"batches": 2, "new_accepted": 1,
+                "remaining_quarantined": 1, "truncated_batches": 1})
+            self.assertEqual(db.execute("SELECT review_id FROM scale_quarantines").fetchone()[0],
+                "truncated")
+            self.assertEqual(db.execute("SELECT review_id FROM scale_evidence").fetchone()[0],
+                "valid")
+            self.assertEqual(scale.recover_metered(db)["new_accepted"], 0)
+            db.execute("UPDATE reservations SET charged_nusd=charged_nusd+1 "
+                "WHERE request_key='truncated'")
+            with self.assertRaisesRegex(ValueError, "charge differs"):
+                scale.recover_metered(db)
         finally:
             db.close()
 

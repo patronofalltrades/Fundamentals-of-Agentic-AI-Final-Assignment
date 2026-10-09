@@ -6,6 +6,15 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 
 **Deadline:** October 13, 2026, at 11:59 pm Pacific Time (America/Los_Angeles).
 
+**Current extraction target (Hanif, October 9 UTC): at least 100,000 accepted
+evidence rows for distinct original source review IDs.** Selecting 100,000
+source IDs alone does not meet this target. Quarantined, uncertain, invalid,
+empty-text, and synthetic rows do not count. Frozen source coverage may extend
+beyond 100,000 selected IDs as needed. Every selected ID and source hash stays
+accounted for, and semantic review flags exclude affected rows from
+representative examples pending human review. The existing separate $5 Jev
+and $5 OpenRouter caps remain unchanged, including full unresolved holds.
+
 **Class 7:** October 13, 2026; class time has not been supplied.
 
 **Submission:** This public repository will be the grader's entry point. Final submission through the course portal is pending.
@@ -13,8 +22,9 @@ A pipeline to turn historical Spotify Google Play reviews into a product recomme
 ## Instructor clarification and final deliverables
 
 Hanif reported an in-class clarification on October 6 Pacific / October 7 UTC:
-the minimum analysis is **100,000 source reviews** to control cost. Exact-text
-cache reuse may reduce inference calls, but every selected original review ID
+the instructor's minimum analysis is **100,000 selected source reviews** to
+control cost. Hanif's later target above requires 100,000 accepted evidence
+rows. Exact-text cache reuse may reduce inference calls, but every selected original review ID
 and source hash must remain in the saved output. Full-corpus processing is a
 stretch goal subject to measured feasibility. The supplied
 `GRADING_CONTRACT.md` still specifies full-corpus output, so a scoped run must
@@ -121,7 +131,7 @@ No API key is needed. Close all database writers before re-ingestion. Status wit
 - `GRADING_CONTRACT.md` and `COST_CALCULATOR.md` in the expanded course dataset ZIP specify the export format and measured pilot requirements. These supplied files are not yet committed here.
 - [Original dataset](https://www.kaggle.com/datasets/bwandowando/3-4-million-spotify-google-store-reviews), by BwandoWando, version 2, published November 17, 2023. The publisher lists CC0: Public Domain.
 
-**Clarified minimum scope is 100,000 source reviews.** Keep each selected original ID, classify its nonempty text, and quarantine selected empty texts with `empty_review_text`. The earlier full-corpus target was 660,622 original IDs, 660,609 nonempty reviews, and 13 empty texts. Other unresolved nonempty reviews must remain visible and reduce successful classification coverage.
+**The instructor's clarified minimum is 100,000 selected source reviews; Hanif's current completion target is 100,000 accepted evidence rows.** Keep each selected original ID, classify its nonempty text, and quarantine selected empty texts with `empty_review_text`. The earlier full-corpus target was 660,622 original IDs, 660,609 nonempty reviews, and 13 empty texts. Other unresolved nonempty reviews must remain visible and reduce successful classification coverage.
 
 The brief includes “or at least 100,000” in several passages; Hanif reports that the instructor confirmed this minimum. Other passages and the supplied grading contract still require full coverage. Do not claim the unchanged full-corpus checker accepts a 100,000-row export without verifying it. The older `spotify-insight-dataset` README describes sample processing, whereas the expanded `Final Assignment - Spotify Reviews Dataset` package adds the full-run contract, calculator specification, checker, and cost pilot. Their four shared CSVs are byte-identical. The expanded package remains a technical reference, with the later instructor clarification recorded above.
 

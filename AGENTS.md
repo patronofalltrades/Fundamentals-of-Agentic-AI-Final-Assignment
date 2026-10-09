@@ -6,11 +6,29 @@ Build the Final Assignment — Multi Agent Large Data Processing Pipeline.
 Use historical Spotify reviews to support a product-priority recommendation.
 The deadline is October 13, 2026, at 11:59 pm Pacific Time.
 
+## Current accepted-evidence objective (Hanif, October 9 UTC)
+
+Hanif now requires **at least 100,000 accepted evidence rows for distinct
+original source review IDs**. The earlier 100,000-selected-source minimum is
+not the completion target. Select additional frozen source gates as needed,
+preserving every selected ID and source hash. Exact-text cache aliases may
+count only when each distinct source ID has saved, validated evidence. Do not
+count quarantined, uncertain, empty, invalid, or synthetic rows as accepted.
+Keep semantic review flags separate from structural acceptance and exclude
+flagged rows from representative examples pending human review.
+
+The approved scaled execution retains separate cumulative **US$5 Jev** and
+**US$5 OpenRouter** caps, including charges and full unresolved reservations.
+Stop before either cap is exceeded; the new target is not a cap increase.
+Use the measured, user-approved 25-review DeepInfra request configuration for
+the current queue, with its pinned route, privacy checks, and quality gates.
+
 ## Instructor clarification (user reported October 6 Pacific / October 7 UTC)
 
-Hanif reports an in-class clarification: the minimum run is **100,000 source
-reviews** so costs stay within limits. Preserve every selected source review ID
-and source hash even when exact-text caching reduces model calls. The earlier
+Hanif reports an in-class clarification: the instructor's minimum run is
+**100,000 selected source reviews** so costs stay within limits. Hanif's later
+accepted-evidence objective above is stricter. Preserve every selected source
+review ID and source hash even when exact-text caching reduces model calls. The earlier
 full-corpus plan remains a stretch goal, not the clarified minimum. The
 supplied `GRADING_CONTRACT.md` still describes full-corpus outputs; disclose
 that discrepancy and verify the final grading scope rather than claiming a
