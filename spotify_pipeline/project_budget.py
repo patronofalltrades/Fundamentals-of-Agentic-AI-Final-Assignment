@@ -219,6 +219,25 @@ class ProjectBudget:
             self.db.rollback()
             raise
 
+    def cancel_unsent(self, request_key, record=None):
+        """Forget an admission that never reached a transport worker.
+
+        The caller must prove no worker was submitted. Never use this for a
+        dispatched request, even when its delivery or charge is unknown.
+        """
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            changed = self.db.execute("DELETE FROM reservations WHERE request_key=? "
+                "AND status='reserved'", (request_key,)).rowcount
+            if changed != 1:
+                raise ValueError("only a definitely unsent reservation can be cancelled")
+            if record is not None:
+                record(self.db)
+            self.db.commit()
+        except BaseException:
+            self.db.rollback()
+            raise
+
     def uncertain(self, request_key, record=None):
         self.db.execute("BEGIN IMMEDIATE")
         try:

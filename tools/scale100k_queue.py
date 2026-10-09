@@ -718,6 +718,9 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key,
                     stop, halt = True, "evidence planning failed: " + type(exc).__name__ + ": " + str(exc)
 
             while not stop and len(active) < global_workers:
+                if stop_requested is not None and stop_requested():
+                    stop, halt = True, "operator interrupt; in-flight requests drained"
+                    break
                 now = time.monotonic()
                 jev_ready = bool(jev_queue) and now >= cooldown_until["jev"]
                 evidence_ready = bool(evidence_queue) and now >= cooldown_until["evidence"]
@@ -754,6 +757,18 @@ def run_mixed(budget, manifest_sha, jev_key, evidence_key,
                         jev_queue.appendleft(rows[0])
                     else:
                         evidence_queue.appendleft((rows, body, cfg))
+                    break
+                if stop_requested is not None and stop_requested():
+                    # No transport worker owns this request yet. Remove both
+                    # admission and queue metadata in one ledger transaction.
+                    def forget_unsent(conn):
+                        conn.execute("DELETE FROM scale_members WHERE request_key=?", (key,))
+                        changed = conn.execute("DELETE FROM scale_requests "
+                            "WHERE request_key=? AND status='reserved'", (key,)).rowcount
+                        if changed != 1:
+                            raise ValueError("unsent scale request changed")
+                    budget.cancel_unsent(key, forget_unsent)
+                    stop, halt = True, "operator interrupt; in-flight requests drained"
                     break
                 future = pool.submit(_call, stage, body, api_key)
                 active[future] = (stage, key, rows)
