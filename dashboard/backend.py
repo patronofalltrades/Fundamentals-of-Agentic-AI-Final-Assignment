@@ -83,7 +83,7 @@ class SQLiteBackend:
 
     @property
     def stores_full_text(self) -> bool:
-        return self.table_exists("texts")
+        return self.table_exists("texts") or self.table_exists("source_text")
 
     def execute(self, sql: str, params: Sequence[Any] = ()):
         return self._conn.execute(sql, tuple(params))

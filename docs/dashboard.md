@@ -283,3 +283,31 @@ python3 -m dashboard load-bundle --bundle <bundle-dir> --postgres-env DASHBOARD_
   it points at the Neon database `dashboard_5000` (4,649 labelled rows; 285 quarantined and 66 uncertain rows
   are counted but not labelled). The 500-row database `neondb` is unchanged.
 - **Rollback:** remove `DASHBOARD_DATABASE_URL` from the Vercel production environment and redeploy.
+
+## Accepted-evidence import (`import-accepted`, local and private)
+
+Contract: `docs/accepted-evidence-dashboard-import.md` in the pipeline worktree. The handoff JSON is private and
+ignored. It is read by code only, never committed, uploaded or pasted.
+
+```sh
+python3 -m dashboard import-accepted --handoff <private handoff.json> \
+  --sha256 01d3f466e86f3d6a010f5e9b28b2c1347e683d925228591ff6fa36a2bb75c39c \
+  --source-csv <spotify_reviews_18months.csv> --db local/accepted100k_dashboard.db
+DASHBOARD_DB=local/accepted100k_dashboard.db python3 -m dashboard serve --db local/accepted100k_dashboard.db
+```
+
+- **Gates, all before any write:** digest and schema; no repeated ID; accepted and excluded IDs partition the
+  110,000 selected IDs; the CSV hash; every six-field source hash and position against the CSV; every accepted
+  quote and entity against its own source text; known source states only; the 47 representative exclusions
+  match coverage and each has a finding. The target file must be new.
+- **States:** accepted 100,229 · quarantined 1,791 · unresolved 1,457 (uncertain, prior-uncertain and
+  attempted-alias rows) · empty 1 · pending 6,522. Pending rows await a label and are never shown as failures.
+  Only accepted rows enter the label totals and trends.
+- **Representative evidence:** the 47 flagged records never appear in `/api/reviews`. Their detail view shows the
+  flag. The flag is not a human accuracy score; unflagged records have not had human review.
+- **Review links:** `#review-<row>` opens any selected row with its state; labels appear only for accepted rows.
+- **Private tables:** `source_text` and `raw_record` keep the source text and raw model output locally. No API
+  route reads them. The import manifest (`dashboard_meta.import_manifest`) holds counts, hashes, state counts and
+  the import time, and no path.
+- **Publication:** not authorised by the contract. For 58% of accepted rows the evidence quote equals the whole
+  review, so publishing quotes publishes those texts. Any public excerpt or source ID needs its own reviewed gate.

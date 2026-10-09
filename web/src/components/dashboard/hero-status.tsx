@@ -13,6 +13,11 @@ export default function HeroStatus() {
           Demo data · {fmt.int(s.coverage.source_rows)} of {fmt.int(s.target.minimum_source_rows)} reviews
         </Badge>
       )}
+      {!s.target.is_demo && s.import && (
+        <Badge variant="secondary" className="rounded-full bg-white/8 font-normal">
+          Development checkpoint · {fmt.int(s.import.selected_rows)} reviews
+        </Badge>
+      )}
       <Badge variant="secondary" className="rounded-full bg-white/8 font-normal">
         Memo: {s.analysis.memo === "claims_checked" ? "checked" : fmt.label(s.analysis.memo)}
       </Badge>

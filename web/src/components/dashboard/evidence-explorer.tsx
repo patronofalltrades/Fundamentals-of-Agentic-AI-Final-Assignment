@@ -6,26 +6,34 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, fmt, TOPICS, type ReviewDetail, type ReviewItem } from "@/lib/api"
+import { api, fmt, TOPICS, type ReviewItem } from "@/lib/api"
 import { REFLECTIONS } from "@/lib/reflections"
 import { LoadError, Reflection } from "./bits"
+import { ReviewDetail } from "./review-detail"
 
 const PAGE = 12
 const ALL = "all"
 
-function Detail({ row }: { row: number }) {
-  const [detail, setDetail] = useState<ReviewDetail | null>(null)
+const LINK = /^#review-([0-9]{1,7})$/
+
+/** The row named by a review link (#review-N), or null. */
+function useLinkedRow() {
+  const read = () => {
+    const m = LINK.exec(window.location.hash)
+    return m ? Number(m[1]) : null
+  }
+  const [row, setRow] = useState<number | null>(read)
   useEffect(() => {
-    api.review(row).then(setDetail).catch(() => setDetail(null))
-  }, [row])
-  if (!detail) return <Skeleton className="mt-3 h-14 rounded-xl bg-canvas/60" />
-  return (
-    <dl className="mt-3 grid gap-x-6 gap-y-1 rounded-xl bg-canvas/60 p-3 text-[13px] sm:grid-cols-2">
-      <div><dt className="inline text-muted-foreground">Sentiment </dt><dd className="inline tabular-nums">{detail.sentiment ?? "—"}</dd></div>
-      <div><dt className="inline text-muted-foreground">Model </dt><dd className="inline">{detail.model ?? "unknown"} · {detail.prompt_version ?? "unknown"}</dd></div>
-      <div className="sm:col-span-2 break-all"><dt className="inline text-muted-foreground">Source row hash </dt><dd className="inline font-mono text-[12px]">{detail.source_sha256}</dd></div>
-    </dl>
-  )
+    const onHash = () => {
+      const next = read()
+      setRow(next)
+      if (next !== null) document.getElementById("evidence")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+    window.addEventListener("hashchange", onHash)
+    if (read() !== null) onHash()
+    return () => window.removeEventListener("hashchange", onHash)
+  }, [])
+  return row
 }
 
 function Card({ item }: { item: ReviewItem }) {
@@ -40,12 +48,12 @@ function Card({ item }: { item: ReviewItem }) {
       </div>
       <blockquote className="mt-3 text-[15px] leading-6 break-words">“{item.evidence_quote}”</blockquote>
       <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
-        <span>Row {item.row_index} · {item.is_cached ? "exact-text reuse" : "direct result"}</span>
+        <span><a href={`#review-${item.row_index}`} className="underline decoration-track underline-offset-4 hover:text-foreground">Row {fmt.int(item.row_index)}</a> · {item.is_cached ? "exact-text reuse" : "direct result"}</span>
         <Button variant="ghost" size="sm" className="h-7 rounded-full text-[13px]" aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? "Hide record" : "Saved record"}
         </Button>
       </div>
-      {open && <Detail row={item.row_index} />}
+      {open && <ReviewDetail row={item.row_index} />}
     </article>
   )
 }
@@ -58,6 +66,8 @@ export default function EvidenceExplorer() {
   const [total, setTotal] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [blocked, setBlocked] = useState<number | null>(null)
+  const linked = useLinkedRow()
   const request = useRef(0)
 
   const load = (reset: boolean) => {
@@ -69,6 +79,7 @@ export default function EvidenceExplorer() {
         if (id !== request.current) return
         setItems(reset ? page.items : [...items, ...page.items])
         setTotal(page.total)
+        setBlocked(page.excluded_blocked ?? null)
         setError(null)
       })
       .catch((e: Error) => id === request.current && setError(e.message))
@@ -97,7 +108,19 @@ export default function EvidenceExplorer() {
         </form>
       </div>
       <Reflection className="mt-2">{REFLECTIONS.evidence}</Reflection>
-      <p className="mt-2 text-[12px] text-muted-foreground">Source-exact quotes. Review IDs and full texts are not shown.</p>
+      <p className="mt-2 text-[12px] text-muted-foreground">
+        Source-exact quotes from accepted reviews. Review IDs and full texts are not shown.
+        {blocked ? ` ${fmt.int(blocked)} reviews with a known semantic flag are left out of these examples. Unflagged reviews have not had human review.` : ""}
+      </p>
+      {linked !== null && (
+        <section className="mt-4 rounded-2xl bg-tile/60 p-4" aria-label="Linked review" data-testid="linked-review">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-[15px]">Linked review</h3>
+            <a href="#evidence" className="text-[13px] text-muted-foreground underline decoration-track underline-offset-4 hover:text-foreground">Close</a>
+          </div>
+          <ReviewDetail row={linked} showQuote />
+        </section>
+      )}
       {error && <div className="mt-4"><LoadError message={error} /></div>}
       <p className="mt-4 text-[13px] text-muted-foreground" aria-live="polite">
         {total === null ? "Loading…" : `${fmt.int(total)} matching reviews`}

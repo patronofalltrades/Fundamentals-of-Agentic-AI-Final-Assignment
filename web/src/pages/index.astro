@@ -10,6 +10,7 @@ import MemoPanel from "@/components/dashboard/memo-panel"
 import EvidenceExplorer from "@/components/dashboard/evidence-explorer"
 import HeroStatus from "@/components/dashboard/hero-status"
 import EvalsSection from "@/components/dashboard/evals-section"
+import RowStates from "@/components/dashboard/row-states"
 import ReviewWalkthrough from "@/components/dashboard/review-walkthrough"
 import { NEXT_TIME } from "@/lib/reflections"
 
@@ -69,6 +70,7 @@ const nav = [
             <ProgressStrip client:load />
           </div>
         </section>
+        <RowStates client:only="react" />
 
         <!-- Issues -->
         <section id="issues" aria-label="Issues" class="grid scroll-mt-6 gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">

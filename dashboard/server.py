@@ -113,6 +113,37 @@ def top_issue(conn):
             "priority_score": first["priority_score"], "complaint_count": first["review_count"]}
 
 
+STATE_ORDER = ("accepted", "quarantined", "unresolved", "empty", "pending")
+PUBLIC_MANIFEST_KEYS = ("import_version", "handoff_sha256", "source_file_sha256", "label_config_hash", "selected_rows",
+                        "accepted_rows", "state_counts", "source_state_counts", "representative_evidence_exclusions",
+                        "imported_at", "scope", "not_human_accuracy")
+
+
+def _states(ag):
+    """Row states from an accepted-evidence import, or ``None`` for older databases."""
+    saved = ag.get("row_state")
+    if not saved:
+        return None
+    return {state: int(saved.get(state, 0)) for state in STATE_ORDER}
+
+
+def _blocked_count(conn):
+    if not _has_table(conn, "semantic_flag"):
+        return None
+    return conn.execute("SELECT COUNT(*) FROM semantic_flag WHERE blocked=1").fetchone()[0]
+
+
+def _import_manifest(conn):
+    """Counts, hashes and the import time. Paths and private fields are never included."""
+    if not _has_table(conn, "dashboard_meta"):
+        return None
+    row = conn.execute("SELECT value FROM dashboard_meta WHERE key='import_manifest'").fetchone()
+    if not row:
+        return None
+    saved = json.loads(row[0])
+    return {key: saved[key] for key in PUBLIC_MANIFEST_KEYS if key in saved}
+
+
 def summary(conn):
     ag = _aggregates(conn)
     rows = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
@@ -132,6 +163,9 @@ def summary(conn):
         "evaluation": saved_evaluation,
         "top_issue": top_issue(conn),
         "target": {"minimum_source_rows": TARGET_MINIMUM_SOURCE_ROWS, "is_demo": rows < TARGET_MINIMUM_SOURCE_ROWS},
+        "states": _states(ag),
+        "representative_exclusions": _blocked_count(conn),
+        "import": _import_manifest(conn),
         "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
     }
 
@@ -154,13 +188,22 @@ def reviews(conn, topic=None, limit=20, offset=0, issue_id=None, query=None):
             return {"items": [], "total": 0, "limit": limit, "offset": offset}
         join = "JOIN issue_membership m ON m.row_index=r.row_index AND m.run_id=? AND m.issue_id=?"
         args = [run["run_id"], issue_id] + args
+    flagged = _has_table(conn, "semantic_flag")
+    if flagged:  # records blocked by known semantic flags are never representative examples
+        join += " LEFT JOIN semantic_flag f ON f.row_index=r.row_index"
+        where.append("COALESCE(f.blocked, 0)=0")
     base = "FROM records r JOIN record_state s USING(row_index) JOIN classifications c ON c.row_index=r.row_index AND c.config_hash=s.config_hash %s WHERE %s" % (join, " AND ".join(where))
     total = conn.execute("SELECT COUNT(*) " + base, args).fetchone()[0]
     items = [dict(row) for row in conn.execute("SELECT r.row_index, r.row_sha256 AS source_sha256, c.topic,c.intent,c.severity,c.evidence_quote,c.needs_review,c.is_cached " + base + " ORDER BY r.row_index LIMIT ? OFFSET ?", args + [limit, offset])]
-    return {"items": items, "total": total, "limit": limit, "offset": offset}
+    result = {"items": items, "total": total, "limit": limit, "offset": offset}
+    if flagged:
+        result["excluded_blocked"] = _blocked_count(conn)
+    return result
 
 
 def review(conn, row_index):
+    if _has_table(conn, "row_state"):
+        return _review_with_state(conn, row_index)
     row = conn.execute("""SELECT r.row_index,r.row_sha256 AS source_sha256,
         c.topic,c.intent,c.severity,c.sentiment,c.evidence_quote,
         c.needs_review,c.is_cached,c.label_config,c.model,c.prompt_version
@@ -168,6 +211,29 @@ def review(conn, row_index):
     if not row:
         return None
     result = dict(row)
+    result["source_id_stored"] = True
+    result["review_text_available_in_database"] = bool(_stores_full_text(conn))
+    result["review_text_exposed"] = False
+    return result
+
+
+def _review_with_state(conn, row_index):
+    """Any selected row: its state, and labels only when it was accepted. Never the review text."""
+    head = conn.execute("""SELECT r.row_index, r.row_sha256 AS source_sha256, t.state, t.source_state, t.reason
+        FROM records r JOIN row_state t USING(row_index) WHERE r.row_index=?""", (row_index,)).fetchone()
+    if not head:
+        return None
+    result = dict(head)
+    if result["state"] == "accepted":
+        labels = conn.execute("""SELECT c.topic,c.intent,c.severity,c.sentiment,c.evidence_quote,c.needs_review,
+            c.is_cached,c.label_config,c.model,c.prompt_version, f.blocked, f.human_review_required, f.categories
+            FROM classifications c LEFT JOIN semantic_flag f USING(row_index) WHERE c.row_index=?""", (row_index,)).fetchone()
+        result.update(dict(labels))
+        result["representative_blocked"] = bool(result.pop("blocked") or 0)
+        result["human_review_required"] = bool(result["human_review_required"] or 0)
+        result["flag_categories"] = json.loads(result.pop("categories") or "[]")
+    else:
+        result["reason"] = result["reason"] if result["state"] != "pending" else "Awaiting a label; not a model failure."
     result["source_id_stored"] = True
     result["review_text_available_in_database"] = bool(_stores_full_text(conn))
     result["review_text_exposed"] = False
