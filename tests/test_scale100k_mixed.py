@@ -38,6 +38,63 @@ def adopt(db):
 
 
 class MixedSchedulerTest(unittest.TestCase):
+    def test_interrupt_during_admission_cancels_only_unsent_and_drains_sent(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder)) as budget:
+                seed(budget.db, rows(12), labels=False)
+                adopt(budget.db)
+                interrupt = {"requested": False}
+                admitted = [0]
+                posted = [0]
+                original_reserve = budget.reserve
+
+                def reserve(*args, **kwargs):
+                    original_reserve(*args, **kwargs)
+                    admitted[0] += 1
+                    if admitted[0] == 2:
+                        interrupt["requested"] = True
+
+                def transport(stage, body, key):
+                    posted[0] += 1
+                    time.sleep(0.006)
+                    return fixture_response(), 0.006, None
+
+                with patch.object(scale, "verify_jev_price"), \
+                     patch.object(scale.jev, "check_model_access"), \
+                     patch.object(scale.benchmark, "verify_route"), \
+                     patch.object(scale.canary, "verify_project_key"), \
+                     patch.object(budget, "reserve", side_effect=reserve), \
+                     patch.object(scale, "_call", side_effect=transport):
+                    drained = scale.run_mixed(budget, "synthetic-manifest",
+                        "jev-key", "evidence-key",
+                        stop_requested=lambda: interrupt["requested"])
+                self.assertTrue(drained["paused"])
+                self.assertEqual(admitted[0], 2)
+                self.assertEqual(posted[0], 1)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations").fetchone()[0], 1)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_requests").fetchone()[0], 1)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_members").fetchone()[0], 1)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations "
+                    "WHERE status='reserved'").fetchone()[0], 0)
+                scale.assert_resume_safe(budget.db)
+
+                def resume_transport(stage, body, key):
+                    return (fixture_response() if stage == "jev" else
+                        evidence_response(body)), 0.002, None
+
+                with patch.object(scale, "verify_jev_price"), \
+                     patch.object(scale.jev, "check_model_access"), \
+                     patch.object(scale.benchmark, "verify_route"), \
+                     patch.object(scale.canary, "verify_project_key"), \
+                     patch.object(scale, "_call", side_effect=resume_transport):
+                    resumed = scale.run_mixed(budget, "synthetic-manifest",
+                        "jev-key", "evidence-key")
+                self.assertFalse(resumed["paused"])
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_labels").fetchone()[0], 12)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_evidence").fetchone()[0], 12)
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM scale_requests "
+                    "WHERE stage='jev'").fetchone()[0], 12)
+
     def test_interrupt_drains_reserved_calls_and_resume_never_replays(self):
         with tempfile.TemporaryDirectory() as folder:
             with ProjectBudget(str(Path(folder) / "project.db"), fixtures(folder)) as budget:
