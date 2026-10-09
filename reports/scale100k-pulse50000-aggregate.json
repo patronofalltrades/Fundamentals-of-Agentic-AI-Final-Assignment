@@ -1,0 +1,102 @@
+{
+  "baseline_checkpoint": {
+    "accepted_evidence_rows": 9566,
+    "selected_source_ids": 10000
+  },
+  "captured_utc": "2026-10-09T11:12:27+00:00",
+  "combined_accepted_evidence_rows": 50413,
+  "combined_selected_source_ids": 60000,
+  "manifest_sha256": "cdc9a74ab8d623af2ddbaf32b28c19ca51e47d1e05309129384982d8da52f107",
+  "provenance_counts": {
+    "evidence": {
+      "compatible_exact_text_cache": 8926,
+      "deepinfra_direct": 29087,
+      "deepinfra_offline_recovery": 780,
+      "scale_exact_text_cache": 2054
+    },
+    "labels": {
+      "compatible_exact_text_cache": 11458,
+      "jev_direct": 30657,
+      "scale_exact_text_cache": 244
+    }
+  },
+  "quarantine_reason_counts": {
+    "ValidationError: entities must be exact whole-word source spans without edge whitespace": 254,
+    "ValidationError: evidence quote must be a nonblank exact source substring": 318,
+    "ValueError: unknown or repeated trial source ID": 95
+  },
+  "request_elapsed": {
+    "evidence": {
+      "median_elapsed_seconds": 35.512,
+      "p95_elapsed_seconds": 87.371,
+      "saved_elapsed_count": 1254,
+      "sum_elapsed_seconds": 52445.066
+    },
+    "jev": {
+      "median_elapsed_seconds": 0.328,
+      "p95_elapsed_seconds": 0.817,
+      "saved_elapsed_count": 30664,
+      "sum_elapsed_seconds": 12444.784
+    }
+  },
+  "scale_queue": {
+    "activated_source_rows": 50000,
+    "active_evidence_batch_size": 25,
+    "blocked": 208,
+    "charges_nusd": {
+      "evidence": 587000842,
+      "jev": 1307254158
+    },
+    "evidence": 40847,
+    "evidence_eligible_unique": 30,
+    "exposure_nusd": {
+      "jev": 1694996520,
+      "openrouter": 1741468104
+    },
+    "jev_eligible_unique": 7408,
+    "labels": 42359,
+    "quarantined": 667,
+    "requests": {
+      "evidence:partial_succeeded": 295,
+      "evidence:quarantined_metered": 37,
+      "evidence:succeeded": 891,
+      "evidence:uncertain": 32,
+      "jev:succeeded": 30657,
+      "jev:uncertain": 7
+    },
+    "source_states": {
+      "accepted": 40847,
+      "attempted_exact_text_alias": 7,
+      "eligible_or_awaiting_label": 7456,
+      "prior_uncertain_exact_text": 208,
+      "quarantined": 667,
+      "uncertain_direct": 807,
+      "uncertain_exact_text_alias": 8
+    }
+  },
+  "scale_request_wall_bounds_utc": {
+    "first_created": "2026-10-08 13:38:28",
+    "last_settled_or_created": "2026-10-09 11:10:59"
+  },
+  "schema": "scale100k-pulse-50000-accepted-aggregate-v1",
+  "source_identity_counts": {
+    "max_position": 60000,
+    "min_position": 10001,
+    "selected": 50000,
+    "unique_ids": 50000,
+    "unique_positions": 50000
+  },
+  "supervisor_checkpoint": {
+    "activated_source_rows": 50000,
+    "evidence": 40847,
+    "exposure_nusd": {
+      "jev": 1694996520,
+      "openrouter": 1741468104
+    },
+    "labels": 42359,
+    "manifest_sha": "cdc9a74ab8d623af2ddbaf32b28c19ca51e47d1e05309129384982d8da52f107",
+    "quality_stops": 0,
+    "stop_reason": "operator interrupt; drained",
+    "uncertain_baseline": 39
+  }
+}
