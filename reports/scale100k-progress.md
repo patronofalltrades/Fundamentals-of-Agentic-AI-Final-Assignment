@@ -20,6 +20,12 @@ A second supervised foreground segment saved 1,009 further accepted evidence row
 
 Saved timing metadata narrows the timeout diagnosis. The eight 25-review requests were created between 09:03:41 and 09:04:33 UTC and all returned `timeout` around 09:05:33–09:05:35 UTC, with no usage or response. The HTTP client uses a 45-second timeout for each socket operation, not a 45-second whole-request deadline. Among the latest 100 metered evidence requests, total elapsed median/p95/max were 32.803/63.383/77.876 seconds; across all 597 metered evidence requests they were 41.854/108.551/250.751 seconds. Thus whole-request duration alone does not prove the socket timeout is too short. The simultaneous failures suggest a shared stall, but saved metadata cannot distinguish provider delay from network transport. Keep the timeout and provider configuration unchanged for the next bounded untouched segment; preserve full uncertain holds and stop again if fresh failures recur.
 
+## Completed 20,000 gate and next activation
+
+One final supervised foreground segment settled the 261 previously untouched distinct evidence texts. The 20,000 activated source IDs are now fully accounted for: 18,878 accepted evidence rows, 337 quarantined, 71 older-uncertain-text blocks, 705 direct and eight alias uncertain rows, and one attempted-text alias excluded from dispatch. There are zero eligible or reserved requests, and offline recovery added no further row. Measured remaining-90,000 queue charges are $0.658053144 Jev and $0.303730088 DeepInfra. Cumulative shared exposure including every historical and current hold is $1.040419506/$5 Jev and $1.430442854/$5 OpenRouter.
+
+After the clean drain, the next frozen 10,000 source IDs were activated without a paid call. The durable remaining-90,000 queue now contains 30,000 selected IDs; compatible exact-text cache reuse gives 22,275 saved Jev labels and 21,084 accepted evidence rows. There are 7,569 distinct untouched Jev texts and 106 already-labeled distinct evidence texts ready. The 111 historical uncertain-text blocks and all source IDs/hashes remain recorded. No request was reserved by activation. The cumulative project has 40,000 selected IDs including the earlier 10,000 checkpoint, not 40,000 accepted evidence rows.
+
 ## Earlier first-gate snapshot
 
 - The next 90,000 source IDs and source hashes are frozen in a private manifest. The first 10,000 positions are activated in the durable queue.
