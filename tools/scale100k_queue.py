@@ -834,6 +834,7 @@ def main():
     mode.add_argument("--run-jev", action="store_true")
     mode.add_argument("--run-evidence", action="store_true")
     mode.add_argument("--run-mixed", action="store_true")
+    mode.add_argument("--set-global-workers", type=int, metavar="N")
     parser.add_argument("--global-workers", type=int, default=WORKERS)
     parser.add_argument("--jev-workers", type=int, default=DEFAULT_JEV_WORKERS)
     mode.add_argument("--run25-trial", action="store_true")
@@ -842,11 +843,13 @@ def main():
     mode.add_argument("--status", action="store_true")
     args = parser.parse_args()
     validate_mixed_limits(args.global_workers, args.jev_workers)
+    if args.set_global_workers is not None:
+        validate_mixed_limits(args.set_global_workers, DEFAULT_JEV_WORKERS)
     if not args.run_mixed and (args.global_workers != WORKERS or
             args.jev_workers != DEFAULT_JEV_WORKERS):
         parser.error("worker overrides apply only to --run-mixed")
     manifest, manifest_sha = load()
-    if args.run_jev or args.run_evidence or args.run_mixed or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
+    if args.run_jev or args.run_evidence or args.run_mixed or args.set_global_workers is not None or args.run25_trial or args.activate_next_gate or args.adopt25 or args.recover_metered:
         LOCK.touch(mode=0o600, exist_ok=True)
         with LOCK.open("r+") as lock:
             try:
@@ -860,9 +863,14 @@ def main():
 
 def _main_locked(args, manifest, manifest_sha):
     with ProjectBudget(BUDGET, legacy_paths(),
-                       max_global_inflight=args.global_workers) as budget:
+                       max_global_inflight=None if args.status or
+                           args.set_global_workers is not None else args.global_workers) as budget:
         ensure_tables(budget.db, manifest_sha)
-        if args.activate_next_gate:
+        if args.set_global_workers is not None:
+            budget.configure_global_inflight(args.set_global_workers)
+            result = status(budget.db, budget)
+            result["global_inflight_limit"] = budget.max_global_inflight
+        elif args.activate_next_gate:
             activated = activate_gate(budget.db, manifest)
             materialize_caches(budget.db, manifest["historical_uncertain_exact_texts"])
             result = status(budget.db, budget)

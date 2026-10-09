@@ -147,6 +147,67 @@ class ProjectBudgetTest(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=4) as pool:
                 self.assertEqual(sum(pool.map(try_same_key, range(4))), 1)
 
+    def test_shared_ceiling_rejects_conflicting_instances_and_safe_migration(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            budget_path = str(Path(folder) / "project.db")
+            # A fresh or older ledger always starts at eight, including when
+            # the first caller requests twelve.
+            with self.assertRaisesRegex(ValueError, "differs from shared ledger"):
+                ProjectBudget(budget_path, paths, max_global_inflight=12)
+            with ProjectBudget(budget_path, paths) as first:
+                self.assertEqual(first.max_global_inflight, 8)
+                with self.assertRaisesRegex(ValueError, "differs from shared ledger"):
+                    ProjectBudget(budget_path, paths, max_global_inflight=12)
+                with ProjectBudget(budget_path, paths, max_global_inflight=None) as admin:
+                    with self.assertRaisesRegex(ValueError, "another budget user"):
+                        admin.configure_global_inflight(12)
+                for i in range(8):
+                    first.reserve("held-" + str(i), "jev", 2_688_000)
+                with self.assertRaisesRegex(ValueError, "global paid-request limit"):
+                    first.reserve("ninth", "jev", 2_688_000)
+            with ProjectBudget(budget_path, paths, max_global_inflight=None) as admin:
+                with self.assertRaisesRegex(ValueError, "active reservations"):
+                    admin.configure_global_inflight(12)
+                for i in range(8):
+                    admin.uncertain("held-" + str(i))
+                admin.configure_global_inflight(12)
+                self.assertEqual(admin.max_global_inflight, 12)
+            with self.assertRaisesRegex(ValueError, "differs from shared ledger"):
+                ProjectBudget(budget_path, paths)  # stale default-eight user
+            with ProjectBudget(budget_path, paths, max_global_inflight=12) as raised:
+                for i in range(12):
+                    raised.reserve("raised-" + str(i), "jev", 2_688_000)
+                with self.assertRaisesRegex(ValueError, "global paid-request limit"):
+                    raised.reserve("thirteenth", "jev", 2_688_000)
+                self.assertEqual(raised.db.execute("SELECT value FROM coordination "
+                    "WHERE key='global_inflight_limit'").fetchone()[0], 12)
+
+    def test_conflicting_eight_and_twelve_callers_cannot_race_to_ninth(self):
+        with tempfile.TemporaryDirectory() as folder:
+            paths = fixtures(folder)
+            budget_path = str(Path(folder) / "project.db")
+            with ProjectBudget(budget_path, paths):
+                pass
+
+            def attempt(i):
+                try:
+                    with ProjectBudget(budget_path, paths,
+                                       max_global_inflight=12 if i % 2 else 8) as budget:
+                        budget.reserve("mixed-" + str(i), "jev", 2_688_000)
+                        return "admitted"
+                except ValueError as exc:
+                    return str(exc)
+
+            with ThreadPoolExecutor(max_workers=12) as pool:
+                results = list(pool.map(attempt, range(20)))
+            self.assertEqual(results.count("admitted"), 8)
+            self.assertTrue(all("differs from shared ledger" in value
+                for i, value in enumerate(results) if i % 2))
+            with ProjectBudget(budget_path, paths) as budget:
+                self.assertEqual(budget.db.execute("SELECT COUNT(*) FROM reservations "
+                    "WHERE status='reserved'").fetchone()[0], 8)
+
 
 if __name__ == "__main__":
     unittest.main()
