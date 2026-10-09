@@ -2,6 +2,14 @@
 
 This report records saved provider results and conservative budget exposure. It does not claim completion of the 100,000-review assignment or human-label accuracy.
 
+## Foreground supervisor quality stop
+
+Hanif started the published foreground supervisor under `caffeinate`. One process held both exclusive leases. It advanced the activated 30,000-ID remaining-review cohort from 26,844 to 29,882 saved Jev labels and from 24,545 to 28,456 accepted evidence rows. It recovered uniquely identified exact-span rows from saved charged malformed responses after draining requests; recovery made no POST and retained the raw responses and charges. The first structural stop was recovered automatically. The second structural stop reached the supervisor's two-stop review gate, and the process exited with both leases released.
+
+All 30,000 activated IDs remain accounted for: 28,456 accepted evidence rows, 492 quarantined, 111 blocked by older uncertain exact texts, 807 direct and eight alias uncertain rows, three attempted-text aliases excluded from dispatch, and 123 untouched eligible or awaiting-label rows. There are zero reserved requests and zero eligible Jev texts. The uncertain-request counts did not rise during this supervisor run. The last 40 evidence requests include 27 succeeded, ten partial, and three charged wholly malformed responses. Current quarantine reasons are 241 nonexact or blank quotes, 203 invalid entity spans, and 48 unknown or repeated source IDs; these are structural counts, not semantic accuracy.
+
+Measured new charges in this supervisor run were $0.129146514 Jev and $0.072953235 DeepInfra. Current remaining-90,000 queue charges are $0.980821842 Jev and $0.444261084 DeepInfra. Cumulative shared exposure, including historical charges and all full uncertain holds, is $1.368564204/$5 Jev and $1.598728346/$5 OpenRouter. The checkpoint records `quality_stops=2` and `repeated quality stops`. The next 10,000-ID gate has not activated; selected coverage is 40,000 IDs including the earlier 10,000 checkpoint, not 40,000 accepted evidence rows. A reviewed continuation must examine the structural failures and explicitly use the supervisor's reviewed-resume path for the 123 untouched texts; it must leave quarantined and uncertain texts untouched.
+
 ## Later checkpoint: 20,000 of the remaining 90,000 activated
 
 After the first gate, the next 10,000 frozen source positions were activated in the same durable queue. The latest offline ledger read has 20,000 selected source IDs, 19,924 saved Jev labels, 16,769 accepted evidence rows, 256 quarantined rows, 71 rows blocked by older uncertain exact texts, 512 newly uncertain direct or alias rows, 2,391 eligible or awaiting-label rows, and one attempted-text alias excluded from dispatch. No request is actively reserved. These categories sum to all 20,000 selected IDs; later gates remain inactive.
