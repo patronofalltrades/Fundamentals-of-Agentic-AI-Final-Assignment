@@ -84,12 +84,15 @@ def save_checkpoint(state):
         out.write("\n")
         out.flush()
         os.fsync(out.fileno())
+    tmp.chmod(0o600)
     os.replace(tmp, CHECKPOINT)
 
 
-def supervise(manifest, manifest_sha, interrupted, invoke=call_runner):
+def supervise(manifest, manifest_sha, interrupted, invoke=call_runner,
+              resume_reviewed=False):
     """Advance only after each drained segment and checked source gate."""
     quality_stops = 0
+    saved = None
     if CHECKPOINT.exists():
         saved = json.loads(CHECKPOINT.read_text(encoding="utf-8"))
         if saved.get("manifest_sha") != manifest_sha:
@@ -97,10 +100,15 @@ def supervise(manifest, manifest_sha, interrupted, invoke=call_runner):
         quality_stops = saved.get("quality_stops", 0)
         if type(quality_stops) is not int or not 0 <= quality_stops <= MAX_QUALITY_STOPS:
             raise ValueError("invalid supervisor quality-stop count")
+        if type(saved.get("uncertain_baseline")) is not int or saved["uncertain_baseline"] < 0:
+            raise ValueError("invalid supervisor uncertain baseline")
+
+    allowed_uncertain = saved["uncertain_baseline"] if saved else None
 
     def record(reason, result):
         save_checkpoint({"manifest_sha": manifest_sha,
             "quality_stops": quality_stops, "stop_reason": reason,
+            "uncertain_baseline": allowed_uncertain,
             "activated_source_rows": result["activated_source_rows"],
             "labels": result["labels"], "evidence": result["evidence"],
             "exposure_nusd": result["exposure_nusd"]})
@@ -111,6 +119,24 @@ def supervise(manifest, manifest_sha, interrupted, invoke=call_runner):
 
     current = invoke("status", manifest, manifest_sha, interrupted)
     checked_status(current, manifest)
+    observed_uncertain = uncertain_count(current)
+    if saved is None:
+        if resume_reviewed:
+            raise ValueError("reviewed resume requires a saved supervisor stop")
+        allowed_uncertain = observed_uncertain
+        record("initial baseline", current)
+    elif observed_uncertain != allowed_uncertain or quality_stops >= MAX_QUALITY_STOPS:
+        if not resume_reviewed:
+            print(json.dumps({"supervisor": "manual review required before resume",
+                "saved_uncertain": allowed_uncertain,
+                "observed_uncertain": observed_uncertain,
+                "quality_stops": quality_stops}, sort_keys=True), flush=True)
+            return 2
+        quality_stops = 0
+        allowed_uncertain = observed_uncertain
+        record("reviewed resume acknowledged", current)
+    elif resume_reviewed:
+        raise ValueError("no reviewed stop requires acknowledgment")
     if current["requests"].get("evidence:quarantined_metered", 0):
         invoke("recover-metered", manifest, manifest_sha, interrupted)
         current = invoke("status", manifest, manifest_sha, interrupted)
@@ -183,7 +209,9 @@ def supervise(manifest, manifest_sha, interrupted, invoke=call_runner):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+    parser.add_argument("--resume-reviewed", action="store_true",
+        help="acknowledge a reviewed quality stop or changed uncertain-request count")
+    args = parser.parse_args()
     SUPERVISOR_LOCK.parent.mkdir(parents=True, exist_ok=True)
     stop = {"requested": False}
     def on_signal(signum, frame):
@@ -205,7 +233,8 @@ def main():
                 manifest, manifest_sha = load()
                 try:
                     code = supervise(manifest, manifest_sha,
-                        lambda: stop["requested"])
+                        lambda: stop["requested"],
+                        resume_reviewed=args.resume_reviewed)
                 except Exception as exc:
                     print(json.dumps({"supervisor": "stopped; inspect runner and ledger",
                         "error_type": type(exc).__name__}, sort_keys=True), flush=True)
