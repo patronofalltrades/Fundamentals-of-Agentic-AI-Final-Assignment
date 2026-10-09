@@ -8,6 +8,12 @@ The deadline is October 13, 2026, at 11:59 pm Pacific Time.
 
 ## Current accepted-evidence objective (Hanif, October 9 UTC)
 
+**Extraction checkpoint completed October 9 UTC:** 100,229 accepted distinct
+source IDs from 110,000 selected; 6,522 selected rows remain untouched after a
+graceful target stop. See `reports/accepted-100k-completion.md`. The private
+handoff is ignored. This does not complete dashboard import or deployment,
+the grading export, independent verifier, grouping, or product memo.
+
 Hanif now requires **at least 100,000 accepted evidence rows for distinct
 original source review IDs**. The earlier 100,000-selected-source minimum is
 not the completion target. Select additional frozen source gates as needed,

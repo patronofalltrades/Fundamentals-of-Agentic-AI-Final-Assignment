@@ -49,11 +49,21 @@ are final-run requirements; the current extractor diagnostic is serial.
 
 ## Current status
 
+**October 9 extraction update:** [The accepted-evidence checkpoint](reports/accepted-100k-completion.md)
+reached 100,229 structurally accepted distinct source IDs from 110,000 selected
+IDs. Its private handoff is saved locally; 6,522 selected IDs remain untouched
+after the target-based graceful stop. Dashboard import and deployment, issue
+grouping, an independent verifier, the memo, the grading export, and a live
+URL are still pending. Structural acceptance is not a human accuracy score.
+
+The paragraphs below record the earlier offline foundation and pilots. Their
+historical status and costs do not describe the completed extraction checkpoint.
+
 As of October 5, 2026, the supplied dataset packages have been inspected locally with streaming CSV parsing and SHA-256 checks. The assignment brief, dataset READMEs, manifests, `GRADING_CONTRACT.md`, and `COST_CALCULATOR.md` have been read. The offline ingestion stage has now run on the full input. Its saved core profile matches the course helper exactly.
 
 The offline foundation uses Python 3.9+ and SQLite. It implements ingestion, exact-text deduplication, source hashes, schema validation, configuration-specific state, checkpoints, cost replay scaffolding, a manual-label CSV exporter, and isolated offline evaluation. **155 synthetic tests passed before the real Jev pilot.** DeepSeek through OpenCode CLI wrote the main pipeline foundation. Codex reviewed it, made targeted fixes, added the human-label tools, and ran the checks.
 
-**Current coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). No OpenRouter inference has run. Prices, billing route, and potential spend must be checked before further inference.
+**Earlier foundation coding choice:** DeepSeek V4 Flash 0731 from OpenRouter through OpenCode CLI; verified ID `openrouter/deepseek/deepseek-v4-flash-0731`. The two earlier build passes used OpenCode Go Vision Exp. See [build provenance](docs/build_provenance.md). The later measured extraction is recorded in the completion report above.
 
 The 100-review Jev label pilot and separate Codex evidence extraction have run. An ignored local database holds 100 structurally complete classifications. Human evaluation, an end-to-end warm run, ranking, and the memo remain **pending**. A mechanically validated human golden CSV is available locally outside this repository. Label quality on this corpus is unmeasured. GLM is not selected for current work. Opus is a candidate for a small independent verifier sample. Development coding calls are separate from runtime model roles.
 
@@ -65,7 +75,7 @@ The user completed the [bounded v2 launch](docs/jev_v2_user_launch.md) on the sa
 
 An [offline instrumentation and development review](docs/jev_v2_instrumentation_review.md) adds future Codex JSON usage capture and whole-stage monotonic timing without filling historical gaps. A synthetic no-network cold/warm harness checks ingestion through memo handoffs and saved-state reuse. It does not measure live verifier, grouping, memo, or account cost. The remaining topic concern is a development model judgment to measure at the checkpoint.
 
-The [frozen v2 checkpoint preflight](docs/checkpoint_500_preflight.md) verified the supplied 500-row source and prepared a separate ignored ledger that reused the first 100 completed v2 rows. After direct user authorization, the [500-row checkpoint](reports/checkpoint-500-readiness.md) completed 379 new Jev label calls, 379 successful new ChatGPT-auth Codex evidence calls, and 21 exact-text cache reuses. A separate ignored canonical database accepted 500/500 complete records. The cumulative usage-derived Jev charge across v1, v2, and this checkpoint is USD 0.024101700. One Codex attempt interrupted by a connection loss has unknown delivery and usage; its successful retry and both attempt records are preserved. Full end-to-end roles, human agreement, true cold/warm timing, the grading export, and the model/budget decision for 100,000 reviews remain pending. No 100,000-review inference has started.
+The [frozen v2 checkpoint preflight](docs/checkpoint_500_preflight.md) verified the supplied 500-row source and prepared a separate ignored ledger that reused the first 100 completed v2 rows. After direct user authorization, the [500-row checkpoint](reports/checkpoint-500-readiness.md) completed 379 new Jev label calls, 379 successful new ChatGPT-auth Codex evidence calls, and 21 exact-text cache reuses. A separate ignored canonical database accepted 500/500 complete records. The cumulative usage-derived Jev charge across v1, v2, and this checkpoint is USD 0.024101700. One Codex attempt interrupted by a connection loss has unknown delivery and usage; its successful retry and both attempt records are preserved. The later extraction checkpoint is recorded above; full end-to-end roles, human agreement, true cold/warm timing, and the grading export remain separate gates.
 
 **Decision (2026-10-06): keep Jev; fix the timing risk.** Hanif decided to keep Jev for topic, intent and severity with the frozen v2 rubric. The earlier plan targeted all 660,622 IDs; the later instructor clarification sets a 100,000-source-review minimum. At the measured checkpoint rates, one-review Jev requests project to about 45 hours and per-review Codex evidence to about 910 hours for 484,189 distinct texts. The [decision and timing plan](docs/jev_decision_and_timing.md) records the original full-corpus measurements, batched Jev and code-built evidence as mitigations, dated go/no-go gates, and the alternatives that were measured but not chosen.
 
@@ -87,7 +97,7 @@ python3 -m spotify_pipeline cost --measurements PATH --rates PATH --scenario PAT
 - `checkpoint` opens the database read-only and writes sorted original completed IDs plus configuration and source identity for resume. Pending rows never count as completed.
 - `cost` replays saved measurements with editable dated rates using `Decimal`. Shipped cost-scaffold artifacts are `not_measured` with null rates and unset output/fallback caps, so totals stay unresolved, admission is blocked, and no scaling is approved. Test measurements are labelled `synthetic_fixture`. Projections are `not_implemented`. The main pipeline CLI has no paid execution command; the Jev pilot runner is a separate gated tool.
 
-This is a local development branch and is not yet published. SQLite databases, sidecars, checkpoints and other local state are git-ignored; only aggregate reports under `reports/` are tracked.
+This private benchmark branch and its local data are not published. A separately reviewed clean feature branch with code and aggregate docs was published. SQLite databases, sidecars, checkpoints, and private handoffs remain git-ignored.
 
 Offline tests live in `tests/` and use synthetic fixtures in temporary directories only:
 
@@ -104,7 +114,7 @@ See [implementation notes](docs/implementation.md), [build provenance](docs/buil
 | Full-source IDs ingested | 660,622 |
 | Nonempty reviews pending | 660,609 |
 | Empty reviews quarantined | 13 |
-| Runtime classifications | 0 |
+| Runtime classifications in that original offline ingest | 0 |
 | Distinct nonempty exact texts | 484,189 |
 | Contract profile versus course helper | Exact match |
 | Synthetic offline tests | 142 passed after evaluation-boundary tests |
