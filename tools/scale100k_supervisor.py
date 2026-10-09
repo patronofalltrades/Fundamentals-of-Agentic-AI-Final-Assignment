@@ -20,7 +20,21 @@ from tools.scale100k_manifest import load
 SUPERVISOR_LOCK = Path("local/scale100k_supervisor.lock")
 CHECKPOINT = Path("local/scale100k_supervisor.json")
 MAX_QUALITY_STOPS = 2
-MAX_SCALE_ROWS = 90000  # source positions 10,001 through 100,000
+MAX_SCALE_ROWS = 90000  # fallback for synthetic tests without a full manifest
+BASELINE_ACCEPTED = 9566  # two completed, disjoint 5k checkpoints
+ACCEPTED_TARGET = 100000
+
+
+def verify_baseline():
+    """Pin the older accepted denominator before supervising paid work."""
+    uri = Path(scale.BUDGET).resolve().as_uri() + "?mode=ro"
+    with closing(sqlite3.connect(uri, uri=True)) as db:
+        first = db.execute("SELECT COUNT(*) FROM checkpoint_evidence").fetchone()[0]
+        second = db.execute("SELECT COUNT(*) FROM next5000_evidence").fetchone()[0]
+        overlap = db.execute("SELECT COUNT(*) FROM checkpoint_evidence c "
+            "JOIN next5000_evidence n USING(review_id)").fetchone()[0]
+    if first + second != BASELINE_ACCEPTED or overlap:
+        raise ValueError("earlier accepted source-ID denominator differs")
 
 
 def call_runner(mode, manifest, manifest_sha, interrupted):
@@ -36,7 +50,8 @@ def call_runner(mode, manifest, manifest_sha, interrupted):
 
 def source_coverage(manifest, expected_count):
     """Check the already activated slice against the frozen source manifest."""
-    if expected_count < 0 or expected_count > MAX_SCALE_ROWS or \
+    max_rows = manifest.get("selected_rows", MAX_SCALE_ROWS)
+    if expected_count < 0 or expected_count > max_rows or \
             expected_count % scale.GATE_ROWS:
         raise ValueError("activated source scope is not a frozen 10k gate")
     uri = Path(scale.BUDGET).resolve().as_uri() + "?mode=ro"
@@ -70,6 +85,10 @@ def checked_status(result, manifest):
 
 def progress(result):
     return result["labels"] + result["evidence"]
+
+
+def accepted_total(result):
+    return BASELINE_ACCEPTED + result["source_states"].get("accepted", 0)
 
 
 def uncertain_count(result):
@@ -111,10 +130,12 @@ def supervise(manifest, manifest_sha, interrupted, invoke=call_runner,
             "uncertain_baseline": allowed_uncertain,
             "activated_source_rows": result["activated_source_rows"],
             "labels": result["labels"], "evidence": result["evidence"],
+            "accepted_total": accepted_total(result),
             "exposure_nusd": result["exposure_nusd"]})
         print(json.dumps({"supervisor": reason,
             "activated_source_rows": result["activated_source_rows"],
             "labels": result["labels"], "evidence": result["evidence"],
+            "accepted_total": accepted_total(result),
             "exposure_nusd": result["exposure_nusd"]}, sort_keys=True), flush=True)
 
     current = invoke("status", manifest, manifest_sha, interrupted)
@@ -146,20 +167,19 @@ def supervise(manifest, manifest_sha, interrupted, invoke=call_runner,
             record("operator interrupt; drained", current)
             return 130
         count = checked_status(current, manifest)
-        if count == MAX_SCALE_ROWS and not (current["jev_eligible_unique"] or
-                current["evidence_eligible_unique"]):
-            if current["source_states"].get("eligible_or_awaiting_label", 0):
-                raise ValueError("source statuses show unfinished eligible rows")
-            record("100k source scope complete or accounted for", current)
-            return 0
+        max_rows = manifest.get("selected_rows", MAX_SCALE_ROWS)
         if quality_stops >= MAX_QUALITY_STOPS:
             record("repeated quality stops; manual review required", current)
             return 2
         if not (current["jev_eligible_unique"] or current["evidence_eligible_unique"]):
             if current["source_states"].get("eligible_or_awaiting_label", 0):
                 raise ValueError("source statuses show unfinished eligible rows")
-            if count == MAX_SCALE_ROWS:
-                raise ValueError("scope complete but statuses do not reconcile")
+            if accepted_total(current) >= ACCEPTED_TARGET:
+                record("100k accepted evidence target reached", current)
+                return 0
+            if count == max_rows:
+                record("frozen source exhausted before accepted target", current)
+                return 2
             current = invoke("activate-next-gate", manifest, manifest_sha, interrupted)
             checked_status(current | {"jev_eligible_unique": 0,
                 "evidence_eligible_unique": 0}, manifest)
@@ -231,6 +251,7 @@ def main():
             old_term = signal.signal(signal.SIGTERM, on_signal)
             try:
                 manifest, manifest_sha = load()
+                verify_baseline()
                 try:
                     code = supervise(manifest, manifest_sha,
                         lambda: stop["requested"],

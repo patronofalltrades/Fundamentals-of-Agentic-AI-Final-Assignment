@@ -1,4 +1,16 @@
-# Foreground 100k supervisor
+# Foreground accepted-evidence supervisor
+
+Hanif's October 9 target is **at least 100,000 accepted evidence rows for
+distinct source IDs**. Selecting or accounting for 100,000 IDs is insufficient.
+The original frozen source manifest covers positions 10,001–100,000 after the
+two earlier 5,000-ID checkpoints. An optional, separately frozen extension
+covers positions 100,001–120,000. The supervisor activates source positions
+in 10,000-ID gates only when the preceding gate has drained, and stops after a
+drained gate reaches the accepted target. A frozen source scope that runs out
+first stops for review. Quarantined, uncertain, invalid, empty, or synthetic
+rows do not count as accepted. The earlier 9,566 accepted rows are verified
+against the ledger and counted once. The separate $5 provider caps do not
+change with the source extension.
 
 After the coordinator integrates and pushes this commit, launch from Terminal in
 the live repository checkout:
@@ -27,7 +39,10 @@ responses through `recover_metered`, whose parser checks original IDs, exact
 source spans, usage and response structure. It then invokes the mixed runner
 for the current gate. After the runner drains, it checks status and activates
 the next 10,000-source gate only when both eligible queues are empty and source
-statuses reconcile. It stops at source position 100,000.
+statuses reconcile. A source extension must be frozen from the unchanged
+supplied source before its first gate activates. The shared ledger pins its
+digest in the same transaction as source activation. Optional frozen
+positions are not paid or selected until a gate is activated.
 
 A new uncertain request, access or budget failure, unreconciled source, lease
 conflict, no accepted progress, or unrecoverable saved response stops the

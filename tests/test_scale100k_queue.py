@@ -135,7 +135,37 @@ class ScaleQueueTest(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_rows").fetchone()[0], scale.GATE_ROWS)
             self.assertEqual(dict(db.execute("SELECT review_id,blocked_reason FROM scale_rows WHERE blocked_reason IS NOT NULL")),
                 {"id4": "empty_text", "id5": "prior_uncertain_exact_text"})
-            self.assertRaises(ValueError, scale.activate_gate, db, manifest)
+            self.assertEqual(scale.activate_gate(db, manifest), 0)
+        finally:
+            db.close()
+
+    def test_extension_gate_pins_new_manifest_without_replacing_prior_rows(self):
+        db = sqlite3.connect(":memory:")
+        try:
+            scale.ensure_tables(db, "original-frozen-manifest", "extension-sha")
+            db.execute("CREATE TABLE reservations(request_key TEXT,status TEXT)")
+            db.executemany("INSERT INTO scale_rows VALUES (?,?,?,?,?,NULL)",
+                ((10001 + i, "prior" + str(i), "prior text" + str(i),
+                    "source" + str(i), "text" + str(i)) for i in range(90000)))
+            extension = [{"source_position": 100001 + i,
+                "review_id": "extension" + str(i), "review_text": "text" + str(i),
+                "source_sha256": "extension-source" + str(i),
+                "text_sha256": "extension-text" + str(i)} for i in range(10000)]
+            manifest = {"rows": [None] * 90000 + extension,
+                "extension_manifest_sha256": "extension-sha",
+                "historical_uncertain_exact_texts": []}
+            with patch.object(scale, "pending", return_value=[]), \
+                    patch.object(scale, "uncertain_texts", return_value=set()):
+                self.assertEqual(scale.activate_gate(db, manifest), 10000)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM scale_rows").fetchone()[0],
+                100000)
+            self.assertEqual(db.execute("SELECT review_id FROM scale_rows "
+                "WHERE position=100000").fetchone()[0], "prior89999")
+            self.assertEqual(db.execute("SELECT value FROM scale_meta WHERE "
+                "key='extension_manifest_sha256'").fetchone()[0], "extension-sha")
+            scale.ensure_tables(db, "original-frozen-manifest", "extension-sha")
+            with self.assertRaisesRegex(ValueError, "extension identity differs"):
+                scale.ensure_tables(db, "original-frozen-manifest", "changed-extension")
         finally:
             db.close()
 

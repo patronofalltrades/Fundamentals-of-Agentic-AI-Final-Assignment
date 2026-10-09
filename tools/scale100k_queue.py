@@ -45,7 +45,7 @@ def canonical(value):
         separators=(",", ":"), allow_nan=False)
 
 
-def ensure_tables(db, manifest_sha):
+def ensure_tables(db, manifest_sha, extension_sha=None):
     db.execute("CREATE TABLE IF NOT EXISTS scale_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)")
     db.execute("""CREATE TABLE IF NOT EXISTS scale_rows(
         position INTEGER PRIMARY KEY,review_id TEXT NOT NULL UNIQUE,
@@ -74,8 +74,15 @@ def ensure_tables(db, manifest_sha):
         "worker_slots": str(WORKERS), "chunk_rows": str(CHUNK_ROWS)}
     saved = dict(db.execute("SELECT key,value FROM scale_meta"))
     if saved and ({key: saved.get(key) for key in expected} != expected or
-            set(saved) - set(expected) - {"active_evidence_config_sha"}):
+            set(saved) - set(expected) - {"active_evidence_config_sha",
+                "extension_manifest_sha256"}):
         raise ValueError("scale queue identity or configuration changed")
+    saved_extension = saved.get("extension_manifest_sha256")
+    if saved_extension and saved_extension != extension_sha:
+        raise ValueError("activated source extension identity differs")
+    if db.execute("SELECT COUNT(*) FROM scale_rows").fetchone()[0] > 90000 and \
+            not saved_extension:
+        raise ValueError("activated source extension lacks frozen ledger identity")
     if saved.get("active_evidence_config_sha") not in (None, trial25.config_sha()):
         raise ValueError("unknown adopted evidence configuration")
     if not saved:
@@ -104,9 +111,10 @@ def activate_gate(db, manifest):
     if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
         raise ValueError("active paid reservation; cannot activate gate")
     count, top = db.execute("SELECT COUNT(*),COALESCE(MAX(position),10000) FROM scale_rows").fetchone()
-    if count not in range(0, 90001, GATE_ROWS) or top != 10000 + count:
+    if count not in range(0, len(manifest["rows"]) + 1, GATE_ROWS) or \
+            top != 10000 + count:
         raise ValueError("activated source range is not contiguous")
-    if count == 90000:
+    if count == len(manifest["rows"]):
         return 0
     if count and pending(db, "jev") or count and pending(db, "evidence"):
         raise ValueError("previous gate has untouched eligible work")
@@ -120,6 +128,12 @@ def activate_gate(db, manifest):
     if len(records) != GATE_ROWS:
         raise ValueError("source gate length differs")
     with db:
+        if count == 90000:
+            extension_sha = manifest.get("extension_manifest_sha256")
+            if not extension_sha:
+                raise ValueError("source extension is not frozen")
+            db.execute("INSERT INTO scale_meta VALUES ('extension_manifest_sha256',?)",
+                (extension_sha,))
         db.executemany("INSERT INTO scale_rows VALUES (?,?,?,?,?,?)", records)
     return GATE_ROWS
 
@@ -900,7 +914,8 @@ def _main_locked(args, manifest, manifest_sha, stop_requested=None):
     with ProjectBudget(BUDGET, legacy_paths(),
                        max_global_inflight=None if args.status or
                            args.set_global_workers is not None else args.global_workers) as budget:
-        ensure_tables(budget.db, manifest_sha)
+        ensure_tables(budget.db, manifest_sha,
+            manifest.get("extension_manifest_sha256"))
         if args.set_global_workers is not None:
             budget.configure_global_inflight(args.set_global_workers)
             result = status(budget.db, budget)
