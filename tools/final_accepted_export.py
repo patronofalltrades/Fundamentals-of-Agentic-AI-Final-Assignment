@@ -113,7 +113,13 @@ def build(baseline, base, extension, overlay, corrections, budget):
             "SELECT * FROM scale_evidence")}
     quarantines = {rid: (reason, key) for rid, reason, key in db.execute(
         "SELECT * FROM scale_quarantines")}
-    flags = pulse_flags(overlay, source, evidence)
+    earlier_source = {record["review_id"]: {
+        "source_position": record["source_position"],
+        "source_sha256": record["source_sha256"],
+        "text_sha256": text_sha256(record["source"]["review_text"])}
+        for record in baseline["records"]}
+    flags = pulse_flags(overlay, {**earlier_source, **source},
+        set(earlier_source) | set(evidence))
     attempts = {}
     direct = {}
     request_meta = []
@@ -138,6 +144,7 @@ def build(baseline, base, extension, overlay, corrections, budget):
     records = []
     baseline_ids = set()
     baseline_flags = 0
+    newly_flagged_earlier = 0
     for original in baseline["records"]:
         record = dict(original)
         rid = record["review_id"]
@@ -146,10 +153,21 @@ def build(baseline, base, extension, overlay, corrections, budget):
             raise ValueError("earlier accepted source ID or hash differs")
         validate_evidence(record["source"]["review_text"], record["evidence"])
         baseline_ids.add(rid)
-        baseline_flags += bool(record["semantic_review"].get(
+        original_flagged = bool(record["semantic_review"].get(
             "representative_evidence_blocked_by_known_flags"))
+        baseline_flags += original_flagged
+        findings = flags.get(rid, [])
+        if findings:
+            if original_flagged:
+                raise ValueError("pulse finding duplicates earlier semantic exclusion")
+            review = dict(record["semantic_review"])
+            review["findings"] = list(review.get("findings", [])) + findings
+            review["human_review_required"] = True
+            review["representative_evidence_blocked_by_known_flags"] = True
+            record["semantic_review"] = review
+            newly_flagged_earlier += 1
         records.append(record)
-    if baseline_flags != 39:
+    if baseline_flags != 39 or newly_flagged_earlier != 2:
         raise ValueError("earlier semantic exclusions differ")
     excluded = list(baseline["excluded"])
     earlier_ids = baseline_ids | {row["review_id"] for row in excluded}
@@ -209,7 +227,8 @@ def build(baseline, base, extension, overlay, corrections, budget):
             "source_sha256": row["source_sha256"], "status": state,
             "reason": reason, "request_key": key})
         states[state] += 1
-    if states != Counter(current["source_states"]) or \
+    if len([rid for rid in flags if rid in source]) != 6 or \
+            states != Counter(current["source_states"]) or \
             len(records) != 9566 + current["source_states"].get("accepted", 0) or \
             len(records) + len(excluded) != 10000 + activated or \
             len({r["review_id"] for r in records + excluded}) != 10000 + activated:
