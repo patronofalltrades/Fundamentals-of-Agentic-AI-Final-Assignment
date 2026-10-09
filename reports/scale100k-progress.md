@@ -12,6 +12,10 @@ The clean feature branch `feat/scale100k-queue-public` was pushed to the verifie
 
 The command-service transport repeatedly disconnected and killed active paid sessions. An orphaned 25-review DeepInfra reservation had no saved response, usage, or charge; after confirming no runner, it was atomically marked uncertain while retaining its full $0.006938624 hold and source memberships. Later interruptions created additional uncertain calls, whose full holds remain. A detached launch test lacked permission to read this worktree, so it was not used for paid execution. The next segment needs a stable user Terminal session or repaired command transport; the queue is safe to resume only on untouched texts after verifying the process and reservations again.
 
+## Foreground Terminal checkpoint
+
+Hanif started one supervised foreground Terminal segment after the transport failures. The durable ledger grew by 749 directly accepted evidence rows before the structural quality gate drained. Three charged malformed 25-review responses were preserved; offline exact-span recovery accepted 71 uniquely identified rows without a new POST. The latest saved state is 20,000 selected IDs, 19,924 Jev labels, 17,589 accepted evidence rows, 288 quarantined rows, and 1,536 untouched distinct evidence texts eligible. No request is reserved and no new request became uncertain in this segment. Cumulative shared exposure, including all prior full holds, is $1.040419506/$5 Jev and $1.349365252/$5 OpenRouter. The runner stopped at its quality gate; continuing the same gate requires another single supervised foreground segment.
+
 ## Earlier first-gate snapshot
 
 - The next 90,000 source IDs and source hashes are frozen in a private manifest. The first 10,000 positions are activated in the durable queue.
