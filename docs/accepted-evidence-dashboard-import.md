@@ -152,10 +152,11 @@ or invent memberships. The source frame is ready for a separately authorized
 grouping role or human mapping; deterministic validation and ranking need no
 paid calls after that mapping is saved.
 
-A [64-case, review-only issue catalog proposal](issue-grouping-proposal.md)
-and machine-readable draft now provide a concrete semantic decision for
-review. They make no membership assignments; the ranker rejects the draft
-catalog until it is approved.
+A [64-case issue catalog proposal](issue-grouping-proposal.md) and
+machine-readable draft are authorized only for a 100-case pilot. The ranker
+rejects the draft for full production membership until separately approved.
+The [offline pilot report](../reports/issue-grouping-pilot100.md) records
+provisional assignments and private review decisions still needed.
 
 ### PR #16 public API acceptance tests
 

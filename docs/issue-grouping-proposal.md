@@ -1,8 +1,8 @@
 # Draft issue grouping proposal for the accepted-evidence checkpoint
 
-**Status: review only.** No issue membership, issue score, or product
+**Status: pilot authorized, not production approved.** No full issue membership, issue score, or product
 recommendation has been generated. The [machine-readable proposed catalog](issue-catalog-draft.json)
-is marked `draft_unapproved`; the offline ranker
+is marked `pilot_authorized`; the offline ranker
 rejects it until its status and mapping rule are reviewed and approved.
 No model call, human golden answer, accepted record, or provider account was
 used or changed to prepare this proposal.
@@ -100,12 +100,15 @@ the full 30,403-ID mapping. The ranker will calculate the private baseline
 and public projection from that saved mapping; it does not make semantic
 assignments.
 
-## Decision requested
+## Pilot authorization and current decision
 
-Approve or edit the 37 stable IDs and definitions in the draft JSON, the
-one-primary-problem rule, and the handling of generic and ambiguous cases.
-Choose who will make and adjudicate semantic assignments in the pilot. This
-review is a semantic gate, not permission to run a paid model or publish data.
+Hanif authorized preparation of a 100-case model-assisted offline pilot with
+user review of ambiguous cases. The [pilot report](../reports/issue-grouping-pilot100.md)
+records provisional results and private decision files. This authorization
+does not approve the 37 IDs for production mapping, permit a paid model, or
+publish data. Reviewers should decide how to handle the catalog gaps and
+saved-label conflicts exposed by the pilot before authorizing a revised
+catalog or the full 30,403-ID mapping.
 
 The 100,229 accepted-original-ID target is met. The supplied grading contract
 still names all 660,622 source IDs while the instructor-reported minimum is

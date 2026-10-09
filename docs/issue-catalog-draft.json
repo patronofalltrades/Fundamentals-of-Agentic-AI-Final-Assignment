@@ -1,6 +1,6 @@
 {
   "schema_version": "spotify-issue-catalog-v1",
-  "status": "draft_unapproved",
+  "status": "pilot_authorized",
   "mapping_rule_version": "draft-primary-problem-v1",
   "issues": [
     {"issue_id": "ACC-LOGIN", "title": "Sign-in failure", "definition": "Cannot sign in, authenticate, or regain access to an account."},
