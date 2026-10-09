@@ -20,6 +20,7 @@ BASELINE_SHA = "857dc1b50612fe5fe49f4ee4a9b2efcdeaa8bf5db492a53ef34f0e9873a5e203
 BASE_SHA = "cdc9a74ab8d623af2ddbaf32b28c19ca51e47d1e05309129384982d8da52f107"
 EXTENSION_SHA = "485e69bc010c12877b867018199d12494945867a650f8cb742e734b7a6a1d6ab"
 PULSE_SHA = "53f4bb42cf55c189cfb1282478b24c6fcb8adc321ccaa0abd65026e8b9a2e26f"
+HUMAN_CORRECTION_SHA = "feeba27e2ed1a1b54c625ea6ccfde7048c93312b4ffb237130489e5988071cf0"
 CAP = 5000000000
 
 
@@ -76,7 +77,7 @@ def pulse_flags(overlay, source, accepted):
     return flags
 
 
-def build(baseline, base, extension, overlay, budget):
+def build(baseline, base, extension, overlay, corrections, budget):
     db = budget.db
     if baseline.get("schema_version") != "spotify-cumulative10000-dashboard-handoff-v1" or \
             baseline.get("coverage", {}).get("accepted_rows") != 9566 or \
@@ -89,10 +90,8 @@ def build(baseline, base, extension, overlay, budget):
         raise ValueError("paid request is still reserved")
     current = queue_status(db, budget)
     activated = current["activated_source_rows"]
-    if current["source_states"].get("in_flight", 0) or \
-            current["source_states"].get("eligible_or_awaiting_label", 0) or \
-            current["jev_eligible_unique"] or current["evidence_eligible_unique"]:
-        raise ValueError("source gate has not drained")
+    if current["source_states"].get("in_flight", 0):
+        raise ValueError("paid requests have not drained")
     rows = source_rows(base, extension, activated)
     source = {row["review_id"]: row for row in rows}
     if len(source) != activated:
@@ -156,6 +155,14 @@ def build(baseline, base, extension, overlay, budget):
     earlier_ids = baseline_ids | {row["review_id"] for row in excluded}
     if len(earlier_ids) != 10000 or earlier_ids & set(source):
         raise ValueError("earlier selected source IDs overlap or differ")
+    human = corrections.get("corrections")
+    if not isinstance(human, list) or len(human) != 4 or \
+            len({r["review_id"] for r in human}) != 4:
+        raise ValueError("documented human correction overlay differs")
+    selected = earlier_ids | set(source)
+    human_in_scope = [r for r in human if r["review_id"] in selected]
+    if human_in_scope:
+        raise ValueError("human correction entered this source scope; add verified overlay mapping")
     states = Counter()
     for row in rows:
         rid, text = row["review_id"], row["review_text"]
@@ -192,10 +199,12 @@ def build(baseline, base, extension, overlay, budget):
                 k for _, s, k in direct[rid] if s == "uncertain")
         elif any(attempts.get((stage, text)) == "uncertain" for stage in ("jev", "evidence")):
             state, reason, key = "uncertain_exact_text_alias", "exact text matches held request", None
-        elif any((stage, text) in attempts for stage in ("jev", "evidence")):
+        elif ("evidence", text) in attempts or \
+                (rid not in labels and ("jev", text) in attempts):
             state, reason, key = "attempted_exact_text_alias", "attempted exact text is excluded", None
         else:
-            raise ValueError("drained source row has no terminal state")
+            state, reason, key = "eligible_or_awaiting_label", \
+                "untouched source row after target-based graceful stop", None
         excluded.append({"review_id": rid, "source_position": row["source_position"],
             "source_sha256": row["source_sha256"], "status": state,
             "reason": reason, "request_key": key})
@@ -222,7 +231,8 @@ def build(baseline, base, extension, overlay, budget):
             "extension": EXTENSION_SHA},
         "coverage": {"selected_source_rows": 10000 + activated,
             "accepted_rows": len(records), "excluded_rows": len(excluded),
-            "scale_source_states": dict(states), "pending_rows": 0, "in_flight_rows": 0,
+            "scale_source_states": dict(states),
+            "pending_rows": states["eligible_or_awaiting_label"], "in_flight_rows": 0,
             "known_semantic_flags_excluded_from_representative_evidence": baseline_flags + len(flags)},
         "cost_nusd": {"scale_known_charges": charges,
             "shared_exposure_including_all_holds": exposure,
@@ -230,6 +240,8 @@ def build(baseline, base, extension, overlay, budget):
         "semantic_overlay": {"pulse_sha256": PULSE_SHA,
             "pulse_flagged_distinct_ids": len(flags),
             "earlier_flagged_distinct_ids": baseline_flags,
+            "human_correction_sha256": HUMAN_CORRECTION_SHA,
+            "human_correction_ids_outside_selected_scope": len(human),
             "not_human_accuracy": True},
         "topic_summary_rule": "Accepted rows only; descriptive, not issue grouping or a recommendation.",
         "topic_summary": [{"topic": key, "count": value[0], "severity_sum": value[1]}
@@ -243,6 +255,7 @@ def main():
     parser.add_argument("--base-manifest", type=Path, required=True)
     parser.add_argument("--extension-manifest", type=Path, required=True)
     parser.add_argument("--pulse-overlay", type=Path, required=True)
+    parser.add_argument("--human-corrections", type=Path, required=True)
     parser.add_argument("--budget", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -252,8 +265,9 @@ def main():
     base = verified_json(args.base_manifest, BASE_SHA)
     extension = verified_json(args.extension_manifest, EXTENSION_SHA)
     overlay = verified_json(args.pulse_overlay, PULSE_SHA)
+    corrections = verified_json(args.human_corrections, HUMAN_CORRECTION_SHA)
     with ProjectBudget(str(args.budget), legacy_paths()) as budget:
-        result = build(baseline, base, extension, overlay, budget)
+        result = build(baseline, base, extension, overlay, corrections, budget)
     fd = os.open(str(args.output), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
