@@ -33,14 +33,15 @@ class SupervisorTest(unittest.TestCase):
         self.addCleanup(self.patch_checkpoint.stop)
         self.addCleanup(self.patch_coverage.stop)
 
-    def run_steps(self, steps, stopped=lambda: False):
+    def run_steps(self, steps, stopped=lambda: False, resume_reviewed=False):
         calls = []
         def invoke(mode, manifest, sha, interrupted):
             calls.append(mode)
             expected, result = steps.pop(0)
             self.assertEqual(mode, expected)
             return result
-        result = supervisor.supervise({"rows": []}, "frozen-sha", stopped, invoke)
+        result = supervisor.supervise({"rows": []}, "frozen-sha", stopped, invoke,
+            resume_reviewed=resume_reviewed)
         self.assertFalse(steps)
         return result, calls
 
@@ -101,6 +102,44 @@ class SupervisorTest(unittest.TestCase):
         code, calls = self.run_steps([("status", state(labels=4))])
         self.assertEqual(code, 2)
         self.assertEqual(calls, ["status"])
+
+    def test_reviewed_resume_clears_persistent_quality_stop(self):
+        supervisor.CHECKPOINT.write_text(json.dumps({"manifest_sha": "frozen-sha",
+            "quality_stops": 2, "uncertain_baseline": 0}))
+        code, calls = self.run_steps([
+            ("status", state()),
+            ("run-mixed", {"paused": True, "halt_reason": "budget cap reached",
+                "new_uncertain": {}}),
+            ("status", state()),
+        ], resume_reviewed=True)
+        self.assertEqual(code, 2)
+        self.assertIn("run-mixed", calls)
+        saved = json.loads(supervisor.CHECKPOINT.read_text())
+        self.assertEqual(saved["quality_stops"], 0)
+        self.assertEqual(saved["uncertain_baseline"], 0)
+
+    def test_crash_after_new_uncertain_blocks_until_reviewed_resume(self):
+        supervisor.CHECKPOINT.write_text(json.dumps({"manifest_sha": "frozen-sha",
+            "quality_stops": 0, "uncertain_baseline": 4}))
+        code, calls = self.run_steps([("status", state(uncertain=5))])
+        self.assertEqual(code, 2)
+        self.assertEqual(calls, ["status"])
+        self.assertEqual(json.loads(supervisor.CHECKPOINT.read_text())[
+            "uncertain_baseline"], 4)
+        code, calls = self.run_steps([
+            ("status", state(uncertain=5)),
+            ("run-mixed", {"paused": True, "halt_reason": "budget cap reached",
+                "new_uncertain": {}}),
+            ("status", state(uncertain=5)),
+        ], resume_reviewed=True)
+        self.assertEqual(code, 2)
+        self.assertIn("run-mixed", calls)
+        self.assertEqual(json.loads(supervisor.CHECKPOINT.read_text())[
+            "uncertain_baseline"], 5)
+
+    def test_reviewed_resume_requires_a_saved_review_stop(self):
+        with self.assertRaisesRegex(ValueError, "requires a saved supervisor stop"):
+            self.run_steps([("status", state())], resume_reviewed=True)
 
     def test_quality_without_accepted_progress_stops(self):
         code, _ = self.run_steps([

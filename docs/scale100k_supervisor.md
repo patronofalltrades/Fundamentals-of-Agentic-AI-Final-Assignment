@@ -4,7 +4,7 @@ After the coordinator integrates and pushes this commit, launch from Terminal in
 the live repository checkout:
 
 ```sh
-cd '/Users/haniframadhan/Documents/Codex/2026-10-07/task-2/spotify-batch10-canary' && caffeinate -i python3 -m tools.scale100k_supervisor
+cd /path/to/spotify-batch10-canary && /usr/bin/caffeinate -i /usr/bin/python3 -B -m tools.scale100k_supervisor
 ```
 
 Keep that Terminal open. `caffeinate -i` prevents system idle sleep while the
@@ -37,6 +37,12 @@ validated offline recovery only if accepted labels or evidence increased.
 Two consecutive structural quality stops are the maximum; the second stops
 for manual review. The counter persists across restarts and resets after a
 clean segment. No uncertain request is automatically retried.
+The checkpoint also retains the previously observed uncertain-request count.
+A restart stops before dispatch if that count changed after a crash. After
+reviewing a quality stop or changed uncertain count, explicitly resume with
+`python3 -B -m tools.scale100k_supervisor --resume-reviewed` under the same
+foreground `caffeinate -i` wrapper. That flag acknowledges the reviewed stop
+and updates the baseline; it is rejected when no review is needed.
 
 Press Ctrl-C once to stop. The signal prevents new dispatch and waits for
 in-flight provider calls to settle before releasing the leases. A reservation
@@ -47,8 +53,9 @@ stops for manual reconciliation. Restart by running the same command after
 reviewing its stop reason and ledger. Do not remove the local checkpoint to
 bypass a quality stop without reviewing the failed responses.
 
-`local/scale100k_supervisor.json` is an ignored aggregate checkpoint with
-source identity, counts, exposure, stop reason, and the quality-stop counter.
+`local/scale100k_supervisor.json` is an ignored mode-0600 aggregate checkpoint
+with source identity, counts, exposure, stop reason, the quality-stop counter,
+and the acknowledged uncertain-request count.
 The authoritative row and cost records stay in the shared project ledger.
 The terminal prints aggregate counts and exposure after each drained segment
 or stop. It does not print review text or credentials.
