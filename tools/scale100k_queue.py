@@ -452,6 +452,66 @@ def safe_worker_ceiling(db, stage):
     return max(1, WORKERS // 2) if stage == "jev" and jev_overload >= 2 else WORKERS
 
 
+def _context_limit_error(exc):
+    return isinstance(exc, ValueError) and str(exc).endswith(
+        "exceeds conservative context bound")
+
+
+def plan_evidence_chunks(work, trial=False, bounded_trial=False):
+    """Preflight every POST before any reservation or worker starts.
+
+    The payload builders use UTF-8 request bytes as a conservative context
+    proxy and include the entire reserved output allowance. Keep their exact
+    payload and size-specific cache identity together with each selected row.
+    """
+    size = trial25.BATCH_SIZE if trial else evidence.BATCH_SIZE
+    chunk_size = size if bounded_trial else CHUNK_ROWS
+    chunks, oversized = deque(), []
+    for start in range(0, len(work), chunk_size):
+        source = deque(work[start:start + chunk_size])
+        planned = deque()
+        while source:
+            limit = min(size, len(source))
+            chosen = None
+            candidates = list(source)[:limit]
+            for count in range(limit, 0, -1):
+                rows = candidates[:count]
+                try:
+                    body = trial25.payload(rows) if trial else previous.evidence_payload(rows)
+                except ValueError as exc:
+                    if not _context_limit_error(exc):
+                        raise
+                else:
+                    chosen = (rows, body)
+                    break
+            if chosen is None:
+                oversized.append(source.popleft())
+                continue
+            rows, body = chosen
+            for _ in rows:
+                source.popleft()
+            cfg = trial25.config_for_size(len(rows)) if trial else previous.evidence_config(rows)
+            planned.append((rows, body, cfg))
+        if planned:
+            chunks.append(planned)
+    return chunks, oversized
+
+
+def block_oversized_evidence(db, rows):
+    """Retain every source ID and exclude exact-text aliases from repeat plans."""
+    if not rows:
+        return
+    with db:
+        for row in rows:
+            db.execute("""UPDATE scale_rows SET blocked_reason='evidence_context_limit'
+                WHERE text_sha=? AND review_text=? AND blocked_reason IS NULL""",
+                (row["text_sha256"], row["review_text"]))
+
+
+def backoff_seconds(new_uncertain):
+    return min(30, 2 ** min(new_uncertain, 4))
+
+
 def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=False):
     db = budget.db
     assert_resume_safe(db)
@@ -470,10 +530,16 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
         if len(work) < 100:
             raise ValueError("25-review trial requires 100 untouched labeled texts")
         work = work[:100]
-    # Each slot owns successive 500-source chunks. Main thread alone reserves,
-    # saves, and settles each ten-review request before that slot continues.
-    chunk_size = trial25.BATCH_SIZE if bounded_trial else CHUNK_ROWS
-    chunks = deque(deque(work[i:i + chunk_size]) for i in range(0, len(work), chunk_size))
+    # Each slot owns successive source chunks. Preflight all evidence payloads
+    # before the first POST, so a long review cannot strand active futures.
+    if stage == "evidence":
+        chunks, oversized = plan_evidence_chunks(work, trial, bounded_trial)
+        if bounded_trial and oversized:
+            raise ValueError("25-review trial has an evidence context-limit row")
+        block_oversized_evidence(db, oversized)
+    else:
+        chunks = deque(deque(([row], None, None) for row in work[i:i + CHUNK_ROWS])
+            for i in range(0, len(work), CHUNK_ROWS))
     slots = {i: deque() for i in range(WORKERS)}
     active = {}
     limit, rate_errors, new_uncertain, invalid_streak = \
@@ -481,28 +547,27 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
     ceiling = safe_worker_ceiling(db, stage)
     limit = min(limit, ceiling)
     stable_successes = 0
-    stop, halt = False, None
+    stop, halt, cooldown_until = False, None, 0.0
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         while active or (chunks or any(slots.values())) and not stop:
             for slot in range(limit, WORKERS):
                 if slots[slot] and not any(value[0] == slot for value in active.values()):
                     chunks.appendleft(slots[slot])
                     slots[slot] = deque()
+            cooling = time.monotonic() < cooldown_until
             for slot in range(limit):
+                if cooling:
+                    break
                 if stop or any(value[0] == slot for value in active.values()):
                     continue
                 if not slots[slot] and chunks:
                     slots[slot] = chunks.popleft()
                 if not slots[slot]:
                     continue
-                batch = 1 if stage == "jev" else trial25.BATCH_SIZE if trial else evidence.BATCH_SIZE
-                if stage == "evidence" and len(slots[slot]) < batch and chunks:
-                    slots[slot].extend(chunks.popleft())
-                rows = [slots[slot].popleft() for _ in range(min(batch, len(slots[slot])))]
-                body = jev.build_request(rows[0]["review_text"]) if stage == "jev" else \
-                    trial25.payload(rows) if trial else previous.evidence_payload(rows)
-                cfg = config_hash(jev.label_config()) if stage == "jev" else \
-                    trial25.config_for_size(len(rows)) if trial else previous.evidence_config(rows)
+                rows, body, cfg = slots[slot].popleft()
+                if stage == "jev":
+                    body = jev.build_request(rows[0]["review_text"])
+                    cfg = config_hash(jev.label_config())
                 key = "scale100k-" + evidence.digest({"manifest": manifest_sha,
                     "stage": stage, "ids": [r["review_id"] for r in rows], "config": cfg})
                 def record(conn):
@@ -514,13 +579,17 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
                     budget.reserve(key, "jev" if stage == "jev" else "openrouter", reservation, record)
                 except Exception as exc:
                     stop, halt = True, type(exc).__name__ + ": " + str(exc)
-                    slots[slot].extendleft(reversed(rows))
+                    slots[slot].appendleft((rows, body, cfg))
                     break
                 future = pool.submit(_call, stage, body, api_key)
                 active[future] = (slot, key, rows)
             if not active:
+                if not stop and time.monotonic() < cooldown_until:
+                    time.sleep(cooldown_until - time.monotonic())
+                    continue
                 break
-            done, _ = wait(active, return_when=FIRST_COMPLETED)
+            timeout = max(0.0, cooldown_until - time.monotonic()) if cooling else None
+            done, _ = wait(active, timeout=timeout, return_when=FIRST_COMPLETED)
             for future in done:
                 slot, key, rows = active.pop(future)
                 response, elapsed, error = future.result()
@@ -541,7 +610,8 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
                     if new_uncertain >= 2:
                         stop, halt = True, "repeated transient failures; held both requests"
                     else:
-                        time.sleep(min(30, 2 ** min(new_uncertain, 4)))
+                        cooldown_until = max(cooldown_until,
+                            time.monotonic() + backoff_seconds(new_uncertain))
                 elif state == "uncertain":
                     new_uncertain += 1
                     stable_successes = 0
@@ -560,6 +630,7 @@ def run_stage(budget, manifest_sha, stage, api_key, trial=False, bounded_trial=F
         1 if stage == "jev" else evidence.BATCH_SIZE,
         "paused": stop, "halt_reason": halt,
         "new_uncertain": new_uncertain, "rate_errors": rate_errors,
+        "oversized_evidence_rows": len(oversized) if stage == "evidence" else 0,
         "final_worker_limit": limit, "eligible_unique": len(pending(db, stage))})
     return out
 
