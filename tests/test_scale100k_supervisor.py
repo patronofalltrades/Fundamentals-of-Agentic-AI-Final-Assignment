@@ -33,14 +33,15 @@ class SupervisorTest(unittest.TestCase):
         self.addCleanup(self.patch_checkpoint.stop)
         self.addCleanup(self.patch_coverage.stop)
 
-    def run_steps(self, steps, stopped=lambda: False, resume_reviewed=False):
+    def run_steps(self, steps, stopped=lambda: False, resume_reviewed=False,
+                  manifest=None):
         calls = []
         def invoke(mode, manifest, sha, interrupted):
             calls.append(mode)
             expected, result = steps.pop(0)
             self.assertEqual(mode, expected)
             return result
-        result = supervisor.supervise({"rows": []}, "frozen-sha", stopped, invoke,
+        result = supervisor.supervise(manifest or {"rows": []}, "frozen-sha", stopped, invoke,
             resume_reviewed=resume_reviewed)
         self.assertFalse(steps)
         return result, calls
@@ -172,16 +173,28 @@ class SupervisorTest(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertNotIn("activate-next-gate", calls)
 
-    def test_completed_scope_requires_reconciled_source_statuses(self):
-        complete = state(90000, 0, labels=90000, evidence=90000,
-            states={"accepted": 90000})
-        code, calls = self.run_steps([("status", complete)])
+    def test_accepted_target_requires_reconciled_source_statuses(self):
+        complete = state(100000, 0, labels=100000, evidence=90434,
+            states={"accepted": 90434, "quarantined": 9566})
+        code, calls = self.run_steps([("status", complete)],
+            manifest={"rows": [], "selected_rows": 100000})
         self.assertEqual(code, 0)
         self.assertEqual(calls, ["status"])
-        unfinished = state(90000, 0, labels=90000, evidence=89999,
-            states={"accepted": 89999, "eligible_or_awaiting_label": 1})
+        unfinished = state(100000, 0, labels=100000, evidence=90433,
+            states={"accepted": 90433, "quarantined": 9566,
+                "eligible_or_awaiting_label": 1})
         with self.assertRaisesRegex(ValueError, "unfinished eligible"):
-            self.run_steps([("status", unfinished)])
+            self.run_steps([("status", unfinished)],
+                manifest={"rows": [], "selected_rows": 100000})
+
+    def test_selected_100k_alone_does_not_complete_accepted_target(self):
+        selected = state(90000, 0, labels=90000, evidence=90000,
+            states={"accepted": 90000})
+        code, calls = self.run_steps([("status", selected)])
+        self.assertEqual(code, 2)
+        self.assertEqual(calls, ["status"])
+        self.assertEqual(json.loads(supervisor.CHECKPOINT.read_text())[
+            "stop_reason"], "frozen source exhausted before accepted target")
 
     def test_interrupt_does_not_dispatch(self):
         code, calls = self.run_steps([("status", state())], lambda: True)
