@@ -124,6 +124,73 @@ does not cover the full corpus. The instructor's reported 100,000-row minimum
 and the supplied full-corpus checker remain unresolved as a grading-scope
 question.
 
+### Private grouping artifact and remaining decision
+
+`tools/issue_grouping_handoff.py prepare` verified the frozen accepted export
+and wrote the ignored, mode-0600 `local/accepted100k_issue_grouping_frame.json`.
+Its SHA-256 is
+`e9d5b4c1f82d3498228ad0ef67f452061023c45b81477403cfe9e533827fe1bf`.
+It holds exactly 30,403 distinct complaint/cancellation source IDs, their
+original hashes, source text, saved exact evidence, severity, provenance, and
+semantic-flag status. Twenty-four IDs are flagged. It is a private grouping
+input, not a completed issue map and never a public upload.
+
+The same tool's `rank` action requires a versioned private issue catalog
+(`spotify-issue-catalog-v1`, with a stable ID, title, and definition for each
+issue) and a CSV with exactly `issue_id,review_id` columns and exactly one
+valid membership for each of the 30,403 candidates. It rejects missing,
+duplicate, foreign, and unknown-issue memberships. Once supplied, it writes
+both the 30,403-record contract baseline and the 30,379-record public
+projection using integer severity sums, the issue-ID tie break, and
+six-decimal half-up means. It records input checksums for replay.
+
+**Smallest unresolved semantic decision:** approve a stable issue catalog and
+mapping procedure for these records. The saved eight primary `topic` labels
+are broad classes, not named issue clusters, and no grouping implementation
+or membership output exists. This handoff does not turn topics into issue IDs
+or invent memberships. The source frame is ready for a separately authorized
+grouping role or human mapping; deterministic validation and ranking need no
+paid calls after that mapping is saved.
+
+### PR #16 public API acceptance tests
+
+The imported SQLite data passed `PRAGMA quick_check`, and its saved partition
+is 100,229 accepted, 1,791 quarantined, 1,457 unresolved, one empty, and
+6,522 pending. PR #16 is open and its Vercel preview check is green, but the
+current `dashboard/server.py` still returns `row_index` and source hashes in
+review lists, serves numeric `/api/reviews/{row_index}` details, includes
+unshortened `evidence_quote`, exposes individual nonaccepted `reason`, and
+ranks membership without filtering known semantic flags. The preview check
+does not test the approved public boundary.
+
+Before any public data import or deployment, add API-level tests that:
+
+1. Reject numeric source-position detail routes and confirm all public record
+   links use opaque, nonpredictable references with private ID/hash mapping.
+   Inspect list, detail, search, and issue-example responses, not only page
+   rendering; none may reveal the original ID, source position, or hash.
+2. Reject any public excerpt over 30 words, any unscreened personal
+   information, and any shortened excerpt lacking a visible shortened marker.
+   Confirm the private exact-source quote remains unchanged and validates.
+3. Confirm nonaccepted rows are available only as state counts and sanitized
+   reason-category counts; individual detail routes and raw exception or
+   provider strings must not return them.
+4. Confirm all 47 known semantic flags remain in the accepted processing
+   count but never enter public examples; the 24 flagged
+   complaint/cancellation records do not enter public issue membership or
+   ranking. Show the 30,379 public candidate denominator while keeping all
+   30,403 in the private baseline membership.
+5. Keep issue ranking and recommendations visibly pending until an explicit
+   catalog, complete validated membership, and checked claims are saved.
+   Recompute `severity_sum` from membership and severity; assert descending
+   score with ascending issue-ID ties and no fabricated issues.
+
+The instructor-reported minimum and Hanif's later target are 100,000 accepted
+original IDs, reached by this checkpoint. The supplied grading contract still
+specifies 660,622 final records. Disclose that difference in submission
+materials and confirm grading scope; do not treat it as a reason to discard
+the 100,229 accepted-row result.
+
 Issue grouping, independent verification, the product memo, grading export,
 and deployment each need their own checked handoff. This document authorizes
 none of those external actions.
