@@ -109,8 +109,9 @@ def rank(frame, catalog, membership_rows):
             sum(not row["known_semantic_flag"] for row in records.values()) != 30379:
         raise ValueError("grouping frame coverage differs")
     if catalog.get("schema_version") != "spotify-issue-catalog-v1" or \
+            catalog.get("status") != "approved" or \
             not catalog.get("mapping_rule_version") or not catalog.get("issues"):
-        raise ValueError("an explicit versioned issue catalog is required")
+        raise ValueError("an approved versioned issue catalog is required")
     issues = {}
     for item in catalog["issues"]:
         issue_id = item["issue_id"]

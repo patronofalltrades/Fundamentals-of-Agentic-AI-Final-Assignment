@@ -13,7 +13,7 @@ class IssueGroupingHandoffTests(unittest.TestCase):
             "membership_rule": "one_issue_per_record",
             "rows": [{"review_id": "synthetic-%05d" % i, "severity": 2 + i % 4,
                 "known_semantic_flag": i < 24} for i in range(30403)]}
-        cls.catalog = {"schema_version": "spotify-issue-catalog-v1",
+        cls.catalog = {"schema_version": "spotify-issue-catalog-v1", "status": "approved",
             "mapping_rule_version": "synthetic-v1",
             "issues": [{"issue_id": "a", "title": "Synthetic A", "definition": "Fixture only"},
                 {"issue_id": "b", "title": "Synthetic B", "definition": "Fixture only"}]}
@@ -37,8 +37,10 @@ class IssueGroupingHandoffTests(unittest.TestCase):
             rank(self.frame, self.catalog, self.membership + [self.membership[0]])
 
     def test_catalog_is_required_and_no_topic_mapping_is_inferred(self):
-        with self.assertRaisesRegex(ValueError, "explicit versioned"):
+        with self.assertRaisesRegex(ValueError, "approved versioned"):
             rank(self.frame, {}, self.membership)
+        with self.assertRaisesRegex(ValueError, "approved versioned"):
+            rank(self.frame, dict(self.catalog, status="draft_unapproved"), self.membership)
         with self.assertRaisesRegex(ValueError, "foreign, repeated"):
             rank(self.frame, self.catalog,
                  [{"issue_id": "topic-playback", "review_id": m["review_id"]}

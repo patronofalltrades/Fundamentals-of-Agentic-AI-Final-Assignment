@@ -152,6 +152,11 @@ or invent memberships. The source frame is ready for a separately authorized
 grouping role or human mapping; deterministic validation and ranking need no
 paid calls after that mapping is saved.
 
+A [64-case, review-only issue catalog proposal](issue-grouping-proposal.md)
+and machine-readable draft now provide a concrete semantic decision for
+review. They make no membership assignments; the ranker rejects the draft
+catalog until it is approved.
+
 ### PR #16 public API acceptance tests
 
 The imported SQLite data passed `PRAGMA quick_check`, and its saved partition
