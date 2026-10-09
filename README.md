@@ -11,9 +11,17 @@ playback, or billing/support? No recommendation exists yet.
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app** — public, read-only, no login. It now shows development data only (500 reviews). See section 6. |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Class 7 is on the same day; the time is not known. |
 | Submission | This public repository. Final submission through the course portal is pending. |
-| Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
+| Scope | Instructor minimum: 100,000 selected source reviews. Hanif's current target: **at least 100,000 accepted evidence rows for distinct source IDs**. Stretch goal: all 660,622 IDs. |
 | Budget | Strictly below US$50. The ceiling is US$49.99. The ceiling is not permission to spend. The instructor expects about US$10 for 100,000 reviews. |
 | Status date | 9 October 2026 |
+
+The accepted-evidence target may require selecting more than 100,000 source
+IDs. Quarantined, uncertain, invalid, empty-text, and synthetic rows do not
+count. Every selected original ID and source hash stays accounted for. Semantic
+review flags remain separate from structural acceptance and exclude affected
+rows from representative examples pending human review. The scaled run keeps
+separate cumulative $5 Jev and $5 OpenRouter caps, including full unresolved
+holds; this target does not increase either cap.
 
 ## 1. Status
 
@@ -33,7 +41,7 @@ playback, or billing/support? No recommendation exists yet.
 | Cost calculator with measured cold and warm runs | Partial. Only offline replay scaffolding exists. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Scoring has not run in this pipeline. | Section 7 |
 | Dashboard, backend, database, live URL | **Live** with the 500-review development data. Issue ranking and recommendations show pending. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
-| 100,000-review run | **In progress.** The first 20,000 source positions are selected; inference is incomplete and paused for a tested code update. | [scale progress](reports/scale100k-progress.md) |
+| Accepted-evidence run | **In progress.** At the latest drained checkpoint, 90,000 source IDs were selected and 87,003 had accepted evidence. More frozen source gates are needed to reach 100,000 accepted rows. | [scale progress](reports/scale100k-progress.md) |
 | Full-corpus run (stretch) | Not started. | — |
 
 ## 2. Decisions

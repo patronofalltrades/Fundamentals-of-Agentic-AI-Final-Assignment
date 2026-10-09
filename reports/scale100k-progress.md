@@ -1,6 +1,31 @@
 # 100,000-review scale checkpoint — October 9, 2026
 
-This report covers the first 10,000 of the approved remaining 90,000 source reviews. It records saved provider results and conservative budget exposure. It does not claim completion of the 100,000-review assignment or human-label accuracy.
+This report records saved provider results and conservative budget exposure.
+**Hanif's October 9 target is at least 100,000 accepted evidence rows for
+distinct source IDs**, which may require more than 100,000 selected IDs.
+Quarantined, uncertain, invalid, empty-text, and synthetic rows do not count.
+Semantic review flags remain separate from structural acceptance and exclude
+flagged rows from representative examples pending human review. The separate
+$5 Jev and $5 OpenRouter caps remain unchanged. This is not human-label accuracy.
+
+## Latest drained aggregate checkpoint
+
+At the latest reviewed pause, 90,000 source IDs were selected: 80,000 in the
+scale queue plus the earlier 10,000 checkpoint. Accepted evidence was 87,003
+distinct source IDs: 77,437 in the scale queue plus the earlier 9,566, counted
+once. The scale queue retained 1,305 quarantined rows and all uncertain source
+memberships. A new Jev request returned a URL error with no saved response or
+usage; its full $0.002688 reservation remains held. There were no active
+reservations or untouched texts in this gate. Cumulative exposure including
+all charges and holds was $2.975983458/$5 Jev and $2.325507220/$5 OpenRouter.
+
+One earlier charged 25-review response ended at the 12,288-output-token limit
+with `finish_reason=length`. Its saved usage and $0.002206509 charge match.
+All 25 rows remain quarantined without a retry. The offline recovery helper
+now leaves truncated responses charged and quarantined while validating and
+recovering uniquely identified exact-span rows from other saved responses.
+The optional source extension is frozen privately, with positions selected
+only in later 10,000-ID gates if the accepted target has not been reached.
 
 ## Saved results
 

@@ -166,10 +166,12 @@ def recover_metered(db):
     """Recover uniquely identified exact-span rows from saved charged responses."""
     if db.execute("SELECT 1 FROM reservations WHERE status='reserved' LIMIT 1").fetchone():
         raise ValueError("active request; offline recovery deferred")
-    total = {"batches": 0, "new_accepted": 0, "remaining_quarantined": 0}
+    total = {"batches": 0, "new_accepted": 0, "remaining_quarantined": 0,
+        "truncated_batches": 0}
     batches = list(db.execute("""SELECT q.request_key,q.response_json,q.config_sha,
         r.charged_nusd,r.status FROM scale_requests q JOIN reservations r
-        USING(request_key) WHERE q.stage='evidence' AND q.status='quarantined_metered'"""))
+        USING(request_key) WHERE q.stage='evidence' AND q.status='quarantined_metered'
+        ORDER BY q.rowid"""))
     for key, raw, cfg, charged, reservation_status in batches:
         rows = {r["review_id"]: r for r in ({"review_id": rid, "review_text": text,
             "text_sha256": text_sha} for rid, text, text_sha in db.execute("""SELECT
@@ -179,9 +181,24 @@ def recover_metered(db):
                 cfg != trial25.config_for_size(len(rows)):
             raise ValueError("metered response, charge, or configuration differs")
         response = json.loads(raw)
-        if trial25.measured_usage(response)[-1] != charged or \
-                response["choices"][0].get("finish_reason") != "stop":
-            raise ValueError("saved response charge or finish differs")
+        if trial25.measured_usage(response)[-1] != charged:
+            raise ValueError("saved response charge differs")
+        finish = response["choices"][0].get("finish_reason")
+        if finish == "length":
+            # A metered response at the output limit has no trusted complete
+            # result set. Retain every member as charged and quarantined.
+            quarantined = db.execute("SELECT COUNT(*) FROM scale_quarantines WHERE "
+                "request_key=?", (key,)).fetchone()[0]
+            if quarantined != len(rows) or db.execute("SELECT 1 FROM scale_members m "
+                    "JOIN scale_evidence e USING(review_id) WHERE m.request_key=? LIMIT 1",
+                    (key,)).fetchone():
+                raise ValueError("truncated batch membership differs")
+            total["batches"] += 1
+            total["truncated_batches"] += 1
+            total["remaining_quarantined"] += quarantined
+            continue
+        if finish != "stop":
+            raise ValueError("saved response finish differs")
         body = json.loads(response["choices"][0]["message"]["content"])
         items = body.get("results") if isinstance(body, dict) else None
         if not isinstance(items, list) or len(items) != len(rows):
