@@ -35,6 +35,7 @@ LOCK = Path("local/scale100k_paid_run.lock")
 WORKERS = 8
 CHUNK_ROWS = 500
 GATE_ROWS = 10000
+JEV_SLOT_ENV = "SPOTIFY_JEV_MAX_SLOTS"
 
 
 def canonical(value):
@@ -447,10 +448,18 @@ def initial_worker_limit(db, stage):
 
 
 def safe_worker_ceiling(db, stage):
-    """Keep Jev at four after observed provider overload; evidence may use eight."""
+    """Default Jev to four; an explicit bounded setting may change its ceiling."""
+    if stage != "jev":
+        return WORKERS
+    try:
+        configured = int(os.environ.get(JEV_SLOT_ENV, "4"))
+    except ValueError as exc:
+        raise ValueError("invalid Jev slot setting") from exc
+    if not 1 <= configured <= WORKERS:
+        raise ValueError("Jev slot setting outside shared worker cap")
     jev_overload = db.execute("""SELECT COUNT(*) FROM scale_requests
         WHERE stage='jev' AND status='uncertain' AND error_class LIKE '%:529'""").fetchone()[0]
-    return max(1, WORKERS // 2) if stage == "jev" and jev_overload >= 2 else WORKERS
+    return min(configured, max(1, WORKERS // 2)) if jev_overload >= 2 else configured
 
 
 def _context_limit_error(exc):

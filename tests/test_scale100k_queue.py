@@ -73,7 +73,8 @@ class ScaleQueueTest(unittest.TestCase):
                 with patch.object(scale, "verify_jev_price"), \
                      patch.object(scale.jev, "check_model_access"), \
                      patch.object(scale, "_call", side_effect=timeout_call), \
-                     patch.object(scale.time, "sleep"):
+                     patch.object(scale.time, "sleep"), \
+                     patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "8"}):
                     result = scale.run_stage(budget, "synthetic-manifest", "jev", "synthetic-key")
                 self.assertTrue(result["paused"])
                 self.assertEqual(result["new_uncertain"], scale.WORKERS)
@@ -156,10 +157,14 @@ class ScaleQueueTest(unittest.TestCase):
             db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
             self.assertEqual(scale.initial_worker_limit(db, "jev"), 4)
             self.assertEqual(scale.initial_worker_limit(db, "evidence"), 8)
-            self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 8)
+            self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 4)
+            with patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "6"}):
+                self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 6)
             db.execute("INSERT INTO scale_requests VALUES ('jev','uncertain','JevHTTPError:529')")
             self.assertEqual(scale.safe_worker_ceiling(db, "jev"), 4)
             self.assertEqual(scale.safe_worker_ceiling(db, "evidence"), 8)
+            with patch.dict(scale.os.environ, {scale.JEV_SLOT_ENV: "9"}):
+                self.assertRaises(ValueError, scale.safe_worker_ceiling, db, "jev")
         finally:
             db.close()
 

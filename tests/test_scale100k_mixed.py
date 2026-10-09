@@ -66,8 +66,6 @@ class MixedSchedulerTest(unittest.TestCase):
                      patch.object(scale.jev, "check_model_access"), \
                      patch.object(scale.benchmark, "verify_route"), \
                      patch.object(scale.canary, "verify_project_key"), \
-                     patch.object(scale, "safe_worker_ceiling",
-                         side_effect=lambda db, stage: 4 if stage == "jev" else 8), \
                      patch.object(scale, "_call", side_effect=transport):
                     result = scale.run_mixed(budget, "synthetic-manifest",
                         "jev-key", "evidence-key")

@@ -165,7 +165,7 @@ class ThroughputSafetyTest(unittest.TestCase):
                         "jev", "synthetic-key")
                 first, last = items[0]["review_text"], items[-1]["review_text"]
                 self.assertEqual(result["new_uncertain"], 1)
-                self.assertEqual(result["final_worker_limit"], 4)
+                self.assertEqual(result["final_worker_limit"], 2)
                 self.assertGreaterEqual(events[last]["start"] - events[first]["finish"], 0.07)
                 self.assertTrue(any(events[r["review_text"]]["finish"] <
                     events[last]["start"] for r in items[1:8]))
