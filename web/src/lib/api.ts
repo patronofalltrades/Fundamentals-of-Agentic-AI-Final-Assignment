@@ -22,6 +22,28 @@ export type EvaluationSet = {
   label_config: string
 }
 
+export type RowState = "accepted" | "quarantined" | "unresolved" | "empty" | "pending"
+export const ROW_STATES: { key: RowState; label: string; help: string }[] = [
+  { key: "accepted", label: "Accepted", help: "Labels and evidence passed every check" },
+  { key: "quarantined", label: "Quarantined", help: "A saved result failed a check and was set aside" },
+  { key: "unresolved", label: "Unresolved", help: "Request delivery is unknown, or the text repeats one that is" },
+  { key: "empty", label: "Empty", help: "The review has no text" },
+  { key: "pending", label: "Pending", help: "Awaiting a label; not a model failure" },
+]
+
+/** Sanitized reason categories (dashboard/public_boundary.py). Individual reasons stay private. */
+export const REASON_LABELS: Record<string, string> = {
+  awaiting_label: "Awaiting a label",
+  empty_text: "No review text",
+  evidence_quote_check_failed: "Evidence quote failed the source check",
+  entity_check_failed: "Entities failed the source check",
+  batch_id_check_failed: "Batch source IDs failed the check",
+  other_output_check_failed: "Other output check failed",
+  repeat_of_quarantined_text: "Repeats a quarantined text",
+  delivery_unconfirmed: "Request delivery not confirmed",
+  repeat_of_unresolved_text: "Repeats an unresolved text",
+}
+
 export type Summary = {
   source: { basename: string; sha256: string; config_hash: string | null }
   coverage: {
@@ -35,6 +57,22 @@ export type Summary = {
   quality: { classifier_agreement: number | null; blind_verifier: string; human_evaluation: string }
   analysis: { grouping: string; ranking: string; recommendations: string; memo: string; run_id: string | null }
   target: { minimum_source_rows: number; is_demo: boolean }
+  /** Row states from an accepted-evidence import; null for older databases. */
+  states: Record<RowState, number> | null
+  representative_exclusions: number | null
+  import: {
+    selected_rows: number
+    accepted_rows: number
+    handoff_sha256: string
+    source_file_sha256: string
+    imported_at: string
+    representative_evidence_exclusions: number
+    scope?: string
+    public_examples?: { public: number; shortened: number; excluded_known_flag: number; excluded_personal_info: number }
+    issue_candidates?: { contract_baseline: number; public_projection: number; flagged_excluded: number }
+  } | null
+  /** Counts of sanitized reason categories per nonaccepted state. */
+  reason_categories?: Partial<Record<RowState, Record<string, number>>> | null
   trends: Trends | null
   evaluation: { status: "pending" } | { status: "saved"; sets: Record<string, EvaluationSet> }
   top_issue: {
@@ -60,23 +98,42 @@ export type Claim = { claim_id: string; issue_id: string; metric: string; value:
 export type Claims = { status: string; run_id?: string; items: Claim[] }
 export type Memo = { status: string; run_id?: string; text: string | null; sha256?: string }
 
+/**
+ * One evidence example. An accepted-evidence import returns an opaque `ref` and a bounded `excerpt`
+ * (at most 30 words, `shortened` when cut). Older databases return `row_index` and the full quote.
+ */
 export type ReviewItem = {
-  row_index: number
-  source_sha256: string
+  ref?: string
+  excerpt?: string
+  shortened?: boolean
+  row_index?: number
+  source_sha256?: string
+  evidence_quote?: string
   topic: string
   intent: string
   severity: number
-  evidence_quote: string
   needs_review: number
   is_cached: number
 }
-export type Reviews = { items: ReviewItem[]; total: number; limit: number; offset: number }
-export type ReviewDetail = ReviewItem & {
-  sentiment: number | null
-  label_config: string
-  model: string | null
-  prompt_version: string | null
+export type Reviews = {
+  items: ReviewItem[]
+  total: number
+  limit: number
+  offset: number
+  excluded_blocked?: number | null
+  excluded_personal_info?: number | null
 }
+export type ReviewDetail = ReviewItem & {
+  state?: RowState
+  sentiment?: number | null
+  label_config?: string
+  model?: string | null
+  prompt_version?: string | null
+  human_validated?: boolean
+}
+
+/** The link key for an example: its opaque reference, or the row number in older databases. */
+export const reviewKey = (item: ReviewItem) => item.ref ?? String(item.row_index)
 
 export type EvalMetric = { label: string; value: number | string | null; format: string; of?: number; note?: string | null }
 export type EvalItem = {
@@ -137,7 +194,7 @@ export const api = {
     search.set("offset", String(params.offset ?? 0))
     return get<Reviews>(`/api/reviews?${search}`)
   },
-  review: (rowIndex: number) => once<ReviewDetail>(`/api/reviews/${rowIndex}`),
+  review: (key: string) => once<ReviewDetail>(`/api/reviews/${encodeURIComponent(key)}`),
 }
 
 export const fmt = {

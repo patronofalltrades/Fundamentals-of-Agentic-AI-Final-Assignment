@@ -27,7 +27,7 @@ export default function ProgressStrip() {
       <Item icon={<ScanSearch className="size-4" aria-hidden="true" />} label="Classified toward the minimum"
         value={`${fmt.int(c.completed_rows)} of ${fmt.int(s.target.minimum_source_rows)}`} ratio={c.completed_rows / s.target.minimum_source_rows} />
       <span className="hidden h-10 w-px bg-border md:block" aria-hidden="true" />
-      <Item icon={<Copy className="size-4" aria-hidden="true" />} label="Distinct texts sent to the model"
+      <Item icon={<Copy className="size-4" aria-hidden="true" />} label="Distinct texts in the selection"
         value={`${fmt.int(c.distinct_nonempty_texts)} of ${fmt.int(c.nonempty_rows)} reviews`} ratio={c.nonempty_rows ? c.distinct_nonempty_texts / c.nonempty_rows : 0} />
     </div>
   )

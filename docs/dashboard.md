@@ -283,3 +283,45 @@ python3 -m dashboard load-bundle --bundle <bundle-dir> --postgres-env DASHBOARD_
   it points at the Neon database `dashboard_5000` (4,649 labelled rows; 285 quarantined and 66 uncertain rows
   are counted but not labelled). The 500-row database `neondb` is unchanged.
 - **Rollback:** remove `DASHBOARD_DATABASE_URL` from the Vercel production environment and redeploy.
+
+## Accepted-evidence import (`import-accepted`, local and private)
+
+Contract: `docs/accepted-evidence-dashboard-import.md` in the pipeline worktree. The handoff JSON is private and
+ignored. It is read by code only, never committed, uploaded or pasted.
+
+```sh
+python3 -m dashboard import-accepted --handoff <private handoff.json> \
+  --sha256 01d3f466e86f3d6a010f5e9b28b2c1347e683d925228591ff6fa36a2bb75c39c \
+  --source-csv <spotify_reviews_18months.csv> --db local/accepted100k_public_v3.db
+python3 -m dashboard serve --db local/accepted100k_public_v3.db
+```
+
+- **Gates, all before any write:** digest and schema; no repeated ID; accepted and excluded IDs partition the
+  110,000 selected IDs; the CSV hash; every six-field source hash and position against the CSV; every accepted
+  quote and entity against its own source text; known source states only; the 47 representative exclusions
+  match coverage and each has a finding. The target file must be new.
+- **States:** accepted 100,229 · quarantined 1,791 · unresolved 1,457 (uncertain, prior-uncertain and
+  attempted-alias rows) · empty 1 · pending 6,522. Pending rows await a label and are never shown as failures.
+  Only accepted rows enter the label totals and trends.
+- **Public boundary** (`dashboard/public_boundary.py`, applied once at import). The API follows it whenever the
+  database has a `public_example` table:
+  - **Opaque references.** Each public example has a random `ref` (`r` + 16 hex). `#review-<ref>` and
+    `/api/reviews/<ref>` open it. Row-number routes return 404. No public response holds a review ID, source
+    position or source hash. Lists are ordered by `ref`, so a page offset reveals no position.
+  - **Excerpts.** At most 30 words. A longer quote is cut, ends in `…` and is marked `shortened`. Search reads
+    the excerpt only. The exact quote stays private and unchanged.
+  - **Personal-information screen.** Automatic, not human. It removes quotes with an email, link, handle,
+    7+ digit number, name phrase, `First.Last`, or a capitalized word seen in lowercase fewer than 3 times in
+    the accepted quotes. On the real import it removed 4,950 quotes. It cannot catch a name that is also a common
+    word, or a name in another script.
+  - **Nonaccepted rows.** Counts only, per state and sanitized reason category. No detail route, raw reason,
+    exception or provider message is public.
+  - **Flags.** The 47 flagged records stay in the accepted total of 100,229. They never appear as examples and
+    are left out of public issue rankings (`/api/issues`). The summary shows the issue-candidate denominators:
+    30,403 in the course baseline, 30,379 for public rankings, 24 flagged.
+- **Real import (10 Oct 2026):** 95,232 public examples (496 shortened); 47 excluded by flag; 4,950 by the screen.
+  Issue ranking and recommendations stay pending: no issue catalog or membership exists yet.
+- **Private tables:** `source_text`, `raw_record`, `row_state` reasons and the full quotes stay local. The import
+  manifest (`dashboard_meta.import_manifest`) holds counts, hashes, state counts and the import time, and no path.
+- **Publication:** not authorised. The contract says to wait for saved issue membership and ranking. The private
+  database must not be uploaded. A public database needs a separate export that holds only the public boundary.

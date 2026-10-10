@@ -28,6 +28,11 @@ def main():
     handoff.add_argument("--manifest", required=True, help="the checkpoint manifest with every selected row")
     handoff.add_argument("--source-csv", required=True, help="the source CSV the manifest names (hash-checked)")
     handoff.add_argument("--out", required=True)
+    accepted = sub.add_parser("import-accepted", help="import the private accepted-evidence handoff into a new local DB")
+    accepted.add_argument("--handoff", required=True, help="private accepted-evidence handoff JSON (never committed)")
+    accepted.add_argument("--sha256", required=True, help="the handoff's verified SHA-256")
+    accepted.add_argument("--source-csv", required=True, help="the source CSV the handoff names (hash-checked)")
+    accepted.add_argument("--db", required=True, help="new local SQLite file; it keeps source text, so keep it private")
     load = sub.add_parser("load-bundle", help="idempotently load a bundle into SQLite or Postgres")
     load.add_argument("--bundle", required=True)
     target = load.add_mutually_exclusive_group(required=True)
@@ -60,6 +65,11 @@ def main():
         from .handoff import handoff_to_bundle
         manifest = handoff_to_bundle(args.handoff, args.manifest, args.source_csv, args.out)
         print(json.dumps({"counts": manifest["counts"], "rows_sha256": manifest["rows_sha256"]}, sort_keys=True))
+    elif args.command == "import-accepted":
+        from .accepted_import import import_accepted
+        manifest = import_accepted(args.handoff, args.source_csv, args.db, args.sha256)
+        print(json.dumps({k: manifest[k] for k in ("selected_rows", "state_counts", "representative_evidence_exclusions",
+                                                   "handoff_sha256", "imported_at")}, sort_keys=True))
     elif args.command == "load-bundle":
         import os
         if args.sqlite:
