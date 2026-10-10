@@ -1,8 +1,16 @@
 {
   "schema_version": "spotify-issue-catalog-v1",
   "status": "pilot_authorized",
-  "mapping_rule_version": "draft-primary-problem-v1",
+  "mapping_rule_version": "pilot-primary-problem-v2-20261010",
+  "pilot_revision": {
+    "production_approved": false,
+    "base_catalog_sha256": "8b33dbf4aa54706f52ebae7c15dfce2dde228c5003ceb49859e94dbdfc0479a8",
+    "priority_decisions_sha256": "2b7c3de775e127f58851324ecc69c55399d98c20846cab1060914c46439a8230",
+    "gen_policy_diagnostic_sha256": "ec0e791905fdd19d5414e99cc498a1cab3bc5710b67c3f81b85f158855116a41",
+    "approval": "Hanif approved the proposed pilot catalog edits on 2026-10-10; unresolved decisions remain pending."
+  },
   "issues": [
+    {"issue_id": "APP-LAUNCH", "title": "App fails to open", "definition": "The app does not open, remains on its splash or logo screen, or never reaches a usable screen. If a sign-in screen is reached and authentication fails, use ACC-LOGIN; a crash during use is PLY-CRASH; a failed audio request is PLY-FAIL."},
     {"issue_id": "ACC-LOGIN", "title": "Sign-in failure", "definition": "Cannot sign in, authenticate, or regain access to an account."},
     {"issue_id": "ACC-STATE", "title": "Account content or state inaccessible", "definition": "Signed-in account content, saved library, or account state is inaccessible or unexpectedly lost, without a more specific download or catalog problem."},
     {"issue_id": "ACC-OTHER", "title": "Other account access problem", "definition": "A specific account access problem that does not fit sign-in or account-state loss."},
@@ -16,6 +24,8 @@
     {"issue_id": "CAT-REC", "title": "Unwanted or poor recommendations", "definition": "Recommendations, discovery suggestions, or unwanted automatic content are the stated problem, apart from a playback control failure."},
     {"issue_id": "CAT-LYRICS", "title": "Lyrics unavailable", "definition": "Lyrics are absent, incorrect, or unavailable for expected content."},
     {"issue_id": "CAT-OTHER", "title": "Other catalog problem", "definition": "A specific content selection or catalog problem outside the listed catalog definitions."},
+    {"issue_id": "DEV-COMPAT", "title": "App-device compatibility failure", "definition": "The app stops supporting or working on the user's own phone, tablet, or operating-system version. A failure involving an external device or platform belongs to DEV-INTEGRATION; lack of customer service alone is not this issue."},
+    {"issue_id": "DEV-INTEGRATION", "title": "External device or platform integration failure", "definition": "Spotify fails with an external device or platform such as a voice assistant, smartwatch, car, TV, smart speaker, or Connect target. A secondary support complaint does not replace the underlying integration failure."},
     {"issue_id": "DLD-FAIL", "title": "Download fails", "definition": "An attempted music or podcast download fails or does not complete."},
     {"issue_id": "DLD-OFFLINE", "title": "Downloaded content unusable offline", "definition": "Downloaded items or their list cannot be accessed or played without a connection."},
     {"issue_id": "DLD-LOST", "title": "Saved download disappears", "definition": "Previously downloaded or saved offline content disappears or is unexpectedly removed."},
@@ -25,7 +35,7 @@
     {"issue_id": "PLY-SELECTION", "title": "Wrong audio plays", "definition": "A selected track or queue item is replaced by different audio or cannot be selected as intended."},
     {"issue_id": "PLY-SHUFFLE", "title": "Shuffle or queue order failure", "definition": "Shuffle, queue order, or repeated-track selection does not follow the requested playback behavior."},
     {"issue_id": "PLY-BACKGROUND", "title": "Background playback failure", "definition": "Audio stops or the app fails specifically when the device locks, another app opens, or Spotify moves to background."},
-    {"issue_id": "PLY-CONTROL", "title": "Playback controls malfunction", "definition": "Pause, skip, stop, track display, or other playback controls fail while audio playback is otherwise available."},
+    {"issue_id": "PLY-CONTROL", "title": "Playback controls malfunction", "definition": "Pause, skip, stop, sleep timer, track display, or other playback controls fail while audio playback is otherwise available. A failed sleep timer is a stop-control failure; reported data use is a consequence to review separately."},
     {"issue_id": "PLY-QUALITY", "title": "Audio, loading, or connection quality", "definition": "Lag, buffering, audio quality, or connection instability degrades playback without a fully blocked start or crash."},
     {"issue_id": "PLY-OTHER", "title": "Other playback problem", "definition": "A specific playback problem outside the listed playback definitions."},
     {"issue_id": "SUP-NOREPLY", "title": "Support does not respond", "definition": "A stated request to customer support receives no answer or a materially delayed answer."},
@@ -39,6 +49,7 @@
     {"issue_id": "USE-NAV", "title": "Navigation or interface friction", "definition": "A specific screen, control layout, or navigation path makes the app difficult to use without a more specific issue."},
     {"issue_id": "USE-OTHER", "title": "Other usability problem", "definition": "A specific usability problem outside the listed usability definitions."},
     {"issue_id": "GEN-PRIVACY", "title": "Privacy or security harm", "definition": "The review reports a specific privacy, security, or unauthorized-access harm that is not merely an account login failure."},
+    {"issue_id": "GEN-POLICY", "title": "Content or platform-policy objection", "definition": "A specific objection to Spotify content moderation, platform policy, or company stance is the primary complaint, without a more important product malfunction. Content simply unavailable without a stated policy objection remains a catalog issue.", "adoption_status": "conditional_pilot_frequency_review"},
     {"issue_id": "GEN-GENERAL", "title": "General or unspecified criticism", "definition": "The review expresses a complaint or departure but gives no supported specific product problem; do not infer one."}
   ]
 }

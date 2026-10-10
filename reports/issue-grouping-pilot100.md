@@ -25,7 +25,7 @@ review text, so they remain private:
 | `local/issue_grouping_pilot100_assignments.json` | `812765f07555a7cc4cf3a5092e5bb84d00c0a385a83de521f4ddcbf20ef761fa` | One provisional judgment and evidence rationale per case, with alternatives and ambiguity flags |
 | `local/issue_grouping_pilot100_review.json` | `1ac4f88de0e4519a2ac2eccc17b33124c45bd280939c5f3304094fcb72068432` | All 53 cases needing review, source and exact evidence, blank decision fields |
 | `local/issue_grouping_pilot100_priority_review.json` | `5e88d03fd76045a65682956284399adcb1797b111c432ef857bec60400e9c154` | Compact first 25 decisions: all ten abstentions, all ten flagged cases, five boundary/label concerns |
-| `local/issue_grouping_pilot100_priority_decisions.csv` | `c4c70f064fb1053b6df3bd7cb5172e8c1161d6de00805bc113ac4f9b3de28cdd` | Editable 25-row sheet with source/evidence, provisional choice, alternatives, and blank reviewer decision columns |
+| `local/issue_grouping_pilot100_priority_decisions.csv` | `2b7c3de775e127f58851324ecc69c55399d98c20846cab1060914c46439a8230` | Verified current 25-row decision sheet: 22 decisions recorded as confirmed by Hanif on 2026-10-10 (Claude-proposed); cases 29, 92, 97 left blank |
 
 The priority file provides `decision` and `decision_notes` as blank fields.
 In the CSV, fill `reviewer_decision`, `chosen_issue_id`, and
@@ -74,3 +74,57 @@ must still account for all 30,403 if completed statuses remain unchanged.
 This pilot supports the later 100,000-accepted-ID analysis target. It does
 not resolve the supplied full-corpus checker versus instructor-reported
 minimum discrepancy, which needs disclosure and scope confirmation.
+
+## Reviewed pilot-only catalog revision, 10 October 2026
+
+Hanif approved adding four draft issues and extending the playback-control
+definition. The 25-row decision CSV and this report's prior edited version
+were preserved byte-for-byte in ignored mode-0600 snapshots before the
+revision. The report's prior CSV digest was stale; the verified CSV digest is
+the full value in the table above. The snapshot of the prior report has SHA-256
+`5f43c0871b8175d972d3b226124352674277034f0c2da3e79045983f9613c40f`.
+No decision field was overwritten.
+
+The versioned catalog now contains **41 pilot issues** under rule
+`pilot-primary-problem-v2-20261010`: `APP-LAUNCH` for failure before a usable
+screen, `DEV-COMPAT` for the app on the user's own device or OS,
+`DEV-INTEGRATION` for an external device/platform connection, and
+`GEN-POLICY` for a primary content or platform-policy objection. `PLY-CONTROL`
+now explicitly includes a failed sleep timer. The app-launch boundary moves
+pilot case 1 from its original `ACC-LOGIN` proposal to a **v2 overlay**
+suggestion of `APP-LAUNCH`; the original pilot input and assignments remain
+unchanged. The catalog remains `pilot_authorized` with
+`production_approved=false`. The production ranker rejects it.
+
+`GEN-POLICY` remains **conditional within the pilot**. An offline lexical
+screen of all 30,403 complaint/cancellation records found 69 candidates.
+Manual review of those candidates found 27 with a clear policy objection
+present, 21 mixed or primary-issue-unclear, and 21 lexical false positives or
+another primary problem. Twenty-seven is about 0.09% of the frame; the
+screen misses synonyms and other languages, and presence is not verified
+primary membership. No threshold for "rare" was agreed, so this diagnostic
+supports testing a distinct draft issue but does not approve it for
+production ranking. The private diagnostic is
+`local/gen_policy_frequency_diagnostic.json`, SHA-256
+`ec0e791905fdd19d5414e99cc498a1cab3bc5710b67c3f81b85f158855116a41`.
+
+The private v2 overlay is `local/issue_grouping_pilot100_v2_overlay.json`,
+SHA-256 `a2c2a5958b8beeceeb426c25e08cc35664e7038f0a8d31468669259e811c90a9`.
+It records all 22 decisions and source/provenance digests: nine catalog
+revisions, four label-correction decisions, seven accepted provisional
+choices, and two alternatives. Eighteen decisions have pilot issue
+suggestions; **none** create production membership. The four label-correction
+decisions have no membership, including case 80, whose saved cancellation
+intent is disputed and has no chosen issue. Three priority cases (29, 92,
+97) remain blank. The case-1 propagation is separate from the 22 decisions.
+
+The other **28** review cases are in ignored private files with original text,
+exact evidence, provisional issue and alternatives, and blank human decision
+fields: `local/issue_grouping_pilot100_remaining28_v2_review.json` SHA-256
+`fa733c40f17ad59c3500b4d04a0159dcaaad141efe6d8c4ffaa60dc8a0af6214`
+and editable `local/issue_grouping_pilot100_remaining28_v2_decisions.csv`
+SHA-256 `a0a8633459f0f1c024da6d1350194c25eb3734242b96d3e6c4693c5dfa17c220`.
+Case 1 displays the v2 `APP-LAUNCH` suggestion alongside its unchanged v1
+proposal. **31 review decisions remain unentered**: three priority blanks
+and these 28 additional cases. The four label corrections also require a
+separate validated record decision before any full grouping run.

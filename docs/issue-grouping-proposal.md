@@ -4,6 +4,9 @@
 recommendation has been generated. The [machine-readable proposed catalog](issue-catalog-draft.json)
 is marked `pilot_authorized`; the offline ranker
 rejects it until its status and mapping rule are reviewed and approved.
+The catalog began with 37 draft IDs and now has 41 under
+`pilot-primary-problem-v2-20261010`; four reviewed additions and the sleep
+timer boundary are recorded in the [pilot report](../reports/issue-grouping-pilot100.md).
 No model call, human golden answer, accepted record, or provider account was
 used or changed to prepare this proposal.
 
@@ -27,7 +30,7 @@ crashes, playback failure, wrong selection, shuffle, and background behavior;
 ads, playlist editing, and previews; support response and resolution. Generic
 criticism and ambiguous or apparently mismatched saved labels also occurred.
 These observations motivate definitions; they are not prevalence estimates,
-human accuracy results, or proof that the 37 draft issues cover the corpus.
+human accuracy results, or proof that the initial 37 draft issues cover the corpus.
 Some development text can exactly overlap golden-source text under different
 IDs. No human answer labels were read, and this sample must not be used to
 tune against them.
@@ -105,7 +108,7 @@ assignments.
 Hanif authorized preparation of a 100-case model-assisted offline pilot with
 user review of ambiguous cases. The [pilot report](../reports/issue-grouping-pilot100.md)
 records provisional results and private decision files. This authorization
-does not approve the 37 IDs for production mapping, permit a paid model, or
+does not approve the 41 pilot IDs for production mapping, permit a paid model, or
 publish data. Reviewers should decide how to handle the catalog gaps and
 saved-label conflicts exposed by the pilot before authorizing a revised
 catalog or the full 30,403-ID mapping.
