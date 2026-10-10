@@ -7,6 +7,9 @@ rejects it until its status and mapping rule are reviewed and approved.
 The catalog began with 37 draft IDs and now has 41 under
 `pilot-primary-problem-v2-20261010`; four reviewed additions and the sleep
 timer boundary are recorded in the [pilot report](../reports/issue-grouping-pilot100.md).
+The [pilot-v3 catalog](issue-catalog-pilot-v3.json) freezes later confirmed
+freeze/hang, sign-up, and area-only boundaries without approving production
+mapping. Five pilot decisions and an independent human check remain pending.
 No model call, human golden answer, accepted record, or provider account was
 used or changed to prepare this proposal.
 

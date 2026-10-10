@@ -123,8 +123,73 @@ exact evidence, provisional issue and alternatives, and blank human decision
 fields: `local/issue_grouping_pilot100_remaining28_v2_review.json` SHA-256
 `fa733c40f17ad59c3500b4d04a0159dcaaad141efe6d8c4ffaa60dc8a0af6214`
 and editable `local/issue_grouping_pilot100_remaining28_v2_decisions.csv`
-SHA-256 `a0a8633459f0f1c024da6d1350194c25eb3734242b96d3e6c4693c5dfa17c220`.
+SHA-256 `897ebc95fc2913cd704de3a3168c854ecd735d22f3ce46a3cd0ed28f893f540f` (blank original `a0a8633459f0f1c024da6d1350194c25eb3734242b96d3e6c4693c5dfa17c220`
+kept as `local/issue_grouping_pilot100_remaining28_v2_decisions.blank_backup.csv`).
+On 2026-10-10 Hanif confirmed 25 Claude-proposed decisions in this sheet; cases
+22, 31, and 81 remain blank, and cases 43 and 89 add two more label-correction
+decisions (six in total) that stay separate from issue assignments.
 Case 1 displays the v2 `APP-LAUNCH` suggestion alongside its unchanged v1
-proposal. **31 review decisions remain unentered**: three priority blanks
-and these 28 additional cases. The four label corrections also require a
+proposal. **5 review decisions remain unentered**: two priority blanks
+(29, 97) and three of the 28 additional cases (22, 31, 81).
+Hanif adopted a freeze/hang rule on 2026-10-10: an app that freezes, hangs, or stops
+responding, with no crash and no named playback failure, maps to `PLY-QUALITY`.
+It resolves priority case 92 and case 55. The `PLY-QUALITY` catalog wording and the pinned
+priority-sheet digest in `tools/reconcile_grouping_pilot_v2.py` (now `a6201fd8ca1f394105b06977635a77b1f40bb80eadb1087bbfbc6543d130b3ae`;
+v2-reconciled copy kept as `local/issue_grouping_pilot100_priority_decisions.v2_reconciled_backup.csv`)
+were pending at this handoff and are resolved by the v3 catalog and reconciler
+below. The six label corrections still require a
 separate validated record decision before any full grouping run.
+
+## Pilot v3 reconciliation and blind human-check preparation
+
+The preceding paragraph records the handoff before reconciliation. The
+current priority decision CSV hashes to
+`a6201fd8ca1f394105b06977635a77b1f40bb80eadb1087bbfbc6543d130b3ae`;
+the current remaining-28 CSV hashes to
+`897ebc95fc2913cd704de3a3168c854ecd735d22f3ce46a3cd0ed28f893f540f`.
+Both were read only. Their earlier byte-exact backups remain ignored and
+mode 0600 with SHA-256 values
+`2b7c3de775e127f58851324ecc69c55399d98c20846cab1060914c46439a8230`
+and `a0a8633459f0f1c024da6d1350194c25eb3734242b96d3e6c4693c5dfa17c220`,
+respectively. The user-edited report section above was preserved.
+Additional byte-exact snapshots of the current v3 input sheets are
+`local/issue_grouping_pilot100_priority_decisions.v3_input_backup.csv` and
+`local/issue_grouping_pilot100_remaining28_v3_input_backup.csv`; they have
+the same respective SHA-256 values as the current sheets and remain ignored,
+mode 0600.
+
+The [pilot-v3 catalog](../docs/issue-catalog-pilot-v3.json) is a new file,
+SHA-256 `f612276e5224a260bb4cd866bccab7290c7e9dee938e741017bbf228e3436d7b`.
+The v2 catalog remains unchanged. V3 retains 41 issues and
+`pilot_authorized` status with `production_approved=false`. It adds the
+confirmed freeze/hang rule to `PLY-QUALITY`, includes sign-up failure in
+`ACC-LOGIN`, and directs a single named but underspecified product area to
+its sole supported issue or the area's `*-OTHER` bucket if several fit.
+`GEN-GENERAL` applies only when no product area is named. These are rules for
+review, not automatic classifications of the five open cases.
+
+The ignored, mode-0600
+`local/issue_grouping_pilot100_v3_overlay.json` (SHA-256
+`b0a9e7457f6c202049c39515ac5b62a84e8cccb6a6ebaaf69eafbe95d0a2af83`)
+ties both current decision sheets, their backups, the v2 overlay, the new
+catalog, and the frozen pilot to exact digests. It records 48 filled decisions:
+26 accepted provisional choices, six alternatives, ten catalog revisions,
+and six label-correction decisions. Forty-two have pilot issue suggestions;
+the six label-correction cases (18, 43, 61, 80, 89, 94) have **no issue
+suggestion or membership** pending validated label/quote action. No entry
+has production membership. The overlay confirms case 1's APP-LAUNCH pilot
+suggestion and PLY-QUALITY for cases 55 and 92. Five human decisions remain
+blank: priority cases 29 and 97, and additional cases 22, 31, and 81. Their
+blank fields were neither inferred nor filled.
+
+An independent semantic check is prepared but **not performed**. The ignored,
+mode-0600 `local/issue_grouping_independent40_blind.csv` (SHA-256
+`98f15670d5b4218fa238c251065e7c8a4813c5f79a39f44452498549477d37c9`)
+contains 40 new source texts, five per saved topic, with blank issue and
+rationale fields and no first issue prediction. Its separate private source
+manifest is `local/issue_grouping_independent40_manifest.json` (SHA-256
+`65c3d9ad0342099860a1977765fa88c419c17c584464513b0cd8e22d44df0f28`).
+Code verified no original ID or exact text overlaps the 64 design or 100
+pilot cases. A human must perform the semantic check; structural validation
+alone says nothing about grouping accuracy. No review text was sent to a
+coding model or external provider in this reconciliation.
