@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from .public_boundary import REF_RE
 from .store import connect
 
 STATIC = Path(__file__).with_name("static")
@@ -40,7 +41,8 @@ def headers_for(content_type):
 
 
 ISSUE_RE = re.compile(r"^/api/issues/([^/]+)$")
-REVIEW_RE = re.compile(r"^/api/reviews/([0-9]+)$")
+REVIEW_RE = re.compile(r"^/api/reviews/([A-Za-z0-9]{1,40})$")
+ROW_RE = re.compile(r"^[0-9]{1,9}$")
 
 
 def _aggregates(conn):
@@ -115,8 +117,8 @@ def top_issue(conn):
 
 STATE_ORDER = ("accepted", "quarantined", "unresolved", "empty", "pending")
 PUBLIC_MANIFEST_KEYS = ("import_version", "handoff_sha256", "source_file_sha256", "label_config_hash", "selected_rows",
-                        "accepted_rows", "state_counts", "source_state_counts", "representative_evidence_exclusions",
-                        "imported_at", "scope", "not_human_accuracy")
+                        "accepted_rows", "state_counts", "representative_evidence_exclusions", "reason_category_counts",
+                        "public_examples", "personal_info_screen", "issue_candidates", "imported_at", "scope", "not_human_accuracy")
 
 
 def _states(ag):
@@ -125,6 +127,15 @@ def _states(ag):
     if not saved:
         return None
     return {state: int(saved.get(state, 0)) for state in STATE_ORDER}
+
+
+def _public(conn):
+    """True for an accepted-evidence import: public responses then follow the approved boundary.
+
+    Records are reached only by opaque references, quotes only as bounded excerpts, and nonaccepted rows only as
+    counts. Older bundle databases keep their row-number routes.
+    """
+    return _has_table(conn, "public_example")
 
 
 def _blocked_count(conn):
@@ -142,6 +153,18 @@ def _import_manifest(conn):
         return None
     saved = json.loads(row[0])
     return {key: saved[key] for key in PUBLIC_MANIFEST_KEYS if key in saved}
+
+
+def _reason_categories(ag):
+    """Counts of sanitized reason categories per nonaccepted state, or ``None`` for older databases."""
+    saved = ag.get("reason_category")
+    if not saved:
+        return None
+    result = {}
+    for key, n in saved.items():
+        state, category = key.split(":", 1)
+        result.setdefault(state, {})[category] = int(n)
+    return result
 
 
 def summary(conn):
@@ -166,6 +189,7 @@ def summary(conn):
         "states": _states(ag),
         "representative_exclusions": _blocked_count(conn),
         "import": _import_manifest(conn),
+        "reason_categories": _reason_categories(ag),
         "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
     }
 
@@ -173,6 +197,8 @@ def summary(conn):
 def reviews(conn, topic=None, limit=20, offset=0, issue_id=None, query=None):
     limit = min(max(int(limit), 1), 50)
     offset = max(int(offset), 0)
+    if _public(conn):
+        return _public_reviews(conn, topic, limit, offset, issue_id, query)
     args = []
     where = ["s.status='completed'"]
     join = ""
@@ -201,9 +227,61 @@ def reviews(conn, topic=None, limit=20, offset=0, issue_id=None, query=None):
     return result
 
 
+def _public_reviews(conn, topic, limit, offset, issue_id, query):
+    """Public examples: opaque reference, labels and a bounded excerpt. Never a row number, ID or hash.
+
+    The order is by reference, which is random, so a page offset reveals nothing about source positions.
+    Search reads the public excerpt only, never the private full quote.
+    """
+    args, where, join = [], ["1=1"], ""
+    if topic:
+        where.append("c.topic=?")
+        args.append(topic)
+    if query:
+        where.append("instr(lower(p.excerpt),lower(?))>0")
+        args.append(query)
+    if issue_id:
+        run = _run(conn)
+        if not run:
+            return {"items": [], "total": 0, "limit": limit, "offset": offset}
+        join = "JOIN issue_membership m ON m.row_index=p.row_index AND m.run_id=? AND m.issue_id=?"
+        args = [run["run_id"], issue_id] + args
+    base = ("FROM public_example p JOIN record_state s ON s.row_index=p.row_index AND s.status='completed' "
+            "JOIN classifications c ON c.row_index=p.row_index AND c.config_hash=s.config_hash %s WHERE %s"
+            % (join, " AND ".join(where)))
+    total = conn.execute("SELECT COUNT(*) " + base, args).fetchone()[0]
+    items = []
+    for row in conn.execute("SELECT p.ref, c.topic, c.intent, c.severity, p.excerpt, p.shortened, c.needs_review, "
+                            "c.is_cached " + base + " ORDER BY p.ref LIMIT ? OFFSET ?", args + [limit, offset]):
+        item = dict(row)
+        item["shortened"] = bool(item["shortened"])
+        items.append(item)
+    examples = (_import_manifest(conn) or {}).get("public_examples", {})
+    return {"items": items, "total": total, "limit": limit, "offset": offset,
+            "excluded_blocked": _blocked_count(conn),
+            "excluded_personal_info": examples.get("excluded_personal_info")}
+
+
+def public_review(conn, ref):
+    """One public example by its opaque reference, or ``None``. Nonaccepted and flagged rows have none."""
+    if not REF_RE.match(ref):
+        return None
+    row = conn.execute("""SELECT p.ref, c.topic, c.intent, c.severity, c.sentiment, p.excerpt, p.shortened,
+        c.needs_review, c.is_cached, c.label_config, c.model, c.prompt_version
+        FROM public_example p JOIN record_state s ON s.row_index=p.row_index AND s.status='completed'
+        JOIN classifications c ON c.row_index=p.row_index AND c.config_hash=s.config_hash
+        WHERE p.ref=?""", (ref,)).fetchone()
+    if not row:
+        return None
+    result = dict(row)
+    result["state"] = "accepted"
+    result["shortened"] = bool(result["shortened"])
+    result["human_validated"] = False
+    result["review_text_exposed"] = False
+    return result
+
+
 def review(conn, row_index):
-    if _has_table(conn, "row_state"):
-        return _review_with_state(conn, row_index)
     row = conn.execute("""SELECT r.row_index,r.row_sha256 AS source_sha256,
         c.topic,c.intent,c.severity,c.sentiment,c.evidence_quote,
         c.needs_review,c.is_cached,c.label_config,c.model,c.prompt_version
@@ -217,39 +295,21 @@ def review(conn, row_index):
     return result
 
 
-def _review_with_state(conn, row_index):
-    """Any selected row: its state, and labels only when it was accepted. Never the review text."""
-    head = conn.execute("""SELECT r.row_index, r.row_sha256 AS source_sha256, t.state, t.source_state, t.reason
-        FROM records r JOIN row_state t USING(row_index) WHERE r.row_index=?""", (row_index,)).fetchone()
-    if not head:
-        return None
-    result = dict(head)
-    if result["state"] == "accepted":
-        labels = conn.execute("""SELECT c.topic,c.intent,c.severity,c.sentiment,c.evidence_quote,c.needs_review,
-            c.is_cached,c.label_config,c.model,c.prompt_version, f.blocked, f.human_review_required, f.categories
-            FROM classifications c LEFT JOIN semantic_flag f USING(row_index) WHERE c.row_index=?""", (row_index,)).fetchone()
-        result.update(dict(labels))
-        result["representative_blocked"] = bool(result.pop("blocked") or 0)
-        result["human_review_required"] = bool(result["human_review_required"] or 0)
-        result["flag_categories"] = json.loads(result.pop("categories") or "[]")
-    else:
-        result["reason"] = result["reason"] if result["state"] != "pending" else "Awaiting a label; not a model failure."
-    result["source_id_stored"] = True
-    result["review_text_available_in_database"] = bool(_stores_full_text(conn))
-    result["review_text_exposed"] = False
-    return result
-
-
 def issues(conn):
     run = _run(conn)
     if not run:
         return {"status": "pending", "ranking_method": "severity_sum", "items": []}
+    flagged = _has_table(conn, "semantic_flag")
+    # Public rankings leave out members with a known semantic flag until they are reviewed.
+    flag_join = "LEFT JOIN semantic_flag f ON f.row_index=m.row_index" if flagged else ""
+    flag_where = "AND COALESCE(f.blocked, 0)=0" if flagged else ""
     rows = conn.execute("""SELECT i.issue_id,i.title,COUNT(m.row_index) AS review_count,
        SUM(c.severity) AS priority_score
        FROM issue i JOIN issue_membership m USING(run_id,issue_id)
-       JOIN classifications c ON c.row_index=m.row_index AND c.config_hash=?
-       WHERE i.run_id=? AND c.intent IN ('complaint','cancellation')
-       GROUP BY i.issue_id,i.title ORDER BY priority_score DESC,i.issue_id ASC""", (run["config_hash"], run["run_id"])).fetchall()
+       JOIN classifications c ON c.row_index=m.row_index AND c.config_hash=? %s
+       WHERE i.run_id=? AND c.intent IN ('complaint','cancellation') %s
+       GROUP BY i.issue_id,i.title ORDER BY priority_score DESC,i.issue_id ASC""" % (flag_join, flag_where),
+                        (run["config_hash"], run["run_id"])).fetchall()
     items = []
     for row in rows:
         item = dict(row)
@@ -361,7 +421,11 @@ def _api(conn, path, query):
                                 "reviews": reviews(conn, issue_id=match.group(1))})
     match = REVIEW_RE.match(path)
     if match:
-        result = review(conn, int(match.group(1)))
+        key = match.group(1)
+        if _public(conn):  # opaque references only; row numbers never resolve
+            result = public_review(conn, key)
+        else:
+            result = review(conn, int(key)) if ROW_RE.match(key) else None
         return _json_body(200, result) if result is not None else _json_body(404, {"error": "review not found"})
     return _json_body(404, {"error": "not found"})
 

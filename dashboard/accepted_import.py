@@ -16,6 +16,10 @@ Gates, all before anything is written:
 4. Records with ``representative_evidence_blocked_by_known_flags`` are marked blocked and never appear as
    representative examples. The count must equal the coverage figure (47).
 5. An import manifest is saved: counts, hashes, state counts and the import time. It holds no path.
+6. The public boundary (``public_boundary``) is applied once, here: each nonaccepted row gets one sanitized
+   reason category, and each accepted, unflagged row whose quote passes the personal-information screen gets
+   a random public reference and an excerpt of at most 30 words. Only ``public_example`` rows can appear in
+   public examples or record links.
 
 The database keeps source text (``source_text``) and raw model output (``raw_record``) in local tables.
 The API never reads them. This file does not publish or deploy anything.
@@ -34,10 +38,12 @@ from spotify_pipeline.errors import ValidationError
 from spotify_pipeline.contract import SOURCE_FIELDS, file_sha256, row_sha256
 
 from .bundle import DDL
+from .public_boundary import (MAX_EXCERPT_WORDS, SCREEN_VERSION, excerpt, has_personal_info, new_ref,
+                              reason_category, vocabulary)
 from .store import connect
 
 SCHEMA_VERSION = "spotify-accepted100k-dashboard-handoff-v1"
-IMPORT_VERSION = "accepted-evidence-import-v1"
+IMPORT_VERSION = "accepted-evidence-import-v2"
 
 # Dashboard state for each saved source state. Pending rows await a label; they are not failures.
 STATE_GROUPS = {
@@ -61,7 +67,10 @@ PRIVATE_SCHEMA = [
     "CREATE TABLE IF NOT EXISTS raw_record (row_index INTEGER PRIMARY KEY REFERENCES records(row_index), "
     "labels_json TEXT NOT NULL, provenance_json TEXT NOT NULL, semantic_json TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS row_state (row_index INTEGER PRIMARY KEY REFERENCES records(row_index), "
-    "state TEXT NOT NULL, source_state TEXT NOT NULL, reason TEXT)",
+    "state TEXT NOT NULL, source_state TEXT NOT NULL, reason TEXT, category TEXT)",
+    # Public examples only: a random reference, and an excerpt that passed the boundary checks.
+    "CREATE TABLE IF NOT EXISTS public_example (row_index INTEGER PRIMARY KEY REFERENCES records(row_index), "
+    "ref TEXT NOT NULL UNIQUE, excerpt TEXT NOT NULL, shortened INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS semantic_flag (row_index INTEGER PRIMARY KEY REFERENCES records(row_index), "
     "blocked INTEGER NOT NULL, human_review_required INTEGER NOT NULL, finding_count INTEGER NOT NULL, "
     "categories TEXT NOT NULL)",
@@ -150,7 +159,10 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
     if Path(db_path).exists():
         raise ValueError("target database already exists; import into a new file")
     config = checked["config_hash"]
-    records, states, rowstate, classes, texts, raws, flags = [], [], [], [], [], [], []
+    records, states, rowstate, classes, texts, raws, flags, public = [], [], [], [], [], [], [], []
+    categories_seen, examples = Counter(), Counter()
+    common = vocabulary(r["evidence"]["evidence_quote"] for r in accepted)
+    complaints = Counter()  # issue candidates: accepted complaint or cancellation rows
     groups, details, labels = Counter(), Counter(), {"topic": Counter(), "intent": Counter(), "severity": Counter()}
     months, days, distinct = {}, {}, set()
     for rid, item in sorted(selected.items(), key=lambda kv: source[kv[0]]["_position"]):
@@ -172,8 +184,21 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
             raws.append((idx, json.dumps(lab, ensure_ascii=False), json.dumps(item["provenance"], ensure_ascii=False),
                          json.dumps(sem, ensure_ascii=False)))
             categories = sorted({f.get("category", "") for f in sem["findings"]} - {""})
-            flags.append((idx, int(bool(sem["representative_evidence_blocked_by_known_flags"])),
-                          int(bool(sem["human_review_required"])), len(sem["findings"]), json.dumps(categories)))
+            is_blocked = bool(sem["representative_evidence_blocked_by_known_flags"])
+            flags.append((idx, int(is_blocked), int(bool(sem["human_review_required"])), len(sem["findings"]),
+                          json.dumps(categories)))
+            if lab["intent"] in ("complaint", "cancellation"):
+                complaints["flagged" if is_blocked else "public"] += 1
+            if is_blocked:
+                examples["excluded_known_flag"] += 1
+            elif has_personal_info(ev["evidence_quote"], common):
+                examples["excluded_personal_info"] += 1
+            else:
+                text_excerpt, shortened = excerpt(ev["evidence_quote"])
+                public.append((idx, new_ref(), text_excerpt, int(shortened)))
+                examples["public"] += 1
+                examples["shortened"] += int(shortened)
+            category = None
             for dim in labels:
                 labels[dim][str(lab[dim])] += 1
             month, day = _month_day(src["review_timestamp"])
@@ -186,13 +211,19 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
         else:
             source_state, reason = item["status"], item.get("reason")
             state = STATE_GROUPS[source_state]
+            category = reason_category(source_state, reason)
+            categories_seen[(state, category)] += 1
         groups[state] += 1
         details[source_state] += 1
         states.append((idx, config, STATUS_FOR.get(state, state), reason if state != "accepted" else None))
-        rowstate.append((idx, state, source_state, reason))
+        rowstate.append((idx, state, source_state, reason, category))
 
     if groups["accepted"] != len(accepted) or sum(groups.values()) != len(selected):
         raise ValueError("state counts do not add up")
+    for _, _, text_excerpt, shortened in public:  # recheck the boundary before anything is written
+        words = text_excerpt.split()[:-1] if shortened else text_excerpt.split()
+        if len(words) > MAX_EXCERPT_WORDS or has_personal_info(text_excerpt):
+            raise ValueError("a public excerpt breaks the public boundary")
     blocked = sum(f[1] for f in flags)
     if blocked != checked["blocked"]:
         raise ValueError("blocked count changed during import")
@@ -211,6 +242,13 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
         "state_counts": {s: groups[s] for s in STATES},
         "source_state_counts": dict(sorted(details.items())),
         "representative_evidence_exclusions": blocked,
+        "reason_category_counts": {s: {c: n for (st, c), n in sorted(categories_seen.items()) if st == s}
+                                   for s in STATES if s != "accepted"},
+        "public_examples": {k: examples[k] for k in ("public", "shortened", "excluded_known_flag",
+                                                      "excluded_personal_info")},
+        "personal_info_screen": SCREEN_VERSION,
+        "issue_candidates": {"contract_baseline": complaints["public"] + complaints["flagged"],
+                             "public_projection": complaints["public"], "flagged_excluded": complaints["flagged"]},
         "distinct_nonempty_texts": len(distinct),
         "request_counts": {"%s:%s" % k: v for k, v in sorted(requests.items())},
         "cost_nusd": handoff.get("cost_nusd", {}),
@@ -225,6 +263,7 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
     aggregates += [("processing_status", STATUS_FOR.get(s, s), n) for s, n in groups.items()]
     aggregates += [("row_state", s, n) for s, n in groups.items()]
     aggregates += [("source_state", s, n) for s, n in details.items()]
+    aggregates += [("reason_category", "%s:%s" % key, n) for key, n in categories_seen.items()]
     aggregates += [(dim, value, n) for dim, values in labels.items() for value, n in values.items()]
     aggregates += [("month_" + k, m, v[k]) for m, v in months.items() for k in ("reviews", "complaints") if v[k]]
     aggregates += [("month_severity_sum", m, v["severity_sum"]) for m, v in months.items() if v["severity_sum"]]
@@ -242,7 +281,8 @@ def import_accepted(handoff_path: str, source_csv: str, db_path: str, expected_s
             for sql, rows in (
                     ("INSERT INTO records VALUES (?, ?, ?, ?, ?)", records),
                     ("INSERT INTO record_state VALUES (?, ?, ?, ?)", states),
-                    ("INSERT INTO row_state VALUES (?, ?, ?, ?)", rowstate),
+                    ("INSERT INTO row_state VALUES (?, ?, ?, ?, ?)", rowstate),
+                    ("INSERT INTO public_example VALUES (?, ?, ?, ?)", public),
                     ("INSERT INTO classifications (row_index, config_hash, topic, intent, sentiment, severity, entities, "
                      "evidence_quote, needs_review, is_cached, label_config, model, prompt_version, schema_version) "
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", classes),
