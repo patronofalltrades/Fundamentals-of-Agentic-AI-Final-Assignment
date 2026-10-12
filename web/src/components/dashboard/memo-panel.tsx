@@ -33,9 +33,11 @@ function MemoText({ text, claims }: { text: string; claims: Map<string, Claim> }
 export default function MemoPanel() {
   const memo = useData(api.memo)
   const claims = useData(api.claims)
+  const recommendations = useData(api.recommendations)
   if (memo.error) return <LoadError message={memo.error} />
   if (!memo.data) return <Skeleton className="h-48 rounded-2xl bg-tile" />
-  const checked = memo.data.status === "claims_checked"
+  const checked = memo.data.status === "claims_checked" || memo.data.status === "claims_checked_provisional"
+  const provisional = memo.data.status === "claims_checked_provisional"
   const byId = new Map((claims.data?.items ?? []).map((c) => [c.claim_id, c]))
   return (
     <TooltipProvider delayDuration={150}>
@@ -44,11 +46,32 @@ export default function MemoPanel() {
         {memo.data.text && (
           <Badge variant="secondary" className={checked ? "gap-1.5 rounded-full text-positive" : "gap-1.5 rounded-full text-negative"}>
             {checked ? <ShieldCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
-            {checked ? "Every claim matches its saved value" : fmt.label(memo.data.status)}
+            {checked ? "Numeric claims match saved values" : fmt.label(memo.data.status)}
           </Badge>
         )}
       </div>
       <Reflection className="mt-2">{REFLECTIONS.memo}</Reflection>
+      {recommendations.error && <div className="mt-4"><LoadError message={recommendations.error} /></div>}
+      {!!recommendations.data?.items.length && (
+        <div className="mt-4 rounded-2xl border border-border bg-tile p-4">
+          <h3 className="text-base">Provisional next action</h3>
+          {recommendations.data.items.map((item) => (
+            <div key={item.recommendation_id} className="mt-2 text-[15px] leading-7">
+              <p>{item.text}</p>
+              <p className="text-sm text-muted-foreground">
+                Saved issue: {item.issue_ids.join(", ")}
+                {item.claim_ids?.length ? ` · Checked claims: ${item.claim_ids.join(", ")}` : ""}
+              </p>
+            </div>
+          ))}
+          {provisional && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              The issue map is model-derived. Pre-override blind human agreement was 16/40 (40%).
+              The ranking is advisory until targeted human review; these counts do not establish a product effect or revenue impact.
+            </p>
+          )}
+        </div>
+      )}
       <div className="mt-4">
         {memo.data.text ? (
           <MemoText text={memo.data.text} claims={byId} />

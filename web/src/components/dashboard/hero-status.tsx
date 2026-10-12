@@ -19,7 +19,7 @@ export default function HeroStatus() {
         </Badge>
       )}
       <Badge variant="secondary" className="rounded-full bg-white/8 font-normal">
-        Memo: {s.analysis.memo === "claims_checked" ? "checked" : fmt.label(s.analysis.memo)}
+        Memo: {s.analysis.memo === "claims_checked_provisional" ? "provisional, claims checked" : s.analysis.memo === "claims_checked" ? "checked" : fmt.label(s.analysis.memo)}
       </Badge>
     </div>
   )
