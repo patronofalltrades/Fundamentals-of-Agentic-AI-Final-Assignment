@@ -10,6 +10,19 @@ This project turns saved Spotify Google Play reviews into an evidence-linked pro
 
 **Public code repository:** [Fundamentals of Agentic AI Final Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment). This feature branch is the integration candidate.
 
+## Agent handoff — 12 October 2026 UTC
+
+Verified on `feat/grouping-v4-integration`: code reconciliation `628caef`, image integration `504d064`, and release record `1a2ee6e` were pushed to the explicit GitHub feature branch. No remote main merge or course submission occurred. The reconciled code passed **408 Python tests**, CLI help, the offline cost calculator, and the web privacy test. Image links, hashes, and staged diffs passed checks.
+
+- **Production:** deployment `dpl_5ZGRgcJrvoaXxQRwzjtmeTQPUkoN` is live at the canonical URL below. It contains main `00ad910` plus only the reviewed evaluation attribution component. The build passed; canonical API checks still show **110,000 selected / 100,229 accepted**. The corrected bundle includes the isolated-evaluator attribution and diagnostic limits.
+- **Golden evaluation:** all **50/50** source-only predictions are frozen and scored: topic **26/50**, intent **38/50**, severity **30/50**, joint **14/50**. The historical **9/50** result belongs to a separate selected-production-run diagnostic. The aggregate-only import payload passed pinned prediction and human-file hash checks. **Production import is still blocked; the live golden card remains pending.** Twelve human cases request review, eight source texts overlap development data, and earlier golden influence is unknown.
+- **Exact import blocker:** Vercel protects the live `DASHBOARD_DATABASE_URL` from local retrieval. The available connection has only 500 classifications and failed release-identity checks; no database write occurred. The user must securely place the existing live connection in ignored `local/production-import.env`, mode 0600, before the approved aggregate import can proceed. Never paste the secret in chat.
+- **Cost owner — Claude:** his main-branch cost artifacts were preserved. See the [cost guide](cost/README.md), [pilot report](reports/cost100-pilot.md), [dated rates](cost/pilot/rates.json), [measured JSON report](cost/pilot/report.json), and [offline calculator](tools/cost100_offline_calculator.py). No paid inference was added in this closeout.
+- **Images and demo:** the five README images are committed; see [asset provenance](docs/assets/README.md). The private Library file `synthetic-interruption-resume-demo.mp4` records an actual offline SIGINT, disk resume, and zero repeated label requests. Its local path is `local/resume_demo_synthetic_20261013/synthetic-interruption-resume-demo.mp4`. It uses synthetic data and mock responses, with zero outbound calls; it does not replace missing historical main-run checkpoints.
+- **Grading:** the unchanged checker remains **`review_required`**, with no automatic grade. The 660,622-source contract versus 110,000-selected scope and historical provenance/checkpoint gaps remain disclosed. The accepted-evidence count does not clear those flags.
+
+The [final release handoff](reports/final-release-handoff-2026-10-12.md) records exact files, deployment evidence, video hash, and remaining limits. Continue from this dated status; earlier reports retain their historical observations.
+
 ## Live dashboard
 
 [Open the read-only dashboard](https://hanif-spotify-insights.vercel.app). No login is required. It shows the **100,000-review results**: 110,000 selected source IDs, 100,229 structurally accepted rows, the provisional ranking and memo. The public site serves a sanitized database copy. Opening the page does not run a model. Hanif reported 20 passing browser checks for this release; the checks were not rerun in this branch.
