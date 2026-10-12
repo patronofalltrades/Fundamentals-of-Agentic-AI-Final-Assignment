@@ -62,22 +62,22 @@ export default function IssueTable() {
             <TableRow className="bg-tile hover:bg-tile">
               <TableHead className="rounded-l-xl text-[13px] font-normal text-muted-foreground">Issue</TableHead>
               <TableHead className="text-right text-[13px] font-normal text-muted-foreground">Complaints</TableHead>
-              <TableHead className="text-right text-[13px] font-normal text-muted-foreground">Severity sum</TableHead>
-              <TableHead className="text-right text-[13px] font-normal text-muted-foreground">Mean</TableHead>
-              <TableHead className="rounded-r-xl text-right text-[13px] font-normal text-muted-foreground">Share</TableHead>
+              <TableHead className="text-right text-[13px] font-normal text-muted-foreground max-sm:rounded-r-xl">Severity sum</TableHead>
+              <TableHead className="hidden text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Mean</TableHead>
+              <TableHead className="hidden rounded-r-xl text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Share</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {(all ? items : items.slice(0, SHOWN)).map((issue, index) => (
               <TableRow key={issue.issue_id} className="border-border/70 hover:bg-tile/40">
-                <TableCell className="py-3.5">
+                <TableCell className="py-3.5 whitespace-normal">
                   <span className="mr-2 text-muted-foreground tabular-nums">{index + 1}</span>
                   {issue.title !== issue.issue_id ? issue.title : fmt.label(issue.issue_id.replace(/^issue-/, ""))}
                 </TableCell>
-                <TableCell className="text-right"><ClaimValue value={issue.review_count} raw={issue.review_count} claim={byKey.get(`${issue.issue_id}:complaint_count`)} /></TableCell>
-                <TableCell className="text-right"><ClaimValue value={issue.priority_score} raw={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
-                <TableCell className="text-right"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} raw={issue.mean_severity} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right"><ClaimValue value={fmt.int(issue.review_count)} raw={issue.review_count} claim={byKey.get(`${issue.issue_id}:complaint_count`)} /></TableCell>
+                <TableCell className="text-right"><ClaimValue value={fmt.int(issue.priority_score)} raw={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
+                <TableCell className="hidden text-right sm:table-cell"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} raw={issue.mean_severity} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
+                <TableCell className="hidden text-right sm:table-cell">
                   <Badge variant="secondary" className="rounded-full bg-transparent px-0 font-normal text-foreground">
                     {fmt.pct(totalComplaints ? issue.review_count / totalComplaints : 0)}
                   </Badge>

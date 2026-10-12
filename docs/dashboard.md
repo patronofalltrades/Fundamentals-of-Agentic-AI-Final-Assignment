@@ -362,3 +362,30 @@ and `flagged_members_excluded`. The page shows a claim ID only where the claim's
 screen. A rehearsal on a copy of the real database (synthetic grouping by topic, then deleted) took
 1.2 seconds and reproduced 30,403 baseline candidates, 30,379 public and 24 flagged. No ID, hash or row
 number appeared in any public response.
+
+## Publishable copy of the 100,000-review results (`export-public`, `load-public`)
+
+The accepted-evidence database is private. `export-public` writes a separate SQLite file that holds only
+what the public API reads. Row keys are renumbered in random order. Review IDs become opaque keys. Source
+hashes, exact quotes, entities, reasons, finding categories, `source_text`, `raw_record` and `row_state` are
+left out. Issues, membership, claims and the memo are copied under the new keys.
+
+Before it returns, the command compares every public route between the private file and the copy: summary,
+issues, claims, memo, recommendations, review pages, searches, topic filters, each issue's detail and review
+list, and the first 50 review references. It also audits the copy for private values (review IDs, source
+hashes, exact quotes, quotes over 30 words, unexpected tables and kept row keys). Any difference or finding
+stops the export.
+
+`load-public` copies the file into an empty Postgres or SQLite database in chunks, marks it `loading`,
+recounts every table and only then marks it `complete`. A non-empty target or a private file is refused.
+
+Rehearsal, 12 October (local only, then kept private): the real 100,000-review database with the
+30,403-record issue map. Import 2.3 s, export 29 s, load 3.7 s. 144 public routes were identical, and the
+audit found no private values. The public file is 61 MB (the private one is 206 MB). Browser checks passed:
+the issue table matches the API, the flagged-member note shows 24, claim IDs appear only where the claim equals
+the number on screen, and there is no horizontal scroll at phone width.
+
+Publishing (needs approval): load the public file into a new Neon database, set `DASHBOARD_DATABASE_URL` on
+the Vercel project to it, and redeploy. Removing the variable switches the site back to the 5,000-review
+database. Before publishing, rewrite the issue-ranking reflection in `web/src/lib/reflections.ts`; it still
+quotes the 5,000-review figures.
