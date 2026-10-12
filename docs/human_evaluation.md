@@ -102,11 +102,11 @@ repository root, once both real inputs exist, run:
 python3 tools/evaluate_human_labels.py --source ../human-evaluation/golden_50_human_labels.csv --answers ../human-evaluation/golden_50_human_labels_completed.csv --predictions local/records.jsonl --out local/evaluation-aggregate.json
 ```
 
-The direct CLI invocation was checked. The human answer CSV is ready, but no
-runtime prediction file exists, so no real accuracy or agreement has been
-measured.
-
-The evaluator is not implemented yet. When added, it must fail until all 50
-human answers are validated. Prediction model inputs contain original text
-only; expected columns must stay isolated. Report the known six-row/five-text
-overlap with development records. Do not use golden answers for tuning.
+The direct CLI invocation was checked. A later accepted-evidence checkpoint
+contains saved predictions for nine of the 50 golden source IDs. The
+[October 12 offline check](../reports/offline-verification-2026-10-12.md)
+records aggregate diagnostics for those nine and separately for the five
+without exact-text overlap with the development sample. Forty-one cases lack
+accepted predictions in that checkpoint, so this is not a full golden
+evaluation. Prediction model inputs contain original text only; expected
+columns remain isolated. Do not use golden answers for tuning.

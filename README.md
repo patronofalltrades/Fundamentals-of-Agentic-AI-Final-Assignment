@@ -56,6 +56,12 @@ after the target-based graceful stop. Dashboard import and deployment, issue
 grouping, an independent verifier, the memo, the grading export, and a live
 URL are still pending. Structural acceptance is not a human accuracy score.
 
+An [October 12 offline verification checkpoint](reports/offline-verification-2026-10-12.md)
+rechecked the saved export and budget. Only nine of the 50 human golden source
+IDs have accepted predictions in this checkpoint; four are exact-text cache
+overlaps with development data. The partial aggregate diagnostic is not a
+full golden accuracy result.
+
 The paragraphs below record the earlier offline foundation and pilots. Their
 historical status and costs do not describe the completed extraction checkpoint.
 
