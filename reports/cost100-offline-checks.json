@@ -1,0 +1,13 @@
+{
+  "base_100_api_nusd": 7410287,
+  "cold_completed": 98,
+  "cold_failed": 2,
+  "double_rates_api_nusd": 14820574,
+  "local_compute_cost": null,
+  "measured_seconds_unchanged_by_rate_edit": true,
+  "pilot_report_sha256": "ec22214b3f3df0b1d380a758c1d7f1189bb61e75650c8b49c890bd5357f34454",
+  "projection_status": "unavailable_until_stage_specific_scaling_assumptions",
+  "rates_sha256": "a0adefad52dca1d279f392b983df715087d54322371ee89af1c9795d3aced91a",
+  "source": "actual_saved_pilot",
+  "volume_100_vs_100000_measured_identical": true
+}

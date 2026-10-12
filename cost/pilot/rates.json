@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-10-12",
+  "currency": "USD",
+  "deepinfra_input_usd_per_million": "0.037",
+  "deepinfra_output_usd_per_million": "0.17",
+  "jev_input_usd_per_million": "0.042",
+  "jev_output_usd_per_million": "0",
+  "source": {
+    "deepinfra": "https://openrouter.ai/openai/gpt-oss-120b",
+    "jev": "https://docs.typesafe.ai/models"
+  }
+}
