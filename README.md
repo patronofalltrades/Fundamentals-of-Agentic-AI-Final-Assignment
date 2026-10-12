@@ -1,4 +1,8 @@
-# Spotify review insights — final assignment
+# Fundamentals of Agentic AI Final Capstone Project
+
+![Fundamentals of Agentic AI Final Capstone Project — Spotify Review Insights, 100k Reviews](docs/assets/agentic-ai-capstone-hero-v2.png)
+
+**Spotify Review Insights**
 
 This project turns saved Spotify Google Play reviews into an evidence-linked product priority assessment. The assignment scope is **at least 100,000 original source reviews**. The selected run accounts for 110,000 original IDs; 100,229 have structurally accepted labels and evidence. Structural acceptance checks identity, format, and source support. It is not a human accuracy score.
 
@@ -9,6 +13,27 @@ This project turns saved Spotify Google Play reviews into an evidence-linked pro
 ## Live dashboard
 
 [Open the read-only dashboard](https://hanif-spotify-insights.vercel.app). No login is required. It shows the **100,000-review results**: 110,000 selected source IDs, 100,229 structurally accepted rows, the provisional ranking and memo. The public site serves a sanitized database copy. Opening the page does not run a model. Hanif reported 20 passing browser checks for this release; the checks were not rerun in this branch.
+
+### Production screenshots
+
+Captured from the live site on 12 October 2026 at 23:32–23:33 UTC. This is an independent course project and is not affiliated with Spotify. [Capture manifest and hashes](docs/assets/production-2026-10-12/MANIFEST.md).
+
+![Live review activity showing 110,000 selected source reviews and 100,229 classified reviews](docs/assets/production-2026-10-12/overview-review-activity.jpg)
+
+The live overview shows 110,000 selected source reviews, 100,229 classified reviews, and 30,400 complaint or cancellation candidates.
+
+<details>
+<summary>Public issue ranking and prompt benchmark</summary>
+
+![Public top-five issue ranking with ads at 5,195 complaints and playback at 2,474](docs/assets/production-2026-10-12/issue-ranking-top-five.jpg)
+
+The public ranking excludes 23 flagged candidates. It shows 5,195 ad-related complaints and severity sum 11,869; the course baseline below includes flagged records and has 5,197 and 11,874. Playback has 2,474 in both. The ranking remains advisory after 40% agreement with the blind human review. The golden card was still pending when this image was captured.
+
+![Prompt benchmark comparing rubric v1 and v2 on 100 reviews, with 32 topic changes and one severity change](docs/assets/production-2026-10-12/evaluation-prompt-benchmark.jpg)
+
+This is the 100-review **prompt comparison**, not the golden-50 human evaluation: 32 topic changes, zero intent changes, one severity change, and 16 review-flag changes. Refresh these dated screenshots after the golden score is imported.
+
+</details>
 
 ## Current result
 
@@ -23,6 +48,10 @@ This project turns saved Spotify Google Play reviews into an evidence-linked pro
 | Cold/warm cost pilot | A separate 100-review pilot attempted 100, accepted 98, and quarantined two exact-quote failures. Its 112 metered calls charged $0.007410287. Cold active stages took 588.435 seconds; saved warm replay took 0.008029 seconds with zero outbound calls. A later read-only validation took 0.019757 seconds. Pilot checkpoints are separate from the historical main run. [Pilot report](reports/cost100-partial-checkpoint.md). |
 
 The memo proposes a cautious next action. The historical reviews do not establish observed churn, revenue, or causal impact.
+
+![Deliverable map: dashboard, evidence, issue rankings, recommendations, evaluation, and cost and reproducibility](docs/assets/required-outputs.png)
+
+Generated illustration of the requested deliverables. The table above and evaluation limits below record their actual status; the graphic is not a completion certificate. [Asset provenance](docs/assets/README.md).
 
 ## Run locally
 
