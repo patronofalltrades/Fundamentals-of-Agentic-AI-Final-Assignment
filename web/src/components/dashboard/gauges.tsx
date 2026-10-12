@@ -2,7 +2,7 @@ import { PolarAngleAxis, RadialBar, RadialBarChart } from "recharts"
 
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api } from "@/lib/api"
+import { api, fmt } from "@/lib/api"
 import { useData } from "./use-data"
 
 function Gauge({ ratio, display, label }: { ratio: number | null; display: string; label: string }) {
@@ -52,7 +52,7 @@ export default function Gauges() {
       <Panel
         title="Top issue severity"
         subtitle={top ? (top.title !== top.issue_id ? top.title : top.issue_id.replace(/^issue-/, "")) : "Pending the accepted issue ranking"}
-        foot={top ? <>Mean of {top.complaint_count} complaints · scale 1–5</> : "Mean severity of the rank-1 issue"}
+        foot={top ? <>Mean of {fmt.int(top.complaint_count)} complaints · scale 1–5</> : "Mean severity of the rank-1 issue"}
         gauge={<Gauge ratio={top ? (Number(top.mean_severity) - 1) / 4 : null} display={top ? Number(top.mean_severity).toFixed(1) : "—"} label="Top issue mean severity" />}
       />
     </div>

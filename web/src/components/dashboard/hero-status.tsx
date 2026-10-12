@@ -15,7 +15,7 @@ export default function HeroStatus() {
       )}
       {!s.target.is_demo && s.import && (
         <Badge variant="secondary" className="rounded-full bg-white/8 font-normal">
-          Development checkpoint · {fmt.int(s.import.selected_rows)} reviews
+          Results · {fmt.int(s.import.selected_rows)} reviews
         </Badge>
       )}
       <Badge variant="secondary" className="rounded-full bg-white/8 font-normal">
