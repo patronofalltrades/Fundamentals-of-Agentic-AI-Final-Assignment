@@ -103,7 +103,7 @@ python3 -m spotify_pipeline cost --measurements PATH --rates PATH --scenario PAT
 - `checkpoint` opens the database read-only and writes sorted original completed IDs plus configuration and source identity for resume. Pending rows never count as completed.
 - `cost` replays saved measurements with editable dated rates using `Decimal`. Shipped cost-scaffold artifacts are `not_measured` with null rates and unset output/fallback caps, so totals stay unresolved, admission is blocked, and no scaling is approved. Test measurements are labelled `synthetic_fixture`. Projections are `not_implemented`. The main pipeline CLI has no paid execution command; the Jev pilot runner is a separate gated tool.
 
-This private benchmark branch and its local data are not published. A separately reviewed clean feature branch with code and aggregate docs was published. SQLite databases, sidecars, checkpoints, and private handoffs remain git-ignored.
+Tracked code and aggregate reports are separate from local benchmark data. SQLite databases, sidecars, checkpoints, human answers, and private handoffs remain git-ignored.
 
 Offline tests live in `tests/` and use synthetic fixtures in temporary directories only:
 
