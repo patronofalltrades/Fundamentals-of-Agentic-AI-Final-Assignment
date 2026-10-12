@@ -38,12 +38,20 @@ file. `local/golden_gap_run_20261012/predictions50_frozen.jsonl` has SHA-256
 The isolated code-local evaluator reports 50 completed predictions, 52% topic
 agreement, 76% intent agreement, 28% exact topic–intent–severity agreement,
 topic macro F1 0.339156, intent macro F1 0.442381, severity MAE 0.56, and
-sentiment MAE 0.21. Twenty cases differ on severity. Aggregate error-pattern
-counts are saved privately; no per-case answers entered model context. Four
-new gap cases reuse exact development texts, and the earlier nine have mixed
-evidence configurations. These diagnostics do not prove population accuracy.
+sentiment MAE 0.21. Severity agrees exactly on **30/50** cases; twenty differ.
+Twelve human rows carry `needs_review=true`. Topic support, topic confusion,
+absolute severity-error distribution, and agreement-pattern counts are saved
+in a separate private aggregate report (SHA-256
+`68a199ce254950ce14981c980faa3d831fa6dd109749a3d721ffdaa113deea58`).
+No per-case answers entered model context. Eight of the 50 source texts match
+development texts, including four newly completed cases; the earlier nine
+also have mixed evidence configurations. The four-field evaluator does not
+score entity or evidence-quote accuracy. These diagnostics do not prove
+population accuracy.
 Any revision influenced by these golden answers needs a fresh untouched
-holdout before a final accuracy claim.
+holdout before a final accuracy claim. Freezing this prediction file before
+the current score does not prove that older prompt or catalog decisions were
+never influenced by golden feedback.
 
 ## Grading candidate and unchanged checker
 
@@ -67,19 +75,44 @@ quarantined, 7,980 other nonaccepted states, and 4,569 valid cache reuses.
 Membership, baseline ranking, and numeric claim checks produced no flags.
 Remaining checker flags are 7,980 invalid statuses, 949 nonbinary saved call
 outcomes, 79,797 unknown run phases, 94 missing usage fields, unavailable
-main-run resume snapshots and missing role records, plus the unfinished
-classification and call-coverage gates. Those are genuine evidence or scope
+main-run resume snapshots and missing verifier/group/memo role records, plus
+the unfinished classification and call-coverage gates. The checker counts
+20,938 completed records without representable direct call or unified direct
+cache provenance. Most are saved exact-text aliases whose label and evidence
+origins differ; assigning a convenient new origin after the fact would change
+their provenance. Those are genuine evidence or scope
 gaps; the exporter did not invent calls, statuses, phases, tokens, or
 checkpoints to silence them.
 
+| Remaining flag | Type | Honest resolution |
+| --- | --- | --- |
+| 949 nonbinary call outcomes | Saved-status format differs from checker enum | Preserve original partial/quarantined/uncertain status; a future adapter would need per-call and per-row outcome evidence before any binary mapping. |
+| 7,980 selected nonaccepted statuses; unfinished classification | Actual incomplete selected work | Keep all selected IDs; do not relabel pending or uncertain rows as completed or quarantined. |
+| 79,797 null run phases; missing initial/resume proof | Historical metadata absent | Obtain authentic request-to-checkpoint associations; timestamp gaps cannot supply them. |
+| 94 unavailable token fields | Provider usage unavailable | Keep null; no zero-filled usage. |
+| 20,938 unlogged completed records | Split or indirect cache provenance not representable by checker | Preserve saved label/evidence origins and original call evidence; do not assign a post hoc unified origin. |
+| Two missing main-run checkpoints; missing verify/group/memo roles | Historical execution evidence absent | Supply only if authentic artifacts are recovered. A new cost-pilot checkpoint is separate. |
+
 The original full-source reference command could not read even the CSV header:
 macOS reports the 93 MB source file as `compressed,dataless` with zero local
-blocks. The scoped reference was independently assembled from saved private
+blocks. Two Desktop copies of the same CSV and two dataset ZIPs were also
+offloaded and had zero local blocks. No materialized local copy was found.
+The scoped reference was independently assembled from saved private
 manifests and matched to the accepted handoff. It is **not** the official
 660,622-ID full-file reference. The candidate run declares 110,000 selected
 IDs, 100,229 accepted IDs, and notes that its pinned analysis hash identifies
 the original full source, not a reconstructed selected analysis CSV. The
 unchanged full-corpus checker cannot be claimed as passed under this scope.
+
+The checkpoint, next-5000, and scale request tables have no run-phase field.
+Their shared reservations save creation time but not the associated before/
+after completed-ID snapshot. Seven saved resume log files name no request
+keys. Timestamp gaps and attempt numbers therefore cannot prove an individual
+call's `initial` or `resume` phase. All 79,797 phase values remain null rather
+than being inferred. The original provider outcomes remain in the call file;
+949 partial, quarantined-metered, or uncertain outcomes do not fit the course
+checker's binary successful/failed enum. Ninety-four token fields remain
+unavailable, never zero-filled.
 
 The free verification tests added in this integration worktree are synthetic
 identity, exact-span, and public-boundary checks. They are not a real planted
