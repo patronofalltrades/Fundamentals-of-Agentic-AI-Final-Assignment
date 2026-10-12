@@ -1,5 +1,21 @@
 # Coordination record
 
+## Current integration — 12 October 2026
+
+The 100,000-review pipeline integration is owned by Codex on
+`feat/grouping-v4-integration` in the separate `spotify-v4-worktree` checkout.
+Its scope is the frozen v4 catalog, correction and ranking code, provisional
+memo, 100k-focused README, private grading handoff, and pipeline tests. The
+private handoff stays ignored under mode-0600 `local/`. The dashboard/API and
+publication work is owned in a different task and checkout. The shared canary
+and dashboard checkouts remain unchanged by this integration work. No push,
+merge, or deployment has been authorized.
+
+The v4 branch ran 315 offline Python tests successfully. The ranking remains
+advisory: pre-override blind human agreement was 16/40 (40.0%), and the 40
+cases were subsequently used as human overrides. See
+`reports/grouping-v4-handoff.md` and `reports/submission-status-2026-10-12.md`.
+
 The local clone is the shared project record. Read this file and `AGENTS.md`
 before taking a task. Check the branch, status, and origin first.
 This file is a manual task record. It is not a lock or a running agent service.
