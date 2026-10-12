@@ -1,5 +1,13 @@
 # Offline verification checkpoint — October 12, 2026
 
+**Historical checkpoint.** The nine accepted golden predictions below describe
+the selected production-run diagnostic at this point in time. A separate
+source-only run later froze all 50 predictions and scored them: 26/50 topic,
+38/50 intent, 30/50 severity, and 14/50 exact topic–intent–severity. See
+[`golden-gap-and-checker-2026-10-12.md`](golden-gap-and-checker-2026-10-12.md).
+The remaining gates below are also a snapshot, not the current submission
+status.
+
 This checkpoint uses saved outputs only. It makes no model request and does
 not approve production grouping, a dashboard import, or a grading claim.
 
