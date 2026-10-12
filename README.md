@@ -17,40 +17,59 @@ playback, or billing/support? No recommendation exists yet.
 
 ## Handoff to Alfred — read first (13 October)
 
-The deadline is **13 October 2026, 23:59 Pacific**. The dashboard, issue map, ranking, provisional memo and cost
-pilot are done. Three pipeline items remain. Each needs Hanif's approval where marked.
+The deadline is **13 October 2026, 23:59 Pacific**. Done: the live dashboard, the issue map, the ranking, the
+provisional memo, the cost pilot, the golden-50 evaluation and a grading candidate with a checker run. What
+remains is mostly publishing and reconciling branches. Items marked *(Hanif)* need his approval.
+
+### Latest pipeline state (Alfred, 12 October, local only)
+
+Branch `feat/grouping-v4-integration`, commit `68104f9`, in `Codex/2026-10-11/task/spotify-v4-worktree`.
+It is **not on GitHub**. Its report `reports/final-closeout-verification-2026-10-12.md` records:
+
+- **Golden 50:** all 50 predictions completed. Exact agreement: topic 26/50, intent 38/50, severity 30/50,
+  all three 14/50. Severity MAE 0.56; sentiment MAE 0.21. Twelve human rows ask for review. The set has
+  development-text overlap, so it is not an untouched population estimate.
+- **Grading candidate:** 110,000 records with distinct source IDs (100,229 completed, 1,791 quarantined,
+  7,980 other nonaccepted) and 79,797 main-run call lines. All files match their stored hashes. It is private,
+  Git-ignored and mode 0600.
+- **Checker:** unchanged `check_submission.py` gives `review_required` (no automatic grade). Against the
+  full-corpus contract it reports 550,622 missing IDs. It confirms 100,229 valid completed records and 4,569
+  valid direct cache reuses. Other flags: 7,980 nonaccepted statuses, 949 nonbinary call outcomes, 79,797
+  unavailable run phases, 94 unavailable usage fields, 20,938 completed rows without a checker-compatible
+  direct origin, and missing main-run checkpoints and verify/group/memo call records.
+- 403 Python tests pass on that branch.
+
+### Remaining work, in order
+
+1. **Reconcile the pipeline branch with `main`, then push** *(Hanif)*. `feat/grouping-v4-integration` holds an
+   older copy of `dashboard/` and `web/` taken before PRs #18–#20. Merge `main` into it and **keep `main`'s
+   `dashboard/` and `web/` files**; otherwise the memo page, project summary, polish fixes and public-boundary
+   work are reverted. `cost/`: keep both this branch's `cost/README.md` and `cost/pilot/` and the pipeline's
+   `cost/README.actual-pilot.md`.
+2. **Decide what to do with the checker flags.** Either fix what the saved state supports, or disclose each flag
+   in the README with its count. Do not rewrite saved state to hide a flag.
+3. **Show the golden score on the site** *(Hanif runs it; needs the database URL)*:
+   `python3 -m dashboard import-evaluation --report <score_gold JSON> --label-set original --postgres-env DASHBOARD_DATABASE_URL`.
+   Until then the "Golden agreement" card says pending.
+4. *(Optional)* Freeze the catalog and replace the provisional memo with a final one.
+5. **Record the short interruption-and-resume video** *(Hanif)*.
+
+### Decisions for Hanif
+
+- Approve the pipeline push (item 1).
+- Decide whether the grading folder is submitted publicly. It holds original review IDs and exact quotes from the
+  CC0 dataset; the project rules and Alfred's handoff keep it private. The course portal may accept it as a
+  separate upload.
 
 ### What exists, and where
 
 | Item | Location | Notes |
 | --- | --- | --- |
 | Live site | https://hanif-spotify-insights.vercel.app and `/memo/` | Neon database `dashboard_100k`. Rollback: `dashboard_5000`. |
-| Issue map (30,403) and audit | `local/claude_issue_map_v1/` in the pipeline worktree | Read `HANDOFF.md` there. Corrected membership: `issue_membership_corrected_30400.csv`. |
-| Grading-format folder used for the dashboard | `local/publish_100k/grading/` in the dashboard worktree | `run.json`, `records.jsonl`, `membership.csv`, `ranking.csv`, `claims.csv` for the corrected 30,400 run, with 7 declared label corrections. **Not contract-ready:** nonaccepted rows carry the placeholder reason `not accepted`, and there is no `ingestion.json`, `calls.jsonl` or checkpoint file. |
-| Cost pilot, unredacted | `Codex/2026-10-12/task-3/spotify-cost-pilot/local/cost100_pilot/` | Has the original `completed_ids` that the grading checkpoints need. |
-| Cost pilot, redacted | [`cost/pilot/`](cost/pilot/) in this repository | Same usage and totals; IDs replaced by counts. |
+| Pipeline closeout | `reports/final-closeout-verification-2026-10-12.md` and `reports/submission-critical-handoff-2026-10-12.md` on `feat/grouping-v4-integration` | Text only; the data files stay in that worktree's `local/`. |
+| Issue map and audit | `local/claude_issue_map_v1/` in the pipeline worktree | Read `HANDOFF.md` there. |
+| Cost pilot | [`cost/README.md`](cost/README.md), redacted copy in [`cost/pilot/`](cost/pilot/) | The unredacted files are in `Codex/2026-10-12/task-3/spotify-cost-pilot/local/cost100_pilot/`. |
 | Provisional memo | `dashboard/provisional_memo.md` | Served only for run `claude-issue-map-v1-30400` while all 164 claims match. |
-
-### Remaining work, in order
-
-1. **Push the pipeline code** (needs Hanif's approval). Branch `feat/deepinfra-batch10-canary` (latest local
-   commit `5cafc89`) is not on GitHub. The course must be able to see the program that ran.
-2. **Grading folder and self-check.** Build `grading/` to `GRADING_CONTRACT.md`: `run.json` (declare the
-   110,000-ID scope), `ingestion.json` from the course helper, `records.jsonl` with one final record per selected
-   ID and its real quarantine reason, `membership.csv` and `ranking.csv` from the corrected 30,400 membership,
-   `claims.csv`, `calls.jsonl`, and `checkpoint_before.json` / `checkpoint_after.json` from the unredacted cost
-   pilot. Run `check_submission.py` and record the result. Expect it to report the records outside the scope.
-3. **Golden predictions for the remaining 41 reviews** (needs Hanif's spend approval; a few cents). Run them
-   with the same label and evidence configuration, then score all 50 with the isolated evaluator. Hanif loads the
-   result into the site with `python3 -m dashboard import-evaluation` (it needs the database URL).
-4. *(Optional)* Freeze the catalog and replace the provisional memo with a final one.
-5. **Hanif:** record the short interruption-and-resume video.
-
-### Decisions for Hanif
-
-- Approve the pipeline push (item 1) and the golden spend (item 3).
-- Decide whether `grading/` goes into this public repository. It holds original review IDs and exact evidence
-  quotes from the CC0 dataset; the project rules keep IDs out of committed reports.
 
 ### Rules that still apply
 
@@ -73,9 +92,9 @@ is local only; it is not on GitHub yet (see the handoff above).
 | Independent verifier (grouping) | **Done.** A blind second model labelled 600 sampled records: 85.2% agreement (95% CI 82.1–87.8%). | Section 13 |
 | Ranking | **Provisional, live.** 30,400-record membership after 7 human label corrections; recomputed independently. Advisory until the catalog is frozen and a targeted human review is done. | Section 13 |
 | Memo and claim checks | **Provisional memo live.** All 164 numeric claims match the saved claim ledger. It is model-derived and advisory. | [live memo](https://hanif-spotify-insights.vercel.app/#memo) |
-| Grading export and self-check | Not started. | — |
+| Grading export and self-check | **Candidate built, private.** 110,000 records; the unchanged checker returns `review_required` (550,622 IDs missing against the full-corpus contract; other flags listed in the handoff). | Handoff above; pipeline branch |
 | Cost calculator with measured cold and warm runs | **Done, 12 October.** 112 metered calls, US$0.007410287, 98 of 100 completed. Warm run: 0.008 s, zero new calls. Offline recompute: `python3 -m tools.cost100_offline_calculator`. | [cost/README.md](cost/README.md), [pilot report](reports/cost100-pilot.md) |
-| Human golden evaluation | Labels are complete. Only 9 of the 50 golden reviews have predictions; the 41 others need a small paid run. | Section 7 |
+| Human golden evaluation | **Done, 12 October.** 50 of 50 scored. Exact: topic 26/50, intent 38/50, severity 30/50, all three 14/50; severity MAE 0.56. | Handoff above; pipeline branch |
 | Dashboard, backend, database, live URL | **Live with the 100,000-review results** since 12 October (Neon database `dashboard_100k`). All 144 public routes match the audited public copy; no review IDs, hashes or full texts are served. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
 | Full-corpus run (stretch) | Not started. | — |
 
@@ -126,7 +145,7 @@ Codex evidence on the 500-review checkpoint:
 | Scope | The contract checker expects all 660,622 IDs; the run covers 110,000 selected | The unchanged checker will report missing records. Disclose the scope (section 13). |
 | Issue map quality | Model agreement with the blind human review is 40% (16 of 40) | Individual issue assignments are not human-validated. Rank-level claims need that caveat. |
 | Catalog gaps | Every grouping agent reported free-tier limits split across four issues | The middle of the ranking may move after a catalog revision |
-| Missing stages | The grading export and golden scoring are not done | The grading checker cannot pass yet |
+| Checker flags | The grading candidate returns `review_required` | Each flag must be fixed or disclosed before submission |
 
 ## 5. Remaining gates (12–13 October)
 
@@ -134,9 +153,9 @@ Codex evidence on the 500-review checkpoint:
 | --- | --- | --- |
 | Freeze the catalog; rank the 30,400-record membership | Pipeline | The ranker reproduces the saved ranking |
 | Claims, memo and claim check | Pipeline | **Provisional memo live.** Final memo after the catalog freeze; every memo number cites a claim ID with its saved value |
-| Grading export and `check_submission.py` | Pipeline | The checker runs; scope gaps are disclosed |
+| Grading export and `check_submission.py` | Pipeline | **Candidate built; checker run (`review_required`).** Fix or disclose each flag |
 | Cold and warm 100-review cost pilot | Pipeline | **Done 12 October** ([cost/README.md](cost/README.md)) |
-| Golden predictions for the remaining 41 reviews | Pipeline, with spend approval | All 50 scored by the isolated evaluator |
+| Golden predictions for all 50 reviews | Pipeline | **Done 12 October**; load the score into the site with `import-evaluation` |
 | Publish the 100,000-review results | Dashboard | **Done 12 October.** Rollback: set `DASHBOARD_DATABASE_URL` back to `dashboard_5000` and redeploy |
 
 ## 6. How to run
@@ -290,7 +309,8 @@ an offline replay command and a report.
 
 The final submission also needs a deployed dashboard, a backend and a database that stores the results.
 The dashboard is live with the 100,000-review results (section 6).
-The measured `cost/` outputs exist ([cost/README.md](cost/README.md)). The grading folder does not exist yet.
+The measured `cost/` outputs exist ([cost/README.md](cost/README.md)). A grading candidate exists privately on the
+pipeline branch; the checker returns `review_required`.
 
 Rules that the code must follow:
 
