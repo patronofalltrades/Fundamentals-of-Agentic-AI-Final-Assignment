@@ -1,0 +1,19 @@
+{
+  "calls": {
+    "quarantined_metered": 2,
+    "succeeded": 110
+  },
+  "completed_id_count": 98,
+  "exposure_nusd": 7410287,
+  "output_counts": {
+    "enrich_evidence": 98,
+    "enrich_label": 100,
+    "group": 51,
+    "memo": 1,
+    "quarantine_evidence": 2,
+    "rank": 1,
+    "verify": 1
+  },
+  "private_file_sha256": "d6a784d5aac21445655fc139ad2f6448a131d05d72541fe8e29ccb4c7b7fe2c5",
+  "utc": "2026-10-12T12:06:33.701633+00:00"
+}

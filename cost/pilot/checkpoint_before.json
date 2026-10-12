@@ -1,0 +1,12 @@
+{
+  "calls": {
+    "succeeded": 100
+  },
+  "completed_id_count": 0,
+  "exposure_nusd": 4262454,
+  "output_counts": {
+    "enrich_label": 100
+  },
+  "private_file_sha256": "8ea678c52303f274486bd6769e524c9b730276084986fe73218cc4c1adee4dd8",
+  "utc": "2026-10-12T11:44:43.413672+00:00"
+}
