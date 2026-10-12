@@ -93,16 +93,32 @@ checkpoints to silence them.
 | 20,938 unlogged completed records | Split or indirect cache provenance not representable by checker | Preserve saved label/evidence origins and original call evidence; do not assign a post hoc unified origin. |
 | Two missing main-run checkpoints; missing verify/group/memo roles | Historical execution evidence absent | Supply only if authentic artifacts are recovered. A new cost-pilot checkpoint is separate. |
 
-The original full-source reference command could not read even the CSV header:
-macOS reports the 93 MB source file as `compressed,dataless` with zero local
-blocks. Two Desktop copies of the same CSV and two dataset ZIPs were also
-offloaded and had zero local blocks. No materialized local copy was found.
-The scoped reference was independently assembled from saved private
-manifests and matched to the accepted handoff. It is **not** the official
-660,622-ID full-file reference. The candidate run declares 110,000 selected
-IDs, 100,229 accepted IDs, and notes that its pinned analysis hash identifies
-the original full source, not a reconstructed selected analysis CSV. The
-unchanged full-corpus checker cannot be claimed as passed under this scope.
+Mac File Provider initially reported the original 93 MB source CSV as
+`compressed,dataless`. With the user's request to help download it, Finder
+revealed the file and the supported Foundation iCloud API requested its
+in-place download. The file then occupied 93 MB of local blocks, and its
+SHA-256 matched the pinned full-source value
+`1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6`.
+No source content was changed. The unchanged course helper generated an
+independent **660,622-ID** full-source reference (private SHA-256
+`541cbd0630360e132a90a6fff8a47920f051f464e859cc338d67cec646d80422`).
+The earlier 110,000-ID scoped reference remains a diagnostic derived from
+saved manifests, not this independent full-file reference.
+
+Against the independent full reference, the unchanged checker again returned
+`review_required` (private report SHA-256
+`cb07e99dca0f043cea70559daa0c25d54240c969a5879b17e0acf70b547e20e4`).
+It accounted for 110,000 submitted IDs and reported **550,622 missing** under
+its unchanged full-corpus denominator. It confirmed 100,229 valid completed,
+1,791 quarantined, 7,980 other nonaccepted, and 4,569 valid direct cache
+reuses. The candidate ingestion had only one extra adapter field; that prior
+file was snapshotted and replaced with the exact unchanged-checker full-source
+profile. The final full checker has no ingestion mismatch, completed-schema,
+membership, ranking, or numeric-claim flags. It still has one manifest scope
+mismatch, the 550,622 missing-record scope flag, and the genuine execution
+evidence and selected-nonaccepted flags listed above. This is an actual
+full-source checker result, **not a pass**. The instructor-reported 100,000
+minimum and the unchanged full-corpus checker remain distinct scopes.
 
 The checkpoint, next-5000, and scale request tables have no run-phase field.
 Their shared reservations save creation time but not the associated before/
