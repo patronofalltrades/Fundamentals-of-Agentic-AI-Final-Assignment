@@ -8,7 +8,7 @@ playback, or billing/support? No recommendation exists yet.
 
 | Item | Value |
 | --- | --- |
-| **Live dashboard** | **https://hanif-spotify-insights.vercel.app** — public, read-only, no login. It shows the 5,000-review development checkpoint. The 100,000-review results are ready locally and wait for the final ranking (section 6). |
+| **Live dashboard** | **https://hanif-spotify-insights.vercel.app** — public, read-only, no login. It shows the 100,000-review results: 110,000 selected reviews, 100,229 accepted, and the provisional issue ranking and memo (section 6). |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Class 7 is on the same day; the time is not known. |
 | Submission | This public repository. Final submission through the course portal is pending. |
 | Scope | **Minimum: 100,000 source reviews** (instructor clarification, see section 2). Stretch goal: all 660,622 IDs. |
@@ -27,12 +27,12 @@ Pipeline evidence for rows marked *(pipeline branch)* is on branch `feat/deepinf
 | 100,000-review run | **Done, 9 October.** 100,229 structurally accepted source IDs out of 110,000 selected. Structural acceptance is not human accuracy. | `reports/accepted-100k-completion.md` *(pipeline branch)* |
 | Issue grouping | **Done, 12 October: model-made map.** All 30,403 complaint and cancellation records map to one of 41 catalog issues. Human decisions replace the model for 91 cases. The pipeline audit removes 3 records after label corrections (30,400). | `reports/issue-map-independent-validation-2026-10-12.md` *(pipeline branch)* |
 | Independent verifier (grouping) | **Done.** A blind second model labelled 600 sampled records: 85.2% agreement (95% CI 82.1–87.8%). | Section 13 |
-| Ranking | **Provisional.** Recomputed independently twice. Final ranking waits for the frozen catalog and the 30,400-record membership. | Section 13 |
-| Memo and claim checks | Not started. | — |
+| Ranking | **Provisional, live.** 30,400-record membership after 7 human label corrections; recomputed independently. Advisory until the catalog is frozen and a targeted human review is done. | Section 13 |
+| Memo and claim checks | **Provisional memo live.** All 164 numeric claims match the saved claim ledger. It is model-derived and advisory. | [live memo](https://hanif-spotify-insights.vercel.app/#memo) |
 | Grading export and self-check | Not started. | — |
 | Cost calculator with measured cold and warm runs | **Not measured.** Offline replay scaffolding only. | [cost scaffold](reports/cost-scaffold.json) |
 | Human golden evaluation | Labels are complete. Only 9 of the 50 golden reviews have predictions so far. | Section 7 |
-| Dashboard, backend, database, live URL | **Live** with the 5,000-review checkpoint. The 100,000-review import, the issue ranking and a publishable public copy are built and tested locally. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
+| Dashboard, backend, database, live URL | **Live with the 100,000-review results** since 12 October (Neon database `dashboard_100k`). All 144 public routes match the audited public copy; no review IDs, hashes or full texts are served. | [live dashboard](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) |
 | Full-corpus run (stretch) | Not started. | — |
 
 ## 2. Decisions
@@ -89,11 +89,11 @@ Codex evidence on the 500-review checkpoint:
 | Gate | Owner | Pass condition |
 | --- | --- | --- |
 | Freeze the catalog; rank the 30,400-record membership | Pipeline | The ranker reproduces the saved ranking |
-| Claims, memo and claim check | Pipeline | Every memo number cites a claim ID with its saved value |
+| Claims, memo and claim check | Pipeline | **Provisional memo live.** Final memo after the catalog freeze; every memo number cites a claim ID with its saved value |
 | Grading export and `check_submission.py` | Pipeline | The checker runs; scope gaps are disclosed |
 | Cold and warm 100-review cost pilot | Pipeline, with spend approval | Real usage; the warm run makes zero new enrichment calls |
 | Golden predictions for the remaining 41 reviews | Pipeline, with spend approval | All 50 scored by the isolated evaluator |
-| Publish the 100,000-review results | Dashboard, with approval | `export-public` reports no differences and no leaks; the site switches with `DASHBOARD_DATABASE_URL` and can switch back |
+| Publish the 100,000-review results | Dashboard | **Done 12 October.** Rollback: set `DASHBOARD_DATABASE_URL` back to `dashboard_5000` and redeploy |
 
 ## 6. How to run
 
@@ -142,8 +142,8 @@ approval and a flag such as `--execute`.
 - Open the link in any browser. No account or login is needed.
 - The page and the API only read saved results. Opening the page makes no model call and spends no credit.
 - The API rejects every method except GET and HEAD.
-- The deployed 5,000-review database stores review IDs, row hashes, labels and source-exact evidence quotes.
-  It does not store the full review text, rating, likes, app version or timestamp.
+- The earlier 5,000-review database (kept as the rollback) stores review IDs, row hashes, labels and source-exact
+  evidence quotes. It does not store the full review text, rating, likes, app version or timestamp.
 - The API never returns review IDs or full review text.
 - The 100,000-review results use a stricter public boundary: records are reached by random references
   only, quotes appear as excerpts of at most 30 words, possible personal information is left out, and
@@ -245,7 +245,7 @@ The `cost/` folder must contain a real cold and warm 100-review pilot, editable 
 an offline replay command and a report.
 
 The final submission also needs a deployed dashboard, a backend and a database that stores the results.
-The dashboard is live (section 6). It must show the final 100,000-review results before submission.
+The dashboard is live with the 100,000-review results (section 6).
 The grading folder and the measured `cost/` outputs do not exist yet.
 
 Rules that the code must follow:
