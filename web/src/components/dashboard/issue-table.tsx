@@ -1,0 +1,98 @@
+import { useState } from "react"
+import { ArrowRight } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { api, fmt, type Claim } from "@/lib/api"
+import { LoadError, PendingNote, Reflection } from "./bits"
+import { REFLECTIONS } from "@/lib/reflections"
+import { useData } from "./use-data"
+
+const SHOWN = 5
+
+/** A number with its claim ID. The claim is shown only when its saved value is the number on screen. */
+function ClaimValue({ value, raw, claim }: { value: string | number; raw: string | number; claim?: Claim }) {
+  if (!claim || claim.value !== String(raw)) return <span className="tabular-nums">{value}</span>
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="cursor-help tabular-nums underline decoration-track decoration-dotted underline-offset-4">{value}</span>
+      </TooltipTrigger>
+      <TooltipContent>{claim.claim_id}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+export default function IssueTable() {
+  const issues = useData(api.issues)
+  const claims = useData(api.claims)
+  const [all, setAll] = useState(false)
+  if (issues.error) return <LoadError message={issues.error} />
+  if (!issues.data) return <Skeleton className="h-80 rounded-2xl bg-tile" />
+  const items = issues.data.items
+  const byKey = new Map((claims.data?.items ?? []).map((c) => [`${c.issue_id}:${c.metric}`, c]))
+  const totalComplaints = items.reduce((a, i) => a + i.review_count, 0)
+  const flagged = issues.data.flagged_members_excluded ?? 0
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl">Issue ranking</h2>
+        {items.length > SHOWN && (
+          <Button variant="ghost" size="sm" className="gap-2 rounded-full text-[13px]" onClick={() => setAll(!all)}>
+            {all ? "Show top 5" : `View all ${items.length}`}
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Button>
+        )}
+      </div>
+      <Reflection className="mt-2">{REFLECTIONS.issues}</Reflection>
+      {!items.length ? (
+        <div className="mt-4 space-y-3">
+          <PendingNote>
+            Pending. The ranking appears when the pipeline's accepted issue membership is loaded. Raw topic labels are never
+            shown as issues.
+          </PendingNote>
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 rounded-xl bg-tile/60" />)}
+        </div>
+      ) : (
+        <Table className="mt-4 text-[15px]">
+          <TableHeader className="[&_tr]:border-0">
+            <TableRow className="bg-tile hover:bg-tile">
+              <TableHead className="rounded-l-xl text-[13px] font-normal text-muted-foreground">Issue</TableHead>
+              <TableHead className="text-right text-[13px] font-normal text-muted-foreground">Complaints</TableHead>
+              <TableHead className="text-right text-[13px] font-normal text-muted-foreground max-sm:rounded-r-xl">Severity sum</TableHead>
+              <TableHead className="hidden text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Mean</TableHead>
+              <TableHead className="hidden rounded-r-xl text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Share</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(all ? items : items.slice(0, SHOWN)).map((issue, index) => (
+              <TableRow key={issue.issue_id} className="border-border/70 hover:bg-tile/40">
+                <TableCell className="py-3.5 whitespace-normal">
+                  <span className="mr-2 text-muted-foreground tabular-nums">{index + 1}</span>
+                  {issue.title !== issue.issue_id ? issue.title : fmt.label(issue.issue_id.replace(/^issue-/, ""))}
+                </TableCell>
+                <TableCell className="text-right"><ClaimValue value={fmt.int(issue.review_count)} raw={issue.review_count} claim={byKey.get(`${issue.issue_id}:complaint_count`)} /></TableCell>
+                <TableCell className="text-right"><ClaimValue value={fmt.int(issue.priority_score)} raw={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
+                <TableCell className="hidden text-right sm:table-cell"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} raw={issue.mean_severity} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
+                <TableCell className="hidden text-right sm:table-cell">
+                  <Badge variant="secondary" className="rounded-full bg-transparent px-0 font-normal text-foreground">
+                    {fmt.pct(totalComplaints ? issue.review_count / totalComplaints : 0)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {flagged > 0 && (
+        <p className="mt-3 text-[13px] text-muted-foreground" data-testid="baseline-note">
+          This public ranking leaves out {fmt.int(flagged)} complaints with a known semantic flag. The course baseline counts
+          them, and the memo's claim IDs cite the baseline. A number shows its claim ID only where both agree.
+        </p>
+      )}
+    </TooltipProvider>
+  )
+}

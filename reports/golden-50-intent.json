@@ -1,0 +1,320 @@
+{
+  "title": "Jev intent accuracy on the 50 human golden labels",
+  "benchmark_version": "golden-50-human-v1 (original labels, not the adjudicated copy)",
+  "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+  "cases": 50,
+  "labeller": "one person, before seeing any model output",
+  "model": "jev-1.13.0",
+  "scorer": "check_submission.score_gold from the course checker, via the Line A evals/score_gold.py",
+  "measured": "Runs on 2026-10-06. The v2 runs were scored offline on 2026-10-08 with no model calls.",
+  "note": "Line A pipeline. Its prompt v2 ports the topic wording of the production jev-rubric-v2, so the label configuration is close to, but not byte-identical with, the dashboard database. This file holds aggregates only: no review IDs, review texts or human labels.",
+  "cancellation_note": "The person labelled no golden review as cancellation. Jev predicted cancellation once in every run, so that prediction is always wrong.",
+  "runs": [
+    {
+      "prompt": "v2",
+      "run": 1,
+      "accuracy": 0.86,
+      "macro_f1": 0.822757,
+      "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 21,
+          "correct": 17,
+          "precision": 0.809524,
+          "recall": 0.894737,
+          "f1": 0.85
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 6,
+          "correct": 5,
+          "precision": 0.833333,
+          "recall": 0.555556,
+          "f1": 0.666667
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    {
+      "prompt": "v2",
+      "run": 2,
+      "accuracy": 0.86,
+      "macro_f1": 0.822757,
+      "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 21,
+          "correct": 17,
+          "precision": 0.809524,
+          "recall": 0.894737,
+          "f1": 0.85
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 6,
+          "correct": 5,
+          "precision": 0.833333,
+          "recall": 0.555556,
+          "f1": 0.666667
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    {
+      "prompt": "v2",
+      "run": 3,
+      "accuracy": 0.88,
+      "macro_f1": 0.849039,
+      "label_config": "typesafe/jev-latest:prompt-v2:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 17,
+          "precision": 0.85,
+          "recall": 0.894737,
+          "f1": 0.871795
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 7,
+          "correct": 6,
+          "precision": 0.857143,
+          "recall": 0.666667,
+          "f1": 0.75
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    {
+      "prompt": "v1",
+      "run": 1,
+      "accuracy": 0.84,
+      "macro_f1": 0.793764,
+      "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 22,
+          "correct": 17,
+          "precision": 0.772727,
+          "recall": 0.894737,
+          "f1": 0.829268
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 5,
+          "correct": 4,
+          "precision": 0.8,
+          "recall": 0.444444,
+          "f1": 0.571429
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    {
+      "prompt": "v1",
+      "run": 2,
+      "accuracy": 0.84,
+      "macro_f1": 0.793764,
+      "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 22,
+          "correct": 17,
+          "precision": 0.772727,
+          "recall": 0.894737,
+          "f1": 0.829268
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 5,
+          "correct": 4,
+          "precision": 0.8,
+          "recall": 0.444444,
+          "f1": 0.571429
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    {
+      "prompt": "v1",
+      "run": 3,
+      "accuracy": 0.86,
+      "macro_f1": 0.822757,
+      "label_config": "typesafe/jev-latest:prompt-v1:extract-v2:schema-a5-v1",
+      "missing_or_invalid_predictions": 0,
+      "benchmark_sha256": "3c880d41e031c7bc6e076f609f7cced7d1041434449d83f23f4829ba2ffa30ea",
+      "per_class": {
+        "complaint": {
+          "support": 19,
+          "predicted": 21,
+          "correct": 17,
+          "precision": 0.809524,
+          "recall": 0.894737,
+          "f1": 0.85
+        },
+        "praise": {
+          "support": 19,
+          "predicted": 20,
+          "correct": 19,
+          "precision": 0.95,
+          "recall": 1.0,
+          "f1": 0.974359
+        },
+        "request": {
+          "support": 3,
+          "predicted": 2,
+          "correct": 2,
+          "precision": 1.0,
+          "recall": 0.666667,
+          "f1": 0.8
+        },
+        "unclear": {
+          "support": 9,
+          "predicted": 6,
+          "correct": 5,
+          "precision": 0.833333,
+          "recall": 0.555556,
+          "f1": 0.666667
+        },
+        "cancellation": {
+          "support": 0,
+          "predicted": 1,
+          "correct": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    }
+  ]
+}
