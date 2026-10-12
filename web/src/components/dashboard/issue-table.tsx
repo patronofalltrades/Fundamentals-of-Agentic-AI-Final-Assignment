@@ -13,8 +13,9 @@ import { useData } from "./use-data"
 
 const SHOWN = 5
 
-function ClaimValue({ value, claim }: { value: string | number; claim?: Claim }) {
-  if (!claim) return <span className="tabular-nums">{value}</span>
+/** A number with its claim ID. The claim is shown only when its saved value is the number on screen. */
+function ClaimValue({ value, raw, claim }: { value: string | number; raw: string | number; claim?: Claim }) {
+  if (!claim || claim.value !== String(raw)) return <span className="tabular-nums">{value}</span>
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -34,6 +35,7 @@ export default function IssueTable() {
   const items = issues.data.items
   const byKey = new Map((claims.data?.items ?? []).map((c) => [`${c.issue_id}:${c.metric}`, c]))
   const totalComplaints = items.reduce((a, i) => a + i.review_count, 0)
+  const flagged = issues.data.flagged_members_excluded ?? 0
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex items-center justify-between gap-3">
@@ -72,9 +74,9 @@ export default function IssueTable() {
                   <span className="mr-2 text-muted-foreground tabular-nums">{index + 1}</span>
                   {issue.title !== issue.issue_id ? issue.title : fmt.label(issue.issue_id.replace(/^issue-/, ""))}
                 </TableCell>
-                <TableCell className="text-right"><ClaimValue value={issue.review_count} claim={byKey.get(`${issue.issue_id}:complaint_count`)} /></TableCell>
-                <TableCell className="text-right"><ClaimValue value={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
-                <TableCell className="text-right"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
+                <TableCell className="text-right"><ClaimValue value={issue.review_count} raw={issue.review_count} claim={byKey.get(`${issue.issue_id}:complaint_count`)} /></TableCell>
+                <TableCell className="text-right"><ClaimValue value={issue.priority_score} raw={issue.priority_score} claim={byKey.get(`${issue.issue_id}:severity_sum`)} /></TableCell>
+                <TableCell className="text-right"><ClaimValue value={Number(issue.mean_severity).toFixed(2)} raw={issue.mean_severity} claim={byKey.get(`${issue.issue_id}:mean_severity`)} /></TableCell>
                 <TableCell className="text-right">
                   <Badge variant="secondary" className="rounded-full bg-transparent px-0 font-normal text-foreground">
                     {fmt.pct(totalComplaints ? issue.review_count / totalComplaints : 0)}
@@ -84,6 +86,12 @@ export default function IssueTable() {
             ))}
           </TableBody>
         </Table>
+      )}
+      {flagged > 0 && (
+        <p className="mt-3 text-[13px] text-muted-foreground" data-testid="baseline-note">
+          This public ranking leaves out {fmt.int(flagged)} complaints with a known semantic flag. The course baseline counts
+          them, and the memo's claim IDs cite the baseline. A number shows its claim ID only where both agree.
+        </p>
       )}
     </TooltipProvider>
   )

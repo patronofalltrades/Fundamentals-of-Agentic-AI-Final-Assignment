@@ -29,6 +29,7 @@ _PERSONAL = (
     re.compile(r"\b[A-Z][a-z]+[._][A-Z][a-z]+\b"),             # First.Last or First_Last
 )
 _DIGITS = re.compile(r"\+?\d[\d\s().-]{5,}\d")  # phone, card or account numbers: checked by digit count
+_DIGITS_NO_DOT = re.compile(r"\+?\d[\d\s()-]{5,}\d")  # the same, where a dot ends a number (report decimals)
 MIN_PERSONAL_DIGITS = 7
 _CAPITALIZED = re.compile(r"\b[A-Z][a-z']+\b")
 _LOWER = re.compile(r"\b[a-z][a-z']+\b")
@@ -53,13 +54,17 @@ def excerpt(quote):
     return " ".join(words[:MAX_EXCERPT_WORDS]) + " " + SHORTENED_MARK, True
 
 
-def has_personal_info(text, common=None):
-    """True when the text may hold personal information. ``common`` is a ``vocabulary()`` of the corpus."""
+def has_personal_info(text, common=None, decimals=False):
+    """True when the text may hold personal information. ``common`` is a ``vocabulary()`` of the corpus.
+
+    ``decimals=True`` is for report text: a dot then ends a number, so ``4.123456`` is not a long number.
+    """
     if any(p.search(text) for p in _PERSONAL):
         return True
     if common is not None and any(common.get(w.lower(), 0) < MIN_COMMON_LOWERCASE for w in _CAPITALIZED.findall(text)):
         return True
-    return any(sum(ch.isdigit() for ch in m.group(0)) >= MIN_PERSONAL_DIGITS for m in _DIGITS.finditer(text))
+    digits = _DIGITS_NO_DOT if decimals else _DIGITS
+    return any(sum(ch.isdigit() for ch in m.group(0)) >= MIN_PERSONAL_DIGITS for m in digits.finditer(text))
 
 
 def new_ref():

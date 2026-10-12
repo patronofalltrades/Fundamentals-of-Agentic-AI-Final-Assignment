@@ -42,6 +42,7 @@ def main():
     grading.add_argument("--folder", required=True, help="grading export folder")
     grading.add_argument("--issue-names", help="optional JSON file: {issue_id: display name}")
     grading.add_argument("--run-id", help="optional run ID (default: grading-<ranking.csv hash>)")
+    grading.add_argument("--catalog", help="accepted-evidence database only: the frozen issue catalog JSON (titles, hash)")
     grading_target = grading.add_mutually_exclusive_group(required=True)
     grading_target.add_argument("--db", help="SQLite dashboard database")
     grading_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
@@ -96,7 +97,11 @@ def main():
                 parser.error("environment variable %s is not set" % args.postgres_env)
             backend = NeonHTTPBackend(url, timeout=60)
         with backend:
-            print(json.dumps(load_grading(backend, args.folder, names, args.run_id), sort_keys=True))
+            catalog = None
+            if args.catalog:
+                from .accepted_grading import catalog_from
+                catalog = catalog_from(args.catalog)
+            print(json.dumps(load_grading(backend, args.folder, names, args.run_id, catalog), sort_keys=True))
     elif args.command == "import-evaluation":
         import os
         from .evaluation import load_evaluation

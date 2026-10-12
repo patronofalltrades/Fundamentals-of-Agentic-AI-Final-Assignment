@@ -70,6 +70,14 @@ export type Summary = {
     scope?: string
     public_examples?: { public: number; shortened: number; excluded_known_flag: number; excluded_personal_info: number }
     issue_candidates?: { contract_baseline: number; public_projection: number; flagged_excluded: number }
+    /** Present once the pipeline's grading folder is loaded. Counts and hashes only. */
+    issue_import?: {
+      run_id: string
+      issues: number
+      human_label_corrections: number
+      catalog_sha256: string | null
+      memo_claim_check: string
+    }
   } | null
   /** Counts of sanitized reason categories per nonaccepted state. */
   reason_categories?: Partial<Record<RowState, Record<string, number>>> | null
@@ -92,7 +100,16 @@ export type Issue = {
   priority_score: number
   mean_severity: string
 }
-export type Issues = { status: string; run_id?: string; ranking_method: string; items: Issue[] }
+export type Issues = {
+  status: string
+  run_id?: string
+  ranking_method: string
+  /** The public ranking. In an accepted-evidence import it leaves out flagged members. */
+  items: Issue[]
+  /** The course baseline, flagged members included. Claims cite these numbers. */
+  baseline?: Omit<Issue, "title">[]
+  flagged_members_excluded?: number
+}
 
 export type Claim = { claim_id: string; issue_id: string; metric: string; value: string }
 export type Claims = { status: string; run_id?: string; items: Claim[] }
