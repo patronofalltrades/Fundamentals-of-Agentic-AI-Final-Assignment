@@ -1,0 +1,21 @@
+---
+import Layout from "@/layouts/main.astro"
+import { ArrowLeft } from "lucide-react"
+import MemoPanel from "@/components/dashboard/memo-panel"
+---
+
+<Layout title="Decision memo · Spotify review evidence" description="The full decision memo, with every numeric claim checked against the saved issue ranking.">
+  <div class="mx-auto max-w-[1100px] p-4 sm:p-6 lg:p-10">
+    <div class="rounded-3xl bg-card p-6 sm:p-10">
+      <a href="/#memo" class="mb-6 inline-flex items-center gap-2 text-[14px] text-muted-foreground transition-colors hover:text-foreground">
+        <ArrowLeft className="size-4" aria-hidden="true" /> Back to the dashboard
+      </a>
+      <MemoPanel variant="full" client:load />
+      <p class="mt-8 text-[13px] text-muted-foreground">
+        Every number in the claim ledger is a saved claim. The dashboard serves this memo only when each claim matches the
+        saved ranking exactly. Hover a number to see its claim ID.
+      </p>
+    </div>
+    <footer class="mt-4 px-2 text-[13px] text-muted-foreground">Independent course project. Not affiliated with or endorsed by Spotify.</footer>
+  </div>
+</Layout>

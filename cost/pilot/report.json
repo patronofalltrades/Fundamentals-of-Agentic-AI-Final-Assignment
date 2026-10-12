@@ -1,0 +1,104 @@
+{
+  "actual_charged_nusd": 7410287,
+  "all_interruption_downtime_seconds": 992.755459458,
+  "calls": 112,
+  "calls_missing_usage": 0,
+  "cold_active_stage_seconds": 588.434599542,
+  "cold_end_to_end_wall_seconds": 1581.190059,
+  "completed": 98,
+  "conservative_exposure_nusd": 7410287,
+  "events": [
+    {
+      "elapsed_seconds": 270.90429975,
+      "ended_utc": "2026-10-12T11:44:43.412984+00:00",
+      "phase": "cold",
+      "stage": "label",
+      "started_utc": "2026-10-12T11:40:12.510239+00:00"
+    },
+    {
+      "elapsed_seconds": 0.001637540999999132,
+      "ended_utc": "2026-10-12T11:45:18.924167+00:00",
+      "phase": "cold",
+      "stage": "label",
+      "started_utc": "2026-10-12T11:45:18.922510+00:00"
+    },
+    {
+      "elapsed_seconds": 34.915225375,
+      "ended_utc": "2026-10-12T11:45:53.840455+00:00",
+      "phase": "cold",
+      "stage": "evidence",
+      "started_utc": "2026-10-12T11:45:18.925443+00:00"
+    },
+    {
+      "elapsed_seconds": 0.0018522079999989671,
+      "ended_utc": "2026-10-12T12:01:00.271282+00:00",
+      "phase": "cold",
+      "stage": "label",
+      "started_utc": "2026-10-12T12:01:00.269402+00:00"
+    },
+    {
+      "elapsed_seconds": 41.966920166,
+      "ended_utc": "2026-10-12T12:01:42.241426+00:00",
+      "phase": "cold",
+      "stage": "evidence",
+      "started_utc": "2026-10-12T12:01:00.273833+00:00"
+    },
+    {
+      "elapsed_seconds": 0.004149334000000948,
+      "ended_utc": "2026-10-12T12:02:32.868902+00:00",
+      "phase": "cold",
+      "stage": "label",
+      "started_utc": "2026-10-12T12:02:32.864694+00:00"
+    },
+    {
+      "elapsed_seconds": 132.02374533399998,
+      "ended_utc": "2026-10-12T12:04:45.078057+00:00",
+      "phase": "cold",
+      "stage": "evidence",
+      "started_utc": "2026-10-12T12:02:32.871555+00:00"
+    },
+    {
+      "elapsed_seconds": 22.75061100000002,
+      "ended_utc": "2026-10-12T12:05:07.829809+00:00",
+      "phase": "cold",
+      "stage": "verify",
+      "started_utc": "2026-10-12T12:04:45.078522+00:00"
+    },
+    {
+      "elapsed_seconds": 79.47320274999998,
+      "ended_utc": "2026-10-12T12:06:27.305833+00:00",
+      "phase": "cold",
+      "stage": "group",
+      "started_utc": "2026-10-12T12:05:07.830249+00:00"
+    },
+    {
+      "elapsed_seconds": 0.005095791999991661,
+      "ended_utc": "2026-10-12T12:06:27.311652+00:00",
+      "phase": "cold",
+      "stage": "rank",
+      "started_utc": "2026-10-12T12:06:27.306566+00:00"
+    },
+    {
+      "elapsed_seconds": 6.387860291999999,
+      "ended_utc": "2026-10-12T12:06:33.700298+00:00",
+      "phase": "cold",
+      "stage": "memo",
+      "started_utc": "2026-10-12T12:06:27.312257+00:00"
+    },
+    {
+      "elapsed_seconds": 0.008028666999990719,
+      "ended_utc": "2026-10-12T12:06:33.711061+00:00",
+      "phase": "warm",
+      "stage": "all",
+      "started_utc": "2026-10-12T12:06:33.703039+00:00"
+    }
+  ],
+  "failed_or_uncertain_calls": 2,
+  "failed_records": 2,
+  "input_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+  "pause_downtime_seconds": 35.508838,
+  "rate_multiplier": "1",
+  "recomputed_api_nusd": 7410287,
+  "rows": 100,
+  "warm_seconds": 0.008028666999990719
+}

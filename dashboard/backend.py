@@ -147,8 +147,20 @@ def _parse(value: Any, type_id: Optional[int]):
 
 def _https_post(url: str, headers: Dict[str, str], body: bytes, timeout: float) -> Dict[str, Any]:
     request = urllib.request.Request(url, data=body, method="POST", headers=headers)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        # Keep Neon's own message (for example a SQL error); never echo the request headers or connection string.
+        try:
+            detail = json.loads(error.read().decode("utf-8", "replace"))
+            message = " ".join(str(detail.get(k)) for k in ("message", "code", "detail") if detail.get(k))
+        except Exception:
+            message = ""
+        dsn = headers.get("Neon-Connection-String", "")
+        if dsn:
+            message = message.replace(dsn, "[connection string]")
+        raise RuntimeError("Neon returned HTTP %d: %s" % (error.code, message[:500] or "no message")) from None
 
 
 class NeonHTTPBackend:

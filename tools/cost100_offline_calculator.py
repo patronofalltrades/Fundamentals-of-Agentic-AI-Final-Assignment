@@ -51,7 +51,7 @@ def calculate(folder, rates_file=None, projected_records=100):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pilot", default="local/cost100_pilot")
+    parser.add_argument("--pilot", default="cost/pilot")
     parser.add_argument("--rates")
     parser.add_argument("--projected-records", type=int, default=100)
     args = parser.parse_args()

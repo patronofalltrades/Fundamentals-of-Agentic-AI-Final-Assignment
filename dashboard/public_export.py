@@ -185,7 +185,10 @@ def load_public(backend, public_db: str, rows_per_batch: int = 2000) -> Dict[str
         if tables - ALLOWED or audit_tables(src):
             raise ValueError("not a public export")
         for sql in DDL["common"] + DDL[backend.dialect] + PUBLIC_TABLES:
-            backend.execute(sql)
+            try:
+                backend.execute(sql)
+            except Exception as error:
+                raise RuntimeError("creating tables failed (%s): %s" % (sql.split("(")[0].strip(), error)) from None
         if backend.execute("SELECT COUNT(*) FROM records").fetchone()[0]:
             raise ValueError("the target database is not empty")
         counts = {}
@@ -198,7 +201,11 @@ def load_public(backend, public_db: str, rows_per_batch: int = 2000) -> Dict[str
                 continue
             columns = [c[1] for c in src.execute("PRAGMA table_info(%s)" % table)]
             for start in range(0, len(rows), rows_per_batch):
-                backend.run_batch(multi_row_insert(table, columns, rows[start:start + rows_per_batch]))
+                try:
+                    backend.run_batch(multi_row_insert(table, columns, rows[start:start + rows_per_batch]))
+                except Exception as error:
+                    raise RuntimeError("loading %s rows %d-%d failed: %s" % (
+                        table, start + 1, min(start + rows_per_batch, len(rows)), error)) from None
         for table, n in counts.items():
             if backend.execute("SELECT COUNT(*) FROM %s" % table).fetchone()[0] != n:
                 raise ValueError("loaded %s count differs; load into a fresh database again" % table)

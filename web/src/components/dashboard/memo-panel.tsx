@@ -1,19 +1,23 @@
-import { Fragment } from "react"
-import { ShieldCheck, TriangleAlert } from "lucide-react"
+import { Fragment, type ReactNode } from "react"
+import { ArrowRight, ShieldCheck, TriangleAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { api, fmt, type Claim } from "@/lib/api"
+import { ledgerRows, parseMemo, sentenceCase, SUMMARY_SECTIONS, type LedgerRow, type MemoBlock } from "@/lib/memo"
 import { LoadError, PendingNote, Reflection } from "./bits"
 import { REFLECTIONS } from "@/lib/reflections"
 import { useData } from "./use-data"
 
 const CLAIM = /(claim-[A-Za-z0-9_.:-]+)/g
+const METRICS = ["complaint_count", "severity_sum", "mean_severity", "priority_score"] as const
 
-function MemoText({ text, claims }: { text: string; claims: Map<string, Claim> }) {
+/** Text with each claim ID marked; hovering shows the saved value. */
+function WithClaims({ text, claims }: { text: string; claims: Map<string, Claim> }) {
   return (
-    <div className="max-w-[72ch] text-[15px] leading-7 whitespace-pre-wrap text-foreground/90">
+    <>
       {text.split(CLAIM).map((part, i) => {
         const claim = claims.get(part)
         if (!claim) return <Fragment key={i}>{part}</Fragment>
@@ -26,23 +30,108 @@ function MemoText({ text, claims }: { text: string; claims: Map<string, Claim> }
           </Tooltip>
         )
       })}
+    </>
+  )
+}
+
+function Blocks({ blocks, claims }: { blocks: MemoBlock[]; claims: Map<string, Claim> }) {
+  return (
+    <div className="space-y-3">
+      {blocks.map((b, i) =>
+        b.kind === "paragraph" ? (
+          <p key={i}><WithClaims text={b.text} claims={claims} /></p>
+        ) : (
+          <ul key={i} className="list-disc space-y-1 pl-5">
+            {b.items.map((item, j) => <li key={j}><WithClaims text={item} claims={claims} /></li>)}
+          </ul>
+        ),
+      )}
     </div>
   )
 }
 
-export default function MemoPanel() {
+/** The claim ledger as one row per issue; each number carries its claim ID. */
+function Ledger({ rows, titles }: { rows: LedgerRow[]; titles: Map<string, string> }) {
+  const byIssue = new Map<string, { rank: string; values: Partial<Record<string, LedgerRow>> }>()
+  for (const row of rows) {
+    const item = byIssue.get(row.issueId) ?? { rank: row.claimId.split("-")[1] ?? "", values: {} }
+    item.values[row.metric] = row
+    byIssue.set(row.issueId, item)
+  }
+  const cell = (row?: LedgerRow) =>
+    row ? (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="cursor-help tabular-nums underline decoration-track decoration-dotted underline-offset-4">
+            {row.metric === "mean_severity" ? Number(row.value).toFixed(2) : fmt.int(Number(row.value))}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{row.claimId} = {row.value}</TooltipContent>
+      </Tooltip>
+    ) : "—"
+  return (
+    <Table className="text-[14px]" data-testid="claim-ledger">
+      <TableHeader className="[&_tr]:border-0">
+        <TableRow className="bg-tile hover:bg-tile">
+          <TableHead className="rounded-l-xl text-[13px] font-normal text-muted-foreground">Issue</TableHead>
+          <TableHead className="text-right text-[13px] font-normal text-muted-foreground">Complaints</TableHead>
+          <TableHead className="text-right text-[13px] font-normal text-muted-foreground max-sm:rounded-r-xl">Severity sum</TableHead>
+          <TableHead className="hidden text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Mean</TableHead>
+          <TableHead className="hidden rounded-r-xl text-right text-[13px] font-normal text-muted-foreground sm:table-cell">Priority</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...byIssue.entries()].map(([issueId, { rank, values }]) => (
+          <TableRow key={issueId} className="border-border/70">
+            <TableCell className="py-2.5 whitespace-normal">
+              <span className="mr-2 text-muted-foreground tabular-nums">{Number(rank)}</span>
+              {titles.get(issueId) ?? issueId}
+              <span className="ml-2 hidden font-mono text-[12px] text-muted-foreground sm:inline">{issueId}</span>
+            </TableCell>
+            {METRICS.map((m, i) => (
+              <TableCell key={m} className={i >= 2 ? "hidden text-right sm:table-cell" : "text-right"}>{cell(values[m])}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
+function Section({ heading, children }: { heading: string; children: ReactNode }) {
+  return (
+    <section className="mt-6">
+      <h3 className="mb-2 text-lg text-foreground">{sentenceCase(heading)}</h3>
+      {children}
+    </section>
+  )
+}
+
+/**
+ * The decision memo. ``summary`` (main page) shows the opening note, the finding and the next action, each in
+ * full, and links to the memo page. ``full`` (memo page) shows every section, with the claim ledger as a table.
+ */
+export default function MemoPanel({ variant = "summary" }: { variant?: "summary" | "full" }) {
   const memo = useData(api.memo)
   const claims = useData(api.claims)
   const recommendations = useData(api.recommendations)
+  const issues = useData(api.issues)
   if (memo.error) return <LoadError message={memo.error} />
   if (!memo.data) return <Skeleton className="h-48 rounded-2xl bg-tile" />
   const checked = memo.data.status === "claims_checked" || memo.data.status === "claims_checked_provisional"
   const provisional = memo.data.status === "claims_checked_provisional"
   const byId = new Map((claims.data?.items ?? []).map((c) => [c.claim_id, c]))
+  const titles = new Map((issues.data?.items ?? []).map((i) => [i.issue_id, i.title]))
+  const parsed = memo.data.text ? parseMemo(memo.data.text) : null
+  const actions = recommendations.data?.items ?? []
+  const full = variant === "full"
+  const sections = parsed ? parsed.sections.filter((s) => full || (SUMMARY_SECTIONS.test(s.heading) && !(actions.length && /recommend|next action/i.test(s.heading)))) : []
+  const claimCount = claims.data?.items.length ?? 0
+
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl">Decision memo</h2>
+        {full ? <h1 className="text-2xl">{parsed?.title ? sentenceCase(parsed.title) : "Decision memo"}</h1> : <h2 className="text-xl">Decision memo</h2>}
         {memo.data.text && (
           <Badge variant="secondary" className={checked ? "gap-1.5 rounded-full text-positive" : "gap-1.5 rounded-full text-negative"}>
             {checked ? <ShieldCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
@@ -50,12 +139,34 @@ export default function MemoPanel() {
           </Badge>
         )}
       </div>
-      <Reflection className="mt-2">{REFLECTIONS.memo}</Reflection>
+      {!full && <Reflection className="mt-2">{REFLECTIONS.memo}</Reflection>}
+
+      {!parsed ? (
+        <div className="mt-4">
+          <PendingNote>
+            Pending. The memo comes from the pipeline's export. Each number in it cites a claim ID, and the dashboard checks
+            each claim against the saved ranking before it shows the memo.
+          </PendingNote>
+        </div>
+      ) : (
+        <div className="max-w-[78ch] text-[15px] leading-7 text-foreground/90" data-testid={full ? "memo-full" : "memo-summary"}>
+          {parsed.intro.length > 0 && <div className="mt-4"><Blocks blocks={parsed.intro} claims={byId} /></div>}
+          {sections.map((s) => {
+            const rows = ledgerRows(s)
+            return (
+              <Section key={s.heading} heading={s.heading}>
+                {rows ? <Ledger rows={rows} titles={titles} /> : <Blocks blocks={s.blocks} claims={byId} />}
+              </Section>
+            )
+          })}
+        </div>
+      )}
+
       {recommendations.error && <div className="mt-4"><LoadError message={recommendations.error} /></div>}
-      {!!recommendations.data?.items.length && (
-        <div className="mt-4 rounded-2xl border border-border bg-tile p-4">
+      {!full && actions.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-border bg-tile p-4">
           <h3 className="text-base">Provisional next action</h3>
-          {recommendations.data.items.map((item) => (
+          {actions.map((item) => (
             <div key={item.recommendation_id} className="mt-2 text-[15px] leading-7">
               <p>{item.text}</p>
               <p className="text-sm text-muted-foreground">
@@ -72,16 +183,13 @@ export default function MemoPanel() {
           )}
         </div>
       )}
-      <div className="mt-4">
-        {memo.data.text ? (
-          <MemoText text={memo.data.text} claims={byId} />
-        ) : (
-          <PendingNote>
-            Pending. The memo comes from the pipeline's export. Each number in it cites a claim ID, and the dashboard checks
-            each claim against the saved ranking before it shows the memo.
-          </PendingNote>
-        )}
-      </div>
+
+      {!full && parsed && (
+        <a href="/memo/" data-testid="full-memo-link"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-[15px] text-primary-foreground transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none">
+          Read the full memo{claimCount ? ` · all ${claimCount} checked claims` : ""} <ArrowRight className="size-4" aria-hidden="true" />
+        </a>
+      )}
     </TooltipProvider>
   )
 }

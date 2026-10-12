@@ -1,5 +1,9 @@
 # Prepublication reconciliation — 12 October 2026
 
+**Historical pre-merge snapshot.** The main ref and cost-commit status below
+describe the earlier `d14ca59` check. The later `00ad910` main ref includes
+Claude's cost pilot files and is being reconciled into this feature branch.
+
 This is a local, text-only preparation record. No branch was merged or pushed.
 No database was written. No model, paid, deployment, upload, or recording action
 occurred. Private review IDs, texts, answer rows, and credentials stay outside
