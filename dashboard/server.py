@@ -513,6 +513,8 @@ def route(open_conn, method, path, query=""):
         if DIST.is_dir():
             root = DIST.resolve()
             target = (root / name).resolve()
+            if target.is_dir():  # /memo/ and /memo serve memo/index.html, as on Vercel
+                target = (target / "index.html").resolve()
             if root not in target.parents or not target.is_file():
                 return _json_body(404, {"error": "not found"})
             content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
