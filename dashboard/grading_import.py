@@ -46,7 +46,8 @@ def _read_csv(path: Path, fields: List[str]) -> List[Dict[str, str]]:
         return [dict(row) for row in reader]
 
 
-def _records(folder: Path, wanted: set) -> Dict[str, Dict[str, Any]]:
+def _records(folder: Path, wanted: Optional[set]) -> Dict[str, Dict[str, Any]]:
+    """Records for ``wanted`` review IDs, or every record when ``wanted`` is ``None``."""
     plain, packed = folder / "records.jsonl", folder / "records.jsonl.gz"
     if plain.exists() == packed.exists():
         raise ValueError("supply exactly one of records.jsonl and records.jsonl.gz")
@@ -57,7 +58,9 @@ def _records(folder: Path, wanted: set) -> Dict[str, Dict[str, Any]]:
             if not line.strip():
                 continue
             row = json.loads(line)
-            if row.get("review_id") in wanted:
+            if wanted is None or row.get("review_id") in wanted:
+                if wanted is None and row.get("review_id") in found:
+                    raise ValueError("records.jsonl repeats a review ID")
                 found[row["review_id"]] = row
     return found
 
@@ -92,7 +95,7 @@ def memo_claim_check(memo: str, claims: List[Dict[str, str]]) -> str:
         if not any(claim["claim_id"] in line and claim["value"] in line for line in lines):
             return "failed"
     known = {c["claim_id"] for c in claims}
-    if any(cid not in known for cid in re.findall(r"\bclaim-[A-Za-z0-9_.:-]+", memo)):
+    if any(cid not in known for cid in re.findall(r"\bclaim-[A-Za-z0-9_.:-]*[A-Za-z0-9_]", memo)):
         return "failed"
     return "passed"
 
@@ -111,7 +114,7 @@ def _db_labels(backend, review_ids: List[str], config_hash: str) -> Dict[str, Di
 
 
 def load_grading(backend, folder: str, issue_names: Optional[Dict[str, str]] = None,
-                 run_id: Optional[str] = None) -> Dict[str, Any]:
+                 run_id: Optional[str] = None, catalog: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     root = Path(folder)
     run = json.loads((root / "run.json").read_text(encoding="utf-8"))
     ranking = _read_csv(root / "ranking.csv", RANKING_FIELDS)
@@ -130,6 +133,11 @@ def load_grading(backend, folder: str, issue_names: Optional[Dict[str, str]] = N
     identity = _identity(backend)
     if run.get("analysis_sha256") != identity["source_sha256"]:
         raise ValueError("run.json analysis_sha256 differs from the dashboard source")
+    if backend.table_exists("public_example"):
+        return _load_accepted(backend, root, run, identity, ranking, claims, membership, memo, issue_names,
+                              run_id, catalog)
+    if catalog is not None:
+        raise ValueError("--catalog applies to an accepted-evidence database only")
 
     member_ids = sorted({rid for _, rid in membership})
     exported = _records(root, set(member_ids))
@@ -174,3 +182,58 @@ def load_grading(backend, folder: str, issue_names: Optional[Dict[str, str]] = N
     if served != ranking:
         raise ValueError("saved, but the API ranking differs from ranking.csv; investigate before use")
     return dict(result, claims=len(claims), memo_claim_check=check, ranking_matches=True)
+
+
+def _load_accepted(backend, root: Path, run: Dict[str, Any], identity: Dict[str, str], ranking, claims, membership,
+                   memo: str, issue_names, run_id, catalog) -> Dict[str, Any]:
+    """The grading folder into an accepted-evidence database. Checks are in ``accepted_grading``."""
+    from . import accepted_grading
+    from .server import issues
+
+    if run.get("allow_multi_issue") is not False:
+        raise ValueError("an accepted-evidence import needs allow_multi_issue false")
+    checked = accepted_grading.prepare(backend, identity, run, _records(root, None), membership, memo, catalog)
+    labels = checked["labels"]
+    if rank(membership, labels) != ranking:
+        raise ValueError("ranking.csv differs from the ranking recomputed from the corrected labels")
+    if claims != claims_from(ranking):
+        raise ValueError("claims.csv differs from the claims derived from ranking.csv")
+    public = rank([m for m in membership if m[1] not in checked["flagged"]], labels)
+    check = memo_claim_check(memo, claims)
+
+    run_id = run_id or "grading-" + hashlib.sha256((root / "ranking.csv").read_bytes()).hexdigest()[:16]
+    if not accepted_grading.IDENTIFIER.fullmatch(run_id):
+        raise ValueError("run_id is not a plain identifier")
+    if backend.execute("SELECT 1 FROM analysis_run").fetchone():
+        raise ValueError("this database already holds an analysis run; import into a fresh copy")
+    titles = {i["issue_id"]: i["title"] for i in catalog["issues"]} if catalog else {}
+    titles.update(issue_names or {})
+    statements = list(checked["statements"])
+    statements.append(("INSERT INTO analysis_run (run_id, source_sha256, config_hash, grouping_status, verifier_status, "
+                       "recommendation_status) VALUES (?, ?, ?, 'accepted', 'pending', 'pending')",
+                       (run_id, identity["source_sha256"], identity["config_hash"])))
+    statements += multi_row_insert("issue", ("run_id", "issue_id", "title"),
+                                   [(run_id, r["issue_id"], titles.get(r["issue_id"], r["issue_id"])) for r in ranking])
+    statements += multi_row_insert("issue_membership", ("run_id", "issue_id", "row_index"),
+                                   accepted_grading.membership_rows(membership, checked["rows"], run_id))
+    statements += multi_row_insert("claim", ("run_id", "claim_id", "issue_id", "metric", "value"),
+                                   [(run_id, c["claim_id"], c["issue_id"], c["metric"], c["value"]) for c in claims])
+    if memo.strip():
+        statements.append(("INSERT INTO memo (run_id, text, sha256, claim_check) VALUES (?, ?, ?, ?)",
+                           (run_id, memo, hashlib.sha256(memo.encode("utf-8")).hexdigest(), check)))
+    issue_import = dict(checked["issue_import"], ranking_csv_sha256=hashlib.sha256(
+        (root / "ranking.csv").read_bytes()).hexdigest(), memo_claim_check=check)
+    statements += accepted_grading.manifest_statements(backend, issue_import, checked["examples_delta"], run_id)
+    backend.run_batch(statements)
+
+    api = issues(backend)
+    served = [{"rank": str(n), "issue_id": i["issue_id"], "complaint_count": str(i["review_count"]),
+               "severity_sum": str(i["priority_score"]), "mean_severity": i["mean_severity"],
+               "priority_score": str(i["priority_score"])} for n, i in enumerate(api["items"], 1)]
+    baseline = [{"rank": str(n), "issue_id": i["issue_id"], "complaint_count": str(i["review_count"]),
+                 "severity_sum": str(i["priority_score"]), "mean_severity": i["mean_severity"],
+                 "priority_score": str(i["priority_score"])} for n, i in enumerate(api["baseline"], 1)]
+    if served != public or baseline != ranking:
+        raise ValueError("saved, but the API ranking differs from the recomputed ranking; investigate before use")
+    return {"run_id": run_id, "issues": len(ranking), "memberships": len(membership), "claims": len(claims),
+            "memo_claim_check": check, "ranking_matches": True, **issue_import}

@@ -42,6 +42,7 @@ def main():
     grading.add_argument("--folder", required=True, help="grading export folder")
     grading.add_argument("--issue-names", help="optional JSON file: {issue_id: display name}")
     grading.add_argument("--run-id", help="optional run ID (default: grading-<ranking.csv hash>)")
+    grading.add_argument("--catalog", help="accepted-evidence database only: the frozen issue catalog JSON (titles, hash)")
     grading_target = grading.add_mutually_exclusive_group(required=True)
     grading_target.add_argument("--db", help="SQLite dashboard database")
     grading_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
@@ -51,6 +52,14 @@ def main():
     evaluation_target = evaluation.add_mutually_exclusive_group(required=True)
     evaluation_target.add_argument("--db", help="SQLite dashboard database")
     evaluation_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
+    public = sub.add_parser("export-public", help="write a publishable copy of an accepted-evidence DB (no IDs, hashes, quotes)")
+    public.add_argument("--db", required=True, help="private accepted-evidence SQLite file")
+    public.add_argument("--out", required=True, help="new SQLite file for the public copy")
+    load_pub = sub.add_parser("load-public", help="load a public copy into an empty Postgres or SQLite database")
+    load_pub.add_argument("--public-db", required=True)
+    load_pub_target = load_pub.add_mutually_exclusive_group(required=True)
+    load_pub_target.add_argument("--sqlite", help="new SQLite file")
+    load_pub_target.add_argument("--postgres-env", metavar="VAR", help="name of the env var holding the postgres:// URL")
     web = sub.add_parser("serve", help="serve a local read-only API and dashboard")
     web.add_argument("--db", required=True)
     web.add_argument("--host", default="127.0.0.1")
@@ -96,7 +105,26 @@ def main():
                 parser.error("environment variable %s is not set" % args.postgres_env)
             backend = NeonHTTPBackend(url, timeout=60)
         with backend:
-            print(json.dumps(load_grading(backend, args.folder, names, args.run_id), sort_keys=True))
+            catalog = None
+            if args.catalog:
+                from .accepted_grading import catalog_from
+                catalog = catalog_from(args.catalog)
+            print(json.dumps(load_grading(backend, args.folder, names, args.run_id, catalog), sort_keys=True))
+    elif args.command == "export-public":
+        from .public_export import export_public
+        print(json.dumps(export_public(args.db, args.out), sort_keys=True))
+    elif args.command == "load-public":
+        import os
+        from .public_export import load_public
+        if args.sqlite:
+            backend = SQLiteBackend(args.sqlite, readonly=False)
+        else:
+            url = os.environ.get(args.postgres_env)
+            if not url:
+                parser.error("environment variable %s is not set" % args.postgres_env)
+            backend = NeonHTTPBackend(url, timeout=60)
+        with backend:
+            print(json.dumps(load_public(backend, args.public_db), sort_keys=True))
     elif args.command == "import-evaluation":
         import os
         from .evaluation import load_evaluation

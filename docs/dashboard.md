@@ -325,3 +325,67 @@ python3 -m dashboard serve --db local/accepted100k_public_v3.db
   manifest (`dashboard_meta.import_manifest`) holds counts, hashes, state counts and the import time, and no path.
 - **Publication:** not authorised. The contract says to wait for saved issue membership and ranking. The private
   database must not be uploaded. A public database needs a separate export that holds only the public boundary.
+
+## Issue ranking for the accepted-evidence import (`import-grading --catalog`)
+
+The pipeline hands over its course grading folder, unchanged in format: `run.json`, `records.jsonl`,
+`membership.csv`, `ranking.csv`, `claims.csv` and `memo.md`. `import-grading` sees the public boundary
+(`public_example`) and applies extra checks before any write:
+
+```sh
+cp local/accepted100k_public_v3.db local/accepted100k_issues_v1.db   # a saved run is immutable: import into a copy
+python3 -m dashboard import-grading --folder <grading-folder> --db local/accepted100k_issues_v1.db \
+  --catalog <frozen issue catalog JSON>
+```
+
+1. Every exported record is a selected row with the same source row hash. Every accepted row is exported as
+   `completed`. A completed record that the database does not hold as accepted is refused.
+2. Labels that differ from the saved labels must be listed in `run.json` under `human_label_corrections`
+   (review IDs). A corrected quote must be an exact substring of the review's source text. An undeclared
+   difference, or a declared row without a difference, stops the import.
+3. Membership equals the issue candidates exactly: every completed `complaint` or `cancellation` record,
+   after corrections, is in one issue, and no other record is. `allow_multi_issue` must be `false`.
+4. `ranking.csv` is the course baseline (flagged members included). It must equal the ranking recomputed
+   from the corrected labels. `claims.csv` must equal the claims derived from it.
+5. With `--catalog` (JSON with an `issues` list of `issue_id` and `title`), every issue must be in the
+   catalog. Titles come from it, and its SHA-256 is recorded.
+6. The memo is public text: no review ID, email address, link, handle, name phrase, number of 7 or more
+   digits (a decimal point ends a number), or quoted span of more than 30 words.
+
+One transaction then saves the run, issues, membership, claims and memo. It applies the declared corrections
+to the saved labels, rebuilds their public excerpts (the public reference is kept), recomputes the label and
+trend aggregates, and updates the import manifest (`issue_candidates`, `public_examples`, `issue_import`).
+After the write, the API rankings are compared with the recomputed ones again.
+
+`/api/issues` returns `items` (the public ranking, without flagged members), `baseline` (the course ranking)
+and `flagged_members_excluded`. The page shows a claim ID only where the claim's value is the number on
+screen. A rehearsal on a copy of the real database (synthetic grouping by topic, then deleted) took
+1.2 seconds and reproduced 30,403 baseline candidates, 30,379 public and 24 flagged. No ID, hash or row
+number appeared in any public response.
+
+## Publishable copy of the 100,000-review results (`export-public`, `load-public`)
+
+The accepted-evidence database is private. `export-public` writes a separate SQLite file that holds only
+what the public API reads. Row keys are renumbered in random order. Review IDs become opaque keys. Source
+hashes, exact quotes, entities, reasons, finding categories, `source_text`, `raw_record` and `row_state` are
+left out. Issues, membership, claims and the memo are copied under the new keys.
+
+Before it returns, the command compares every public route between the private file and the copy: summary,
+issues, claims, memo, recommendations, review pages, searches, topic filters, each issue's detail and review
+list, and the first 50 review references. It also audits the copy for private values (review IDs, source
+hashes, exact quotes, quotes over 30 words, unexpected tables and kept row keys). Any difference or finding
+stops the export.
+
+`load-public` copies the file into an empty Postgres or SQLite database in chunks, marks it `loading`,
+recounts every table and only then marks it `complete`. A non-empty target or a private file is refused.
+
+Rehearsal, 12 October (local only, then kept private): the real 100,000-review database with the
+30,403-record issue map. Import 2.3 s, export 29 s, load 3.7 s. 144 public routes were identical, and the
+audit found no private values. The public file is 61 MB (the private one is 206 MB). Browser checks passed:
+the issue table matches the API, the flagged-member note shows 24, claim IDs appear only where the claim equals
+the number on screen, and there is no horizontal scroll at phone width.
+
+Publishing (needs approval): load the public file into a new Neon database, set `DASHBOARD_DATABASE_URL` on
+the Vercel project to it, and redeploy. Removing the variable switches the site back to the 5,000-review
+database. Before publishing, rewrite the issue-ranking reflection in `web/src/lib/reflections.ts`; it still
+quotes the 5,000-review figures.

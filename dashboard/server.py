@@ -118,7 +118,8 @@ def top_issue(conn):
 STATE_ORDER = ("accepted", "quarantined", "unresolved", "empty", "pending")
 PUBLIC_MANIFEST_KEYS = ("import_version", "handoff_sha256", "source_file_sha256", "label_config_hash", "selected_rows",
                         "accepted_rows", "state_counts", "representative_evidence_exclusions", "reason_category_counts",
-                        "public_examples", "personal_info_screen", "issue_candidates", "imported_at", "scope", "not_human_accuracy")
+                        "public_examples", "personal_info_screen", "issue_candidates", "issue_import", "imported_at", "scope",
+                        "not_human_accuracy")
 
 
 def _states(ag):
@@ -295,14 +296,10 @@ def review(conn, row_index):
     return result
 
 
-def issues(conn):
-    run = _run(conn)
-    if not run:
-        return {"status": "pending", "ranking_method": "severity_sum", "items": []}
-    flagged = _has_table(conn, "semantic_flag")
+def _ranking(conn, run, exclude_flagged):
     # Public rankings leave out members with a known semantic flag until they are reviewed.
-    flag_join = "LEFT JOIN semantic_flag f ON f.row_index=m.row_index" if flagged else ""
-    flag_where = "AND COALESCE(f.blocked, 0)=0" if flagged else ""
+    flag_join = "LEFT JOIN semantic_flag f ON f.row_index=m.row_index" if exclude_flagged else ""
+    flag_where = "AND COALESCE(f.blocked, 0)=0" if exclude_flagged else ""
     rows = conn.execute("""SELECT i.issue_id,i.title,COUNT(m.row_index) AS review_count,
        SUM(c.severity) AS priority_score
        FROM issue i JOIN issue_membership m USING(run_id,issue_id)
@@ -315,7 +312,24 @@ def issues(conn):
         item = dict(row)
         item["mean_severity"] = _mean(item["priority_score"], item["review_count"])
         items.append(item)
-    return {"status": "accepted_membership", "run_id": run["run_id"], "ranking_method": "severity_sum", "items": items}
+    return items
+
+
+def issues(conn):
+    run = _run(conn)
+    if not run:
+        return {"status": "pending", "ranking_method": "severity_sum", "items": []}
+    result = {"status": "accepted_membership", "run_id": run["run_id"], "ranking_method": "severity_sum"}
+    if _has_table(conn, "semantic_flag"):
+        # ``items`` is the public projection; ``baseline`` is the course ranking with flagged members included.
+        result["items"] = _ranking(conn, run, True)
+        result["baseline"] = [{k: i[k] for k in ("issue_id", "review_count", "priority_score", "mean_severity")}
+                              for i in _ranking(conn, run, False)]
+        result["flagged_members_excluded"] = (sum(i["review_count"] for i in result["baseline"])
+                                              - sum(i["review_count"] for i in result["items"]))
+    else:
+        result["items"] = _ranking(conn, run, False)
+    return result
 
 
 def _has_table(conn, name):

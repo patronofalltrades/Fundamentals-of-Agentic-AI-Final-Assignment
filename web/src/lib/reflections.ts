@@ -5,10 +5,11 @@
 
 export const REFLECTIONS = {
   issues:
-    "Most reviews are not complaints. Of the 4,649 labelled reviews in the 5,000-review checkpoint, 3,037 landed in topic " +
-    "“other” and 3,410 had severity 1. " +
-    "We rank by the sum of severities, so both volume and harm count: a frequent mild issue can outrank a rare severe one. " +
-    "We kept that trade-off because the course scorer uses the same rule.",
+    // 100,000-review results, 12 Oct: accepted rows, intent and severity counts from /api/summary; issue rows from /api/issues.
+    "Most reviews are not complaints. Of the 100,229 accepted reviews, 30,400 are complaints or cancellations and 68,949 " +
+    "have severity 1. We rank by the sum of severities, so volume and harm both count. Ads lead on volume (mean severity " +
+    "2.28), while failed playback ranks second with fewer, more severe complaints (mean 3.60). The issue map is model-made: " +
+    "a blind second model agreed on 85% of a 600-review sample, but agreement with a blind human review was 40%.",
   memo:
     "We wanted every number in the memo to be checkable. Each figure carries a claim ID. The import refuses a ranking it cannot " +
     "recompute, and it flags any memo number that differs from its saved claim, here on the page.",

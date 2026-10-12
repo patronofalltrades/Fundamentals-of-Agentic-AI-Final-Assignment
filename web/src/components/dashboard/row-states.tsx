@@ -56,7 +56,10 @@ export default function RowStates() {
         </p>
         {candidates && (
           <p data-testid="issue-candidates">
-            Issue candidates: {fmt.int(candidates.public_projection)} complaint or cancellation reviews for public rankings, out of {fmt.int(candidates.contract_baseline)} in the course baseline ({fmt.int(candidates.flagged_excluded)} flagged). No issue catalog or ranking has been saved yet.
+            Issue candidates: {fmt.int(candidates.public_projection)} complaint or cancellation reviews for public rankings, out of {fmt.int(candidates.contract_baseline)} in the course baseline ({fmt.int(candidates.flagged_excluded)} flagged).{" "}
+            {s.import?.issue_import
+              ? `Each candidate belongs to one of ${fmt.int(s.import.issue_import.issues)} issues${s.import.issue_import.human_label_corrections ? `, after ${fmt.int(s.import.issue_import.human_label_corrections)} human label corrections` : ""}.`
+              : "No issue catalog or ranking has been saved yet."}
           </p>
         )}
         {s.import && (
