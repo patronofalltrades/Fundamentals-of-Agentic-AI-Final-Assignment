@@ -8,6 +8,7 @@ import unittest
 from dashboard.accepted_grading import catalog_from
 from dashboard.backend import SQLiteBackend
 from dashboard.grading_import import claims_from, load_grading, rank
+from dashboard.server import _provisional_claims_match
 from spotify_pipeline.contract import file_sha256
 
 from tests import test_dashboard_accepted as base
@@ -29,6 +30,14 @@ class AcceptedGradingTests(unittest.TestCase):
     run_import = base.AcceptedImportTests.run_import
     get = base.AcceptedImportTests.get
     bodies = base.AcceptedImportTests.bodies
+
+    def test_provisional_ledger_requires_exact_claim_fields(self):
+        saved = [{"claim_id": "claim-0001-complaint_count", "issue_id": "USE-ADS",
+                  "metric": "complaint_count", "value": "5197"}]
+        line = "- claim-0001-complaint_count: USE-ADS complaint_count = 5197\n"
+        self.assertTrue(_provisional_claims_match(line, saved))
+        self.assertFalse(_provisional_claims_match(line, [{**saved[0], "value": "0"}]))
+        self.assertFalse(_provisional_claims_match(line, [{**saved[0], "issue_id": "PLY-FAIL"}]))
 
     def records(self, corrections=None):
         out = {}
@@ -107,6 +116,26 @@ class AcceptedGradingTests(unittest.TestCase):
         for body in self.bodies(db) + [self.get(db, "/api/issues/PLY-FAIL")[2]]:
             for rid, *_ in SOURCE:
                 self.assertNotIn('"%s"' % rid, body)
+
+    def test_checked_memo_action_is_an_advisory_recommendation(self):
+        _, db = self.run_import()
+        checked_claims = claims_from(rank(MEMBERSHIP, self.records()))
+        memo = ("# Synthetic provisional memo\n\n"
+                "Leading issue: PLY-FAIL.\n\n"
+                "## recommended next action\n"
+                "Review a targeted sample before deciding on a change.\n\n"
+                "## checked claim ledger\n" +
+                "\n".join("- %s: %s" % (c["claim_id"], c["value"]) for c in checked_claims) + "\n")
+        self.load(db, self.folder(name="action", memo=memo))
+        _, result, body = self.get(db, "/api/recommendations")
+        self.assertEqual(result["status"], "provisional_from_checked_memo")
+        self.assertEqual(len(result["items"]), 1)
+        self.assertEqual(result["items"][0]["issue_ids"], ["PLY-FAIL"])
+        self.assertEqual(result["items"][0]["claim_ids"],
+                         ["claim-0001-complaint_count", "claim-0001-severity_sum"])
+        self.assertNotIn("synthetic-1", body)
+        self.assertEqual(self.get(db, "/api/summary")[1]["analysis"]["recommendations"],
+                         "provisional_from_checked_memo")
 
     def test_declared_correction_is_applied_everywhere(self):
         _, db = self.run_import()

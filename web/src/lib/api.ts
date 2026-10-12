@@ -114,6 +114,10 @@ export type Issues = {
 export type Claim = { claim_id: string; issue_id: string; metric: string; value: string }
 export type Claims = { status: string; run_id?: string; items: Claim[] }
 export type Memo = { status: string; run_id?: string; text: string | null; sha256?: string }
+export type Recommendations = {
+  status: string
+  items: { recommendation_id: string; text: string; issue_ids: string[]; claim_ids?: string[] }[]
+}
 
 /**
  * One evidence example. An accepted-evidence import returns an opaque `ref` and a bounded `excerpt`
@@ -202,6 +206,7 @@ export const api = {
   issues: () => once<Issues>("/api/issues"),
   claims: () => once<Claims>("/api/claims"),
   memo: () => once<Memo>("/api/memo"),
+  recommendations: () => once<Recommendations>("/api/recommendations"),
   evals: () => once<Evals>("/api/evals"),
   reviews: (params: { topic?: string; q?: string; offset?: number; limit?: number }) => {
     const search = new URLSearchParams()

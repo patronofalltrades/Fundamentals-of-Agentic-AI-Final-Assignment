@@ -14,7 +14,7 @@ function stages(s: Summary) {
     { name: "Verify", done: s.quality.blind_verifier !== "pending" },
     { name: "Group", done: s.analysis.grouping === "accepted" },
     { name: "Rank", done: s.analysis.ranking !== "pending" },
-    { name: "Memo", done: s.analysis.memo === "claims_checked" },
+    { name: "Memo", done: s.analysis.memo === "claims_checked" || s.analysis.memo === "claims_checked_provisional" },
   ]
 }
 

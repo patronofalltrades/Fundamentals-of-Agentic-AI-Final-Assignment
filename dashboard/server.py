@@ -4,6 +4,7 @@
 WSGI entry (``dashboard.wsgi``) both call it, so local and deployed behavior match.
 """
 
+import hashlib
 import json
 import mimetypes
 import re
@@ -19,6 +20,7 @@ STATIC = Path(__file__).with_name("static")
 # The built Astro site (web/dist). When present it replaces the legacy static page.
 DIST = Path(__file__).resolve().parents[1] / "web" / "dist"
 EVALS = Path(__file__).with_name("evals.json")  # built by tools/build_eval_registry.py
+PROVISIONAL_MEMO = Path(__file__).with_name("provisional_memo.md")
 TOPICS = ("access", "usability", "playback", "downloads", "catalog", "billing", "support", "other")
 TARGET_MINIMUM_SOURCE_ROWS = 100000  # instructor clarification; see AGENTS.md
 SECURITY_HEADERS = (
@@ -58,8 +60,10 @@ def _run(conn):
 
 
 def _stores_full_text(conn):
-    # A raw sqlite3 connection (local copy) keeps the texts table; the deployed database does not.
-    return getattr(conn, "stores_full_text", True)
+    # Public SQLite exports omit both legacy and accepted-evidence text tables.
+    # Remote backends may expose this directly; inspect local schemas otherwise.
+    saved = getattr(conn, "stores_full_text", None)
+    return bool(saved) if saved is not None else _has_table(conn, "texts") or _has_table(conn, "source_text")
 
 
 def _mean(total, count):
@@ -182,7 +186,7 @@ def summary(conn):
         "coverage": {"source_rows": rows, "nonempty_rows": ag.get("source_status", {}).get("nonempty", 0), "distinct_nonempty_texts": distinct, "completed_rows": ag.get("processing_status", {}).get("completed", 0), "empty_rows": ag.get("source_status", {}).get("empty", 0)},
         "raw_labels": {"topic": ag.get("topic", {}), "intent": ag.get("intent", {}), "severity": ag.get("severity", {})},
         "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": saved_evaluation["status"]},
-        "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": run["recommendation_status"] if run else "pending", "memo": memo(conn)["status"], "run_id": run["run_id"] if run else None},
+        "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": recommendations(conn)["status"], "memo": memo(conn)["status"], "run_id": run["run_id"] if run else None},
         "trends": _trends(ag),
         "evaluation": saved_evaluation,
         "top_issue": top_issue(conn),
@@ -191,7 +195,11 @@ def summary(conn):
         "representative_exclusions": _blocked_count(conn),
         "import": _import_manifest(conn),
         "reason_categories": _reason_categories(ag),
-        "note": "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. The 100,000-row minimum is not complete.",
+        "note": ("At least 100,000 distinct source reviews have structurally accepted evidence. "
+                 "Issue membership and ranking remain model-derived and advisory; human accuracy is not established."
+                 if ag.get("row_state", {}).get("accepted", 0) >= TARGET_MINIMUM_SOURCE_ROWS else
+                 "Development checkpoint only. Raw topic labels are not validated issue clusters or product prevalence. "
+                 "The 100,000-accepted-review target is not complete."),
     }
 
 
@@ -353,12 +361,40 @@ def claims(conn, issue_id=None):
     return {"status": "saved" if items else "pending", "run_id": run["run_id"], "items": items}
 
 
+def _provisional_claims_match(draft, saved_claims):
+    """Require exact issue, metric and value fields in the saved aggregate ledger."""
+    ledger = re.findall(
+        r"(?m)^- (claim-[A-Za-z0-9_.:-]+): ([A-Za-z0-9-]+) ([a-z_]+) = ([0-9]+(?:\.[0-9]+)?)$",
+        draft)
+    expected = {(c["claim_id"], c["issue_id"], c["metric"], str(c["value"])) for c in saved_claims}
+    return len(ledger) == len(expected) and set(ledger) == expected
+
+
 def memo(conn):
     run = _run(conn)
     row = conn.execute("SELECT text, sha256, claim_check FROM memo WHERE run_id=?", (run["run_id"],)).fetchone() \
         if run and _has_table(conn, "memo") else None
     if not row:
-        return {"status": "pending", "text": None}
+        # This report was saved separately from the grading export. Serve it
+        # only for the matching accepted run and after every numeric claim
+        # agrees with the database's saved claim ledger.
+        accepted = _aggregates(conn).get("row_state", {}).get("accepted", 0)
+        if (not run or run["run_id"] != "claude-issue-map-v1-30400"
+                or accepted < TARGET_MINIMUM_SOURCE_ROWS or not PROVISIONAL_MEMO.is_file()):
+            return {"status": "pending", "text": None}
+        from .accepted_grading import _check_memo
+        from .grading_import import memo_claim_check
+        saved_claims = claims(conn)["items"]
+        draft = PROVISIONAL_MEMO.read_text(encoding="utf-8")
+        try:
+            _check_memo(draft, set())
+        except ValueError:
+            return {"status": "pending", "text": None}
+        if (len(saved_claims) != 164 or not _provisional_claims_match(draft, saved_claims)
+                or memo_claim_check(draft, saved_claims) != "passed"):
+            return {"status": "pending", "text": None}
+        return {"status": "claims_checked_provisional", "run_id": run["run_id"],
+                "text": draft, "sha256": hashlib.sha256(draft.encode("utf-8")).hexdigest()}
     return {"status": "claims_checked" if row["claim_check"] == "passed" else "claim_check_" + row["claim_check"],
             "run_id": run["run_id"], "text": row["text"], "sha256": row["sha256"]}
 
@@ -372,6 +408,23 @@ def recommendations(conn):
         item = dict(row)
         item["issue_ids"] = [r[0] for r in conn.execute("SELECT issue_id FROM recommendation_issue WHERE run_id=? AND recommendation_id=? ORDER BY issue_id", (run["run_id"], row["recommendation_id"]))]
         result.append(item)
+    # The accepted-evidence grading export saves a checked memo but has no separate
+    # recommendation rows. Surface only the action actually saved in that memo.
+    # A checked issue claim links the action to the saved ranking; this is advisory.
+    if not result:
+        saved = memo(conn)
+        if saved["status"] in ("claims_checked", "claims_checked_provisional") and saved["text"]:
+            heading = re.search(r"(?im)^#{1,6}\s+recommended next action\s*$", saved["text"])
+            if heading:
+                remainder = saved["text"][heading.end():]
+                action = re.split(r"(?m)^#{1,6}\s+", remainder, maxsplit=1)[0].strip()
+                lead = top_issue(conn)
+                evidence = claims(conn, lead["issue_id"])["items"] if lead else []
+                cited = [c["claim_id"] for c in evidence if c["metric"] in ("complaint_count", "severity_sum")]
+                if action and lead and lead["issue_id"] in saved["text"] and len(cited) == 2:
+                    result.append({"recommendation_id": "memo-next-action", "text": action,
+                                   "issue_ids": [lead["issue_id"]], "claim_ids": cited})
+                    return {"status": "provisional_from_checked_memo", "items": result}
     return {"status": run["recommendation_status"], "items": result}
 
 
@@ -384,7 +437,8 @@ def evals(conn):
     registry = json.loads(EVALS.read_text(encoding="utf-8")) if EVALS.exists() else {"items": []}
     run, saved_memo = _run(conn), memo(conn)
     source = conn.execute("SELECT value FROM meta WHERE key='file_sha256'").fetchone()
-    memo_state = {"claims_checked": "passed", "pending": "pending"}.get(saved_memo["status"], "failed")
+    memo_state = {"claims_checked": "passed", "claims_checked_provisional": "passed",
+                  "pending": "pending"}.get(saved_memo["status"], "failed")
     checks = [
         _check("Ranking reproduced from saved labels", "passed" if run else "pending",
                "The import recomputes the ranking with the course rule and stops on any difference."),
