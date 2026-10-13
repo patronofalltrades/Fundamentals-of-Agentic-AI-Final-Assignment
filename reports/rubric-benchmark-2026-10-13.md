@@ -23,11 +23,11 @@ were run on 13 October 2026 (UTC) without model calls.
 | B. Scope and source accounting | Disclosed gap | 110,000 selected IDs versus 660,622 in the unchanged contract |
 | C. Common labels | Met | — |
 | D. Enrichment batching, caching, saved state | Met, with flags | 20,938 rows with split cache/evidence provenance |
-| E. Interruption and resume | Partly met | No main-run checkpoints; the demo video uses synthetic data |
-| F. Grading folder and self-check | Partly met | Built and checked, but private; checker gives `review_required` |
+| E. Interruption and resume | Partly met | No main-run checkpoints; the demo video (in the release) uses synthetic data |
+| F. Grading folder and self-check | Met, with flags | Published as a release asset; checker gives `review_required` |
 | G. Baseline ranking and claims | Met | Ranking is advisory (40% blind human agreement on the issue map) |
 | H. Memo and recommendation | Met (provisional) | Model-derived; numbers checked, meaning not human-validated |
-| I. Cost calculator (T3) | Partly met | No full-run estimate; pilot review IDs not in the public `cost/` folder |
+| I. Cost calculator (T3) | Met | Full-run time is modeled, not measured |
 | J. Human golden evaluation | Met | Diagnostic only; development-text overlap |
 | K. Dashboard, backend, database, live URL | Met | — |
 | L. Reproducibility for graders | Met | Fixed on 13 October: two tests needed a private file |
@@ -73,25 +73,24 @@ The export uses the contract's exact `topic`, `intent` and `severity` labels. Th
 | --- | --- | --- |
 | Interrupt after saved progress, resume with no new calls for completed IDs | Cost pilot: `checkpoint_before.json` has 0 completed IDs, `checkpoint_after.json` has 98, and 12 resumed calls sent no completed ID again | Met for the pilot |
 | The two checkpoint snapshots of the main run | Not saved during the historical run | Not met |
-| A short recording | `synthetic-interruption-resume-demo.mp4`, a real offline SIGINT and resume with synthetic data and mock responses. Private; not yet submitted | Partly met |
+| A short recording | `synthetic-interruption-resume-demo.mp4`, a real offline SIGINT and resume with synthetic data and mock responses. Attached to the [release](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13) | Met, with synthetic data |
 
-**Action (Hanif).** Submit the video with the course submission. A recording of a real resume, for example on
-the cost pilot's saved state, would be stronger evidence than synthetic data.
+A recording of a real resume, for example on the cost pilot's saved state, would be stronger evidence than
+synthetic data.
 
-### F. Grading folder and self-check — Partly met
+### F. Grading folder and self-check — Met, with flags
 
-- All nine contract files, plus `ingestion.json`, exist in the private candidate
-  (`local/grading_v4_submission_candidate/`): 110,000 records, 79,797 main-run call records, seven declared human
-  label corrections.
+- The contract files, plus `ingestion.json` and `manifest.json`, are published as `grading-110k.zip` in the
+  [release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13). They come from the private candidate
+  (`local/grading_v4_submission_candidate/`): 110,000 records, 79,797 main-run call records, seven declared
+  human label corrections. Before publishing, every file was scanned: no credentials, connection strings or
+  local paths.
+- The main-run `checkpoint_before.json` and `checkpoint_after.json` do not exist and are not supplied. The pilot
+  checkpoints in `cost/pilot/` do not replace them.
 - The unchanged `check_submission.py` returns `review_required`. It reports no ingestion, record schema,
   membership, ranking or claim flag. Every other flag is listed with its count and disposition in the
   [prepublication audit](prepublication-reconciliation-2026-10-12.md).
-- **Gap:** the folder is not in the repository and not yet submitted. The contract says to "link it from the
-  README" and allows a ZIP or release asset. It holds original review IDs and exact quotes from the CC0 dataset;
-  the project rules keep it private.
-
-**Action (Hanif).** Decide how to submit the grading folder: a ZIP uploaded to the course portal, or a
-GitHub release asset. Without it, the instructor cannot run the main checker.
+- Hanif approved publishing the original review IDs and exact quotes from the CC0 dataset.
 
 ### G. Baseline ranking and claims — Met
 
@@ -118,20 +117,18 @@ The contract scores T3 as 1 when all three parts are shown, 0.5 for materially i
 | (b) Offline calculator with working arithmetic and editable assumptions | `python3 -m tools.cost100_offline_calculator` recomputes the charge; doubled rates double it; the projected count does not change the measured results | Partly met |
 | (c) Retry, spending and recovery controls | Reservations, uncertain-call holds, no automatic retry of unknown outcomes, checkpoints | Met |
 
-Missing items from `COST_CALCULATOR.md`:
+Added on 13 October, offline with no model call:
 
-1. **Full-run estimates.** Section 3 requires an estimate for all 660,622 rows: with and without exact-text reuse
-   (484,189 distinct texts), a base case and a conservative case, an editable budget, maximum concurrency and
-   fallback fraction, and a warning when a scenario exceeds the budget. The calculator reports the projection as
-   unavailable.
-2. **`pilot_records.jsonl`** with the 100 original IDs and row hashes. The instructor "checks the saved 100 IDs
-   against `cost_100.csv`". The public `cost/pilot/` folder replaces IDs with counts; the file with IDs exists only
-   in the private candidate.
-3. **An explicit pilot execution command** in `cost/README.md`, next to the offline replay command.
-4. **`report.md` with the scaling decision**: the chosen budget, concurrency and fallback limit.
-
-Items 1, 3 and 4 can be added offline, with no model call. Item 2 needs Hanif's decision, because it publishes
-original review IDs. The IDs are from a CC0 dataset and carry no review text.
+1. **Full-run estimates** for all 660,622 rows (`--scenario cost/scenario_full.json`). With and without
+   exact-text reuse (484,189 distinct texts), in a base and a conservative case. The budget, retry and fallback
+   fractions, verifier sample, output growth or cap, and maximum concurrency are all editable. A scenario above
+   the budget is flagged. Results: US$35.11 to US$62.89, and the last case is flagged. Projected to 110,000 rows,
+   the base estimate (US$5.85) is close to the main run's measured US$4.21.
+2. **`pilot_records.jsonl`** and unredacted calls and checkpoints with the 100 original IDs. The IDs match
+   `cost_100.csv` in order. Hanif approved this.
+3. **Pilot execution commands** for `tools/cost100_harness.py` in `cost/README.md`.
+4. **The scaling decision**: the budget, batching, concurrency, fallback and spend controls (`cost/README.md`,
+   section 4).
 
 ### J. Human golden evaluation — Met
 
@@ -168,10 +165,9 @@ not zero.
 
 ## Actions before the deadline (13 October, 23:59 Pacific)
 
-| # | Action | Owner | Effect |
+| # | Action | Owner | Status |
 | --- | --- | --- | --- |
-| 1 | Submit the grading folder as a ZIP or release asset, and link it from the README | Hanif decides | Lets the instructor run the main checker (F) |
-| 2 | Submit the interruption-and-resume video | Hanif | Closes the recording requirement (E) |
-| 3 | Add full-run estimates, a pilot execution command and a scaling decision to `cost/` | Claude, offline | Moves T3 part (b) toward Met (I) |
-| 4 | Decide whether `cost/` may include the 100 pilot review IDs | Hanif decides | Lets the instructor check the pilot IDs (I) |
-| 5 | Submit the public GitHub URL through bCourses | Hanif | Required |
+| 1 | Publish the grading folder and the video as release assets | Hanif | Approved; Hanif runs the release command |
+| 2 | Add full-run estimates, a pilot execution command and a scaling decision to `cost/` | Claude | Done |
+| 3 | Include the 100 pilot review IDs in `cost/` | Hanif approved | Hanif copies the files; Claude commits |
+| 4 | Submit the public GitHub URL through bCourses | Hanif | Pending |

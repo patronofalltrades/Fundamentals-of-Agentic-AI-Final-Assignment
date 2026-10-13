@@ -17,6 +17,7 @@ the memo traces back to saved records.
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
 | Deadline | 13 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
 | Spend | About US$4.2 measured for the main run (Jev US$2.92, DeepInfra US$1.29). The cap is strictly below US$50. |
+| **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Requirement check | [Benchmark against the course requirements](reports/rubric-benchmark-2026-10-13.md) (13 October) |
 
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
@@ -30,9 +31,9 @@ a human accuracy score.
 | 100,000-review run | [Completion report](reports/accepted-100k-completion.md) | Done, 9 October |
 | Issue catalog, grouping and baseline ranking | [Frozen catalog](docs/issue-catalog-v1.json), [grouping handoff](reports/grouping-v4-handoff.md) | Done. The ranking is advisory. |
 | Decision memo with checked claims | [Provisional memo](reports/provisional-product-priority-memo.md), live at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/) | Done. All 164 claims match the saved numbers. |
-| Grading folder and `check_submission.py` | Private candidate; [checker flags and dispositions](reports/prepublication-reconciliation-2026-10-12.md) | Built. The checker returns `review_required`. Submission method pending. |
-| 100-review cost and runtime calculator (`cost/`) | [cost/README.md](cost/README.md), [pilot report](reports/cost100-pilot.md) | Measured cold and warm runs. Full-run estimate pending. |
-| Interruption and resume | Cost pilot checkpoints in [`cost/pilot/`](cost/pilot/); a private demo video | Pilot shown. No main-run checkpoints. |
+| Grading folder and `check_submission.py` | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13); [checker flags and dispositions](reports/prepublication-reconciliation-2026-10-12.md) | Published. The checker returns `review_required`. |
+| 100-review cost and runtime calculator (`cost/`) | [cost/README.md](cost/README.md), [pilot report](reports/cost100-pilot.md) | Measured cold and warm runs, pilot IDs, and full-run estimates. |
+| Interruption and resume | Cost pilot checkpoints in [`cost/pilot/`](cost/pilot/); demo video in the [release](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13) | Pilot shown. No main-run checkpoints. |
 | Human golden evaluation | [Golden evaluation and checker report](reports/golden-gap-and-checker-2026-10-12.md) | Done; live on the dashboard |
 | Dashboard, backend, database, live URL | [Live site](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) | Done |
 
@@ -90,7 +91,7 @@ Use Python 3.9 or newer. No installation, API key or model call is needed. Run f
 ```sh
 python3 -m unittest discover -s tests -t . -q        # 408 tests; 2 skip without private local files
 python3 -m spotify_pipeline --help                   # ingest, status, checkpoint, cost
-python3 -m tools.cost100_offline_calculator          # recompute the cost pilot from saved usage and rates
+python3 -m tools.cost100_offline_calculator --scenario cost/scenario_full.json   # pilot and full-run estimate
 ```
 
 Run the dashboard on your computer with a saved database:
@@ -124,8 +125,9 @@ make calls.
    again). The main run has no saved before and after checkpoints. The demo video uses synthetic data.
 6. **Golden set.** Twelve human rows ask for review, eight texts overlap development data, and earlier golden
    influence cannot be ruled out. The scores are diagnostics, not population accuracy.
-7. **Cost calculator.** The full-run projection is not yet given; it needs stage-specific scaling assumptions.
-   Local compute cost is unknown.
+7. **Cost estimate.** The full-run cost is an estimate from the pilot's per-stage usage: US$35.11 (base, with
+   exact-text reuse) to US$62.89 (conservative, without reuse). Elapsed time is modeled. Local compute cost is
+   unknown.
 8. **Data limits.** These are self-selected public reviews from a historical snapshot. They contain no revenue,
    plan tier or confirmed cancellations. A cancellation review states intent; it does not prove a cancellation.
    The memo makes no revenue or causal claim.
@@ -156,16 +158,36 @@ make calls.
 
 ## For agents working on this repository
 
-Read [AGENTS.md](AGENTS.md) first. The latest release record is the
+Read [AGENTS.md](AGENTS.md) first. The release record is the
 [final release handoff](reports/final-release-handoff-2026-10-12.md).
 
-- **Release.** PR #22 (`6a3118f`) and PR #23 (`cec5be9`) merged the pipeline branch into `main`. Production
-  serves that release from Neon database `dashboard_100k`. The rollback database is `dashboard_5000`.
-- **Open items before the deadline:**
-  - Hanif decides how to submit the grading folder (ZIP or release asset) and the demo video.
-  - Add full-run estimates and a scaling decision to `cost/` (offline).
-  - Hanif submits the URL through bCourses.
-- **Rules.**
-  - No paid call, push or merge without Hanif's approval.
-  - Keep the total budget strictly below US$50.
-  - Do not publish either private grading folder or the private database.
+### Handoff to Alfred — 13 October
+
+**State of `main`:**
+
+- **Pipeline merged.** PR #22 (`6a3118f`) and PR #23 (`cec5be9`) merged the pipeline branch into `main`.
+  Production serves that release from Neon database `dashboard_100k`; the rollback database is `dashboard_5000`.
+- **Golden score live.** It is saved as `dashboard_meta.evaluation:original` in `dashboard_100k`.
+- **Grading folder published.** It is the GitHub release `grading-2026-10-13` (`grading-110k.zip`). The ZIP holds
+  the contract files from `local/grading_v4_submission_candidate/` and leaves out `cost100_pilot_separate/`,
+  `pilot.db` and `free_verification_synthetic/`. Hanif approved publishing it, with its original review IDs and
+  exact quotes. The release also holds `synthetic-interruption-resume-demo.mp4`.
+- **`cost/` changed** (Claude):
+  - `cost/pilot/` now holds the unredacted pilot files, with review IDs, as Hanif approved.
+  - `tools/cost100_offline_calculator.py` gives full-run estimates from `cost/scenario_full.json`.
+  - `cost/README.md` lists the pilot execution commands and the scaling decision.
+- **Tests.** Two tests in `tests/test_golden_gap_runner.py` now skip when the private plan in `local/` is absent,
+  so a fresh clone passes: 408 tests, OK.
+- **Requirement check.** See the [benchmark](reports/rubric-benchmark-2026-10-13.md).
+
+**Open items:**
+
+1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific.
+2. Optional: a recording of a real resume on saved state, in addition to the synthetic demo.
+3. Keep every disclosure above. Do not change saved data to clear a checker flag.
+
+**Rules:**
+
+- No paid call, push or merge without Hanif's approval.
+- Keep the total budget strictly below US$50.
+- Do not publish the private database or `local/` files beyond what the release holds.

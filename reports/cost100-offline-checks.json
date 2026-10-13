@@ -3,11 +3,40 @@
   "cold_completed": 98,
   "cold_failed": 2,
   "double_rates_api_nusd": 14820574,
+  "full_run_estimates_660622": {
+    "base_no_reuse": {
+      "api_usd": "46.288861",
+      "elapsed_hours_modeled": "246.6",
+      "over_budget": false
+    },
+    "base_reuse": {
+      "api_usd": "35.110982",
+      "elapsed_hours_modeled": "186.4",
+      "over_budget": false
+    },
+    "conservative_no_reuse": {
+      "api_usd": "62.890396",
+      "elapsed_hours_modeled": "650.8",
+      "over_budget": true
+    },
+    "conservative_reuse": {
+      "api_usd": "48.325287",
+      "elapsed_hours_modeled": "496.0",
+      "over_budget": false
+    }
+  },
+  "full_run_estimates_660622_double_rates_api_usd": {
+    "base_no_reuse": "92.577722",
+    "base_reuse": "70.221965",
+    "conservative_no_reuse": "125.780793",
+    "conservative_reuse": "96.650574"
+  },
   "local_compute_cost": null,
   "measured_seconds_unchanged_by_rate_edit": true,
-  "pilot_report_sha256": "ec22214b3f3df0b1d380a758c1d7f1189bb61e75650c8b49c890bd5357f34454",
-  "projection_status": "unavailable_until_stage_specific_scaling_assumptions",
-  "rates_sha256": "a0adefad52dca1d279f392b983df715087d54322371ee89af1c9795d3aced91a",
-  "source": "actual_saved_pilot",
-  "volume_100_vs_100000_measured_identical": true
+  "pilot_report_sha256": "6ae12a32d29d8f1527a04012329b874a7448a41ab6c9ff35a305044d4096c0a4",
+  "projection_status": "estimate",
+  "rates_sha256": "7da90120f6cc0f9269e5d305795e9f856e9422e4d82862aed84e55a86954d5ac",
+  "scenario_sha256": "dd4450429d47d5095e52f4ab67b442078dd64073370d00e25722430f942ef8c9",
+  "source": "saved_pilot_copy_in_cost_pilot",
+  "volume_100000_vs_660622_measured_identical": true
 }
