@@ -1,0 +1,229 @@
+{
+  "schema_version": "spotify-issue-catalog-v1",
+  "status": "pilot_authorized",
+  "mapping_rule_version": "pilot-primary-problem-v3-20261010",
+  "issues": [
+    {
+      "issue_id": "APP-LAUNCH",
+      "title": "App fails to open",
+      "definition": "The app does not open, remains on its splash or logo screen, or never reaches a usable screen. If a sign-in screen is reached and authentication fails, use ACC-LOGIN; a crash during use is PLY-CRASH; a failed audio request is PLY-FAIL."
+    },
+    {
+      "issue_id": "ACC-LOGIN",
+      "title": "Sign-in failure",
+      "definition": "Cannot sign up, sign in, authenticate, or regain access to an account. If the app never reaches a usable sign-in screen, use APP-LAUNCH."
+    },
+    {
+      "issue_id": "ACC-STATE",
+      "title": "Account content or state inaccessible",
+      "definition": "Signed-in account content, saved library, or account state is inaccessible or unexpectedly lost, without a more specific download or catalog problem."
+    },
+    {
+      "issue_id": "ACC-OTHER",
+      "title": "Other account access problem",
+      "definition": "A specific account access problem that does not fit sign-in or account-state loss."
+    },
+    {
+      "issue_id": "BIL-PRICE",
+      "title": "Price or plan value",
+      "definition": "The stated price, paywall, or plan value is the complaint, without an incorrect charge or failed entitlement."
+    },
+    {
+      "issue_id": "BIL-CHARGE",
+      "title": "Incorrect or continuing charge",
+      "definition": "An unwanted, duplicate, unexpected, or continuing payment is reported."
+    },
+    {
+      "issue_id": "BIL-ENTITLEMENT",
+      "title": "Paid benefit unavailable",
+      "definition": "Payment or active subscription is reported but its promised premium entitlement is not available."
+    },
+    {
+      "issue_id": "BIL-CANCEL",
+      "title": "Subscription cancellation failure",
+      "definition": "The user reports being unable to cancel, or a cancelled plan remains active or billed; a mere intent to leave does not qualify."
+    },
+    {
+      "issue_id": "BIL-OTHER",
+      "title": "Other billing problem",
+      "definition": "A specific billing or subscription problem outside the price, charge, entitlement, and cancellation definitions."
+    },
+    {
+      "issue_id": "CAT-AVAIL",
+      "title": "Requested content unavailable",
+      "definition": "A named or described song, artist, podcast, or catalog item cannot be found or selected because it is unavailable."
+    },
+    {
+      "issue_id": "CAT-SEARCH",
+      "title": "Search or discovery failure",
+      "definition": "Search or discovery fails to locate content that the report does not establish as unavailable."
+    },
+    {
+      "issue_id": "CAT-REC",
+      "title": "Unwanted or poor recommendations",
+      "definition": "Recommendations, discovery suggestions, or unwanted automatic content are the stated problem, apart from a playback control failure."
+    },
+    {
+      "issue_id": "CAT-LYRICS",
+      "title": "Lyrics unavailable",
+      "definition": "Lyrics are absent, incorrect, or unavailable for expected content."
+    },
+    {
+      "issue_id": "CAT-OTHER",
+      "title": "Other catalog problem",
+      "definition": "A specific content selection or catalog problem outside the listed catalog definitions."
+    },
+    {
+      "issue_id": "DEV-COMPAT",
+      "title": "App-device compatibility failure",
+      "definition": "The app stops supporting or working on the user's own phone, tablet, or operating-system version. A failure involving an external device or platform belongs to DEV-INTEGRATION; lack of customer service alone is not this issue."
+    },
+    {
+      "issue_id": "DEV-INTEGRATION",
+      "title": "External device or platform integration failure",
+      "definition": "Spotify fails with an external device or platform such as a voice assistant, smartwatch, car, TV, smart speaker, or Connect target. A secondary support complaint does not replace the underlying integration failure."
+    },
+    {
+      "issue_id": "DLD-FAIL",
+      "title": "Download fails",
+      "definition": "An attempted music or podcast download fails or does not complete."
+    },
+    {
+      "issue_id": "DLD-OFFLINE",
+      "title": "Downloaded content unusable offline",
+      "definition": "Downloaded items or their list cannot be accessed or played without a connection."
+    },
+    {
+      "issue_id": "DLD-LOST",
+      "title": "Saved download disappears",
+      "definition": "Previously downloaded or saved offline content disappears or is unexpectedly removed."
+    },
+    {
+      "issue_id": "DLD-OTHER",
+      "title": "Other download problem",
+      "definition": "A specific download or offline listening problem outside the listed download definitions."
+    },
+    {
+      "issue_id": "PLY-CRASH",
+      "title": "App crash or forced restart",
+      "definition": "The app crashes, closes unexpectedly, or forces a device restart during use."
+    },
+    {
+      "issue_id": "PLY-FAIL",
+      "title": "Playback fails or stops",
+      "definition": "Requested audio does not start, stops unexpectedly, or remains blocked without a more specific background or selection issue."
+    },
+    {
+      "issue_id": "PLY-SELECTION",
+      "title": "Wrong audio plays",
+      "definition": "A selected track or queue item is replaced by different audio or cannot be selected as intended."
+    },
+    {
+      "issue_id": "PLY-SHUFFLE",
+      "title": "Shuffle or queue order failure",
+      "definition": "Shuffle, queue order, or repeated-track selection does not follow the requested playback behavior."
+    },
+    {
+      "issue_id": "PLY-BACKGROUND",
+      "title": "Background playback failure",
+      "definition": "Audio stops or the app fails specifically when the device locks, another app opens, or Spotify moves to background."
+    },
+    {
+      "issue_id": "PLY-CONTROL",
+      "title": "Playback controls malfunction",
+      "definition": "Pause, skip, stop, sleep timer, track display, or other playback controls fail while audio playback is otherwise available. A failed sleep timer is a stop-control failure; reported data use is a consequence to review separately."
+    },
+    {
+      "issue_id": "PLY-QUALITY",
+      "title": "Audio, loading, or connection quality",
+      "definition": "Lag, buffering, audio quality, connection instability, or an app that opens but freezes, hangs, or stops responding degrades use without a crash, a named playback failure, or an app-launch failure. A crash is PLY-CRASH; failure before a usable screen is APP-LAUNCH."
+    },
+    {
+      "issue_id": "PLY-OTHER",
+      "title": "Other playback problem",
+      "definition": "A specific playback problem outside the listed playback definitions."
+    },
+    {
+      "issue_id": "SUP-NOREPLY",
+      "title": "Support does not respond",
+      "definition": "A stated request to customer support receives no answer or a materially delayed answer."
+    },
+    {
+      "issue_id": "SUP-UNHELPFUL",
+      "title": "Support fails to resolve",
+      "definition": "Support responds but repeats steps, gives an unhelpful answer, or fails to resolve the reported problem."
+    },
+    {
+      "issue_id": "SUP-CHANNEL",
+      "title": "Support channel unavailable",
+      "definition": "A needed contact route, such as phone support, is unavailable or inaccessible."
+    },
+    {
+      "issue_id": "SUP-OTHER",
+      "title": "Other support problem",
+      "definition": "A specific customer-service problem outside the listed support definitions."
+    },
+    {
+      "issue_id": "USE-ADS",
+      "title": "Ad frequency or interruption",
+      "definition": "Ad volume, timing, repetition, or interruption of free listening is the stated problem."
+    },
+    {
+      "issue_id": "USE-PLAYLIST",
+      "title": "Playlist or library management",
+      "definition": "Creating, editing, organizing, or navigating playlists or saved library items fails, apart from a playback or account-state problem."
+    },
+    {
+      "issue_id": "USE-PREVIEW",
+      "title": "Song preview unavailable",
+      "definition": "A short preview or sample used while selecting or building a playlist is missing or fails."
+    },
+    {
+      "issue_id": "USE-LOCALIZE",
+      "title": "Language or localization problem",
+      "definition": "The displayed language, translation, or localization makes the app hard to understand or use."
+    },
+    {
+      "issue_id": "USE-NAV",
+      "title": "Navigation or interface friction",
+      "definition": "A specific screen, control layout, or navigation path makes the app difficult to use without a more specific issue."
+    },
+    {
+      "issue_id": "USE-OTHER",
+      "title": "Other usability problem",
+      "definition": "A specific usability problem outside the listed usability definitions."
+    },
+    {
+      "issue_id": "GEN-PRIVACY",
+      "title": "Privacy or security harm",
+      "definition": "The review reports a specific privacy, security, or unauthorized-access harm that is not merely an account login failure."
+    },
+    {
+      "issue_id": "GEN-POLICY",
+      "title": "Content or platform-policy objection",
+      "definition": "A specific objection to Spotify content moderation, platform policy, or company stance is the primary complaint, without a more important product malfunction. Content simply unavailable without a stated policy objection remains a catalog issue.",
+      "adoption_status": "conditional_pilot_frequency_review"
+    },
+    {
+      "issue_id": "GEN-GENERAL",
+      "title": "General or unspecified criticism",
+      "definition": "The review expresses a complaint or departure but names no product area and gives no supported specific problem; do not infer one. A named area with underspecified failure follows the area-only rule."
+    }
+  ],
+  "v3_revision": {
+    "production_approved": false,
+    "base_v2_catalog_sha256": "b5a567746906f1b892f4a8c7a213e976f3f8c67daf0b4502ae3a60a0fd2abc35",
+    "base_v2_overlay_sha256": "a2c2a5958b8beeceeb426c25e08cc35664e7038f0a8d31468669259e811c90a9",
+    "priority_decisions_sha256": "a6201fd8ca1f394105b06977635a77b1f40bb80eadb1087bbfbc6543d130b3ae",
+    "remaining28_decisions_sha256": "897ebc95fc2913cd704de3a3168c854ecd735d22f3ce46a3cd0ed28f893f540f",
+    "approval": "Hanif confirmed the listed decisions and area/freeze/signup rules on 2026-10-10; five review decisions remain open."
+  },
+  "mapping_guidance_v3": {
+    "one_primary_issue": "Keep one primary issue per completed complaint or cancellation; ambiguity stays in pilot review and never becomes production membership automatically.",
+    "freeze_hang": "When the app opens but freezes, hangs, or stops responding without a crash or named playback failure, use PLY-QUALITY. If it never reaches a usable screen, use APP-LAUNCH.",
+    "signup": "An inability to sign up belongs to ACC-LOGIN.",
+    "area_only": "If one named product area is present but the failure is unspecified, choose its sole supported issue. If several issues in that area fit, use that area's *-OTHER and flag the ambiguity. Do not infer a defect from a rating alone.",
+    "general_only": "Use GEN-GENERAL only when no product area or specific problem is named.",
+    "label_corrections": "A correct_saved_label decision is an audit request, not issue membership. Keep all six separate from pilot issue suggestions until source/quote/label correction is validated."
+  }
+}

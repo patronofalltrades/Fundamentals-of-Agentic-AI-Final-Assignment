@@ -1,0 +1,20 @@
+# Submission and release checkpoint — 12 October 2026
+
+The [mission-critical handoff](submission-critical-handoff-2026-10-12.md) is the current artifact index. Private files remain ignored and mode 0600. This checkpoint does not claim a course-checker pass or production deployment.
+
+## Completed locally
+
+- The selected run contains 110,000 original IDs: 100,229 structurally accepted, 1,791 quarantined, 1,457 unresolved, one empty, and 6,522 pending. Structural acceptance is not human accuracy.
+- The approved 41-issue catalog, corrected 30,400-member grouping, deterministic ranking, provisional memo, and 164 numeric claims are saved. The public ranking excludes 23 flagged members, leaving 30,377. Before human overrides, blind human grouping agreement was 16/40 (40.0%), limiting confidence in the priority order.
+- All 50 source-only golden predictions were frozen before current scoring. The isolated evaluator found 26/50 topic agreement, 38/50 intent agreement, 14/50 exact topic–intent–severity agreement, 30/50 exact severity agreement, severity MAE 0.56, and sentiment MAE 0.21. Twelve human rows request review; eight source texts overlap development texts. Earlier golden influence cannot be ruled out and no untouched holdout supports a revised accuracy claim. See [evaluation details](golden-gap-and-checker-2026-10-12.md).
+- The separate cold/warm 100-review cost pilot attempted 100, accepted 98, and quarantined two exact-quote failures without retry. Its 112 metered calls charged $0.007410287. Cold active stage time was 588.435 seconds; first-to-last elapsed was 1,581.190 seconds including 992.755 seconds of interruptions and approval pauses. Saved warm replay took 0.008029 seconds with zero outbound calls. See [pilot result](cost100-partial-checkpoint.md).
+- The private grading candidate includes exact full-source ingestion profiling, 110,000 selected records, 79,797 authentic main-run call entries, corrected membership/ranking, claims, and a manifest. The unchanged checker ran against an independent 660,622-ID full-source reference. It returned **`review_required`**, confirming 100,229 valid completed rows and 4,569 valid direct cache reuses, with no ingestion, completed-schema, membership, ranking, or numeric-claim flags. It reported 550,622 missing under its unchanged full-corpus denominator. See [checker analysis](golden-gap-and-checker-2026-10-12.md).
+- The sanitized 100k dashboard database passed local import and public-boundary checks. The local API serves a provisional recommendation. The dashboard owner controls publication; this handoff did not edit or deploy that checkout.
+
+## Remaining gates
+
+1. Review public excerpts and opaque reference mapping; publish the 100k dashboard data only after the publication decision, then verify the live production URL. A successful preview is not production verification.
+2. Submit the checker result with its real limits. The instructor-reported minimum is 100,000 selected reviews, while the unchanged checker expects 660,622. Its flags include 7,980 selected nonaccepted states, 949 nonbinary saved outcomes, 79,797 unknown historical phases, 94 unavailable usage fields, 20,938 split/indirect provenance cases, missing main-run before/after checkpoints, and missing historical verifier/group/memo calls. The new 100-review pilot checkpoints describe only that pilot. Do not invent or normalize missing historical evidence.
+3. Include a candid quality and recovery discussion. The safe verification trace covers synthetic identity, exact-span, and public-boundary checks only; it does not prove semantic model resistance to planted errors or prompt injection. The offline pilot calculator confirms the measured charge and rate sensitivity, but full-run projection needs stage-specific scaling assumptions; local compute cost is unknown. The warm replay reads and validates saved results without regenerating model outputs.
+
+The local integration branch is unpublished. Final release actions include the verified live URL, public GitHub submission, and bCourses submission.

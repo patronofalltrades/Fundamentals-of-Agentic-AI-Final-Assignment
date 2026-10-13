@@ -212,6 +212,18 @@ python3 -m dashboard import-evaluation --report <report.json> --label-set origin
 python3 -m dashboard import-evaluation --report <report.json> --label-set adjudicated --postgres-env DATABASE_URL
 ```
 
+The completed source-only 50-case diagnostic was instead scored by the isolated
+`tools/evaluate_human_labels.py` evaluator. Its saved aggregate is not in the
+`score_gold` schema. `tools/adapt_golden_evaluation.py` verifies the pinned
+frozen-prediction, human-file, and classifier hashes, then converts aggregate
+counts only into a new mode-0600 report under ignored `local/`. It hashes the
+human CSV as bytes; it does not parse or print answer rows. After review, use
+that report with `--label-set original`. It sets `official=false`. The public
+page names the isolated scorer and notes 12 human rows requesting review,
+eight development-text overlaps, and the lack of an untouched accuracy claim.
+Do not call the current diagnostic a course `score_gold` result. Production
+import and deployment need separate approval.
+
 The command refuses the report when:
 
 - it has no `label_configs`, or an entry differs from the `label_config` in the dashboard's

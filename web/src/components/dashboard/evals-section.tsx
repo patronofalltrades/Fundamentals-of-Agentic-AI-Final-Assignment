@@ -154,7 +154,9 @@ function GoldenCard({ golden }: { golden: Evals["golden"] }) {
         </div>
         <div>
           <dt className="text-[12px] tracking-[0.12em] text-muted-foreground uppercase">Scorer</dt>
-          <dd className="mt-1">The course checker (<code className="text-[13px]">check_submission.py score_gold</code>), unchanged.</dd>
+          <dd className="mt-1">{set?.benchmark_version === "golden-50-human-v1-source-only"
+            ? <>Isolated offline evaluator (<code className="text-[13px]">evaluate_human_labels.py</code>).</>
+            : <>Course checker (<code className="text-[13px]">check_submission.py score_gold</code>) for an official saved score.</>}</dd>
         </div>
       </dl>
       <div className="space-y-4">
@@ -176,6 +178,11 @@ function GoldenCard({ golden }: { golden: Evals["golden"] }) {
           ? <>Severity error (mean absolute): <span className="text-foreground tabular-nums">{set.severity_mae_on_valid_predictions?.toFixed(2) ?? "—"}</span> on a 1–5 scale · {set.approved_cases} of {set.total_cases} cases scored · {set.missing_or_invalid_predictions} missing or invalid</>
           : "The labels are written. The score appears here when the model's predictions for these 50 reviews are saved and scored. No sample numbers are shown."}
       </p>
+      {set?.benchmark_version === "golden-50-human-v1-source-only" && (
+        <p className="text-[13px] text-muted-foreground">
+          Diagnostic sample: 12 human rows request review and eight source texts overlap development data. Earlier golden influence cannot be ruled out. This does not estimate accuracy across all reviews.
+        </p>
+      )}
     </article>
   )
 }

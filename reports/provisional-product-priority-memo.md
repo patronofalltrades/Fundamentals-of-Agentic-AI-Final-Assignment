@@ -1,0 +1,182 @@
+# provisional product priority memo
+
+This issue map is model-derived with 51 pilot and 40 blind human overrides. Before those overrides, the grouping agents agreed with a separate model verifier on 511 of 600 cases (85.2%). They agreed with the reviewed human pilot on 39 of 51 (76.5%) and with the blind human review on 16 of 40 (40.0%). Those human cases are no longer untouched holdouts for the final membership. These checks do not validate individual memberships or prove population accuracy.
+
+## provisional finding
+
+The leading mapped issue is USE-ADS. It has 5197 mapped complaint or cancellation records and a severity sum of 11874 in the corrected baseline. The public projection excludes 23 known flagged candidates. These counts follow saved model-derived membership and should be checked against human review before a product decision.
+
+## recommended next action
+
+Review a targeted sample of the leading issue and the catalog gaps, then decide whether the ad experience warrants a product change. Keep the current ranking advisory until that review is complete.
+
+## catalog gaps
+
+The approved catalog has no separate app-install issue. The handoff also notes free-tier limits, blank saved collections, a disappearing playback control bar, unwanted autoplay or auto-start, songs added to playlists, ads reported by premium users, regional availability, battery or data use, removed features, and lossless audio. These boundaries require review before changing the frozen catalog.
+
+## checked claim ledger
+
+- claim-0001-complaint_count: USE-ADS complaint_count = 5197
+- claim-0001-severity_sum: USE-ADS severity_sum = 11874
+- claim-0001-mean_severity: USE-ADS mean_severity = 2.284780
+- claim-0001-priority_score: USE-ADS priority_score = 11874
+- claim-0002-complaint_count: PLY-FAIL complaint_count = 2474
+- claim-0002-severity_sum: PLY-FAIL severity_sum = 8904
+- claim-0002-mean_severity: PLY-FAIL mean_severity = 3.599030
+- claim-0002-priority_score: PLY-FAIL priority_score = 8904
+- claim-0003-complaint_count: GEN-GENERAL complaint_count = 3648
+- claim-0003-severity_sum: GEN-GENERAL severity_sum = 7834
+- claim-0003-mean_severity: GEN-GENERAL mean_severity = 2.147478
+- claim-0003-priority_score: GEN-GENERAL priority_score = 7834
+- claim-0004-complaint_count: PLY-SELECTION complaint_count = 2016
+- claim-0004-severity_sum: PLY-SELECTION severity_sum = 6675
+- claim-0004-mean_severity: PLY-SELECTION mean_severity = 3.311012
+- claim-0004-priority_score: PLY-SELECTION priority_score = 6675
+- claim-0005-complaint_count: PLY-QUALITY complaint_count = 1648
+- claim-0005-severity_sum: PLY-QUALITY severity_sum = 5323
+- claim-0005-mean_severity: PLY-QUALITY mean_severity = 3.229976
+- claim-0005-priority_score: PLY-QUALITY priority_score = 5323
+- claim-0006-complaint_count: PLY-CRASH complaint_count = 1350
+- claim-0006-severity_sum: PLY-CRASH severity_sum = 5179
+- claim-0006-mean_severity: PLY-CRASH mean_severity = 3.836296
+- claim-0006-priority_score: PLY-CRASH priority_score = 5179
+- claim-0007-complaint_count: BIL-PRICE complaint_count = 1655
+- claim-0007-severity_sum: BIL-PRICE severity_sum = 4680
+- claim-0007-mean_severity: BIL-PRICE mean_severity = 2.827795
+- claim-0007-priority_score: BIL-PRICE priority_score = 4680
+- claim-0008-complaint_count: APP-LAUNCH complaint_count = 994
+- claim-0008-severity_sum: APP-LAUNCH severity_sum = 3923
+- claim-0008-mean_severity: APP-LAUNCH mean_severity = 3.946680
+- claim-0008-priority_score: APP-LAUNCH priority_score = 3923
+- claim-0009-complaint_count: PLY-CONTROL complaint_count = 1034
+- claim-0009-severity_sum: PLY-CONTROL severity_sum = 3639
+- claim-0009-mean_severity: PLY-CONTROL mean_severity = 3.519342
+- claim-0009-priority_score: PLY-CONTROL priority_score = 3639
+- claim-0010-complaint_count: ACC-STATE complaint_count = 929
+- claim-0010-severity_sum: ACC-STATE severity_sum = 3635
+- claim-0010-mean_severity: ACC-STATE mean_severity = 3.912809
+- claim-0010-priority_score: ACC-STATE priority_score = 3635
+- claim-0011-complaint_count: ACC-LOGIN complaint_count = 680
+- claim-0011-severity_sum: ACC-LOGIN severity_sum = 2630
+- claim-0011-mean_severity: ACC-LOGIN mean_severity = 3.867647
+- claim-0011-priority_score: ACC-LOGIN priority_score = 2630
+- claim-0012-complaint_count: PLY-SHUFFLE complaint_count = 835
+- claim-0012-severity_sum: PLY-SHUFFLE severity_sum = 2497
+- claim-0012-mean_severity: PLY-SHUFFLE mean_severity = 2.990419
+- claim-0012-priority_score: PLY-SHUFFLE priority_score = 2497
+- claim-0013-complaint_count: CAT-REC complaint_count = 925
+- claim-0013-severity_sum: CAT-REC severity_sum = 2482
+- claim-0013-mean_severity: CAT-REC mean_severity = 2.683243
+- claim-0013-priority_score: CAT-REC priority_score = 2482
+- claim-0014-complaint_count: USE-OTHER complaint_count = 778
+- claim-0014-severity_sum: USE-OTHER severity_sum = 2329
+- claim-0014-mean_severity: USE-OTHER mean_severity = 2.993573
+- claim-0014-priority_score: USE-OTHER priority_score = 2329
+- claim-0015-complaint_count: DEV-INTEGRATION complaint_count = 610
+- claim-0015-severity_sum: DEV-INTEGRATION severity_sum = 2043
+- claim-0015-mean_severity: DEV-INTEGRATION mean_severity = 3.349180
+- claim-0015-priority_score: DEV-INTEGRATION priority_score = 2043
+- claim-0016-complaint_count: USE-NAV complaint_count = 699
+- claim-0016-severity_sum: USE-NAV severity_sum = 1929
+- claim-0016-mean_severity: USE-NAV mean_severity = 2.759657
+- claim-0016-priority_score: USE-NAV priority_score = 1929
+- claim-0017-complaint_count: DLD-OFFLINE complaint_count = 419
+- claim-0017-severity_sum: DLD-OFFLINE severity_sum = 1521
+- claim-0017-mean_severity: DLD-OFFLINE mean_severity = 3.630072
+- claim-0017-priority_score: DLD-OFFLINE priority_score = 1521
+- claim-0018-complaint_count: USE-PLAYLIST complaint_count = 447
+- claim-0018-severity_sum: USE-PLAYLIST severity_sum = 1491
+- claim-0018-mean_severity: USE-PLAYLIST mean_severity = 3.335570
+- claim-0018-priority_score: USE-PLAYLIST priority_score = 1491
+- claim-0019-complaint_count: BIL-OTHER complaint_count = 391
+- claim-0019-severity_sum: BIL-OTHER severity_sum = 1369
+- claim-0019-mean_severity: BIL-OTHER mean_severity = 3.501279
+- claim-0019-priority_score: BIL-OTHER priority_score = 1369
+- claim-0020-complaint_count: CAT-AVAIL complaint_count = 480
+- claim-0020-severity_sum: CAT-AVAIL severity_sum = 1304
+- claim-0020-mean_severity: CAT-AVAIL mean_severity = 2.716667
+- claim-0020-priority_score: CAT-AVAIL priority_score = 1304
+- claim-0021-complaint_count: DLD-FAIL complaint_count = 270
+- claim-0021-severity_sum: DLD-FAIL severity_sum = 1024
+- claim-0021-mean_severity: DLD-FAIL mean_severity = 3.792593
+- claim-0021-priority_score: DLD-FAIL priority_score = 1024
+- claim-0022-complaint_count: BIL-ENTITLEMENT complaint_count = 307
+- claim-0022-severity_sum: BIL-ENTITLEMENT severity_sum = 1006
+- claim-0022-mean_severity: BIL-ENTITLEMENT mean_severity = 3.276873
+- claim-0022-priority_score: BIL-ENTITLEMENT priority_score = 1006
+- claim-0023-complaint_count: PLY-BACKGROUND complaint_count = 247
+- claim-0023-severity_sum: PLY-BACKGROUND severity_sum = 826
+- claim-0023-mean_severity: PLY-BACKGROUND mean_severity = 3.344130
+- claim-0023-priority_score: PLY-BACKGROUND priority_score = 826
+- claim-0024-complaint_count: DLD-OTHER complaint_count = 250
+- claim-0024-severity_sum: DLD-OTHER severity_sum = 813
+- claim-0024-mean_severity: DLD-OTHER mean_severity = 3.252000
+- claim-0024-priority_score: DLD-OTHER priority_score = 813
+- claim-0025-complaint_count: DEV-COMPAT complaint_count = 211
+- claim-0025-severity_sum: DEV-COMPAT severity_sum = 778
+- claim-0025-mean_severity: DEV-COMPAT mean_severity = 3.687204
+- claim-0025-priority_score: DEV-COMPAT priority_score = 778
+- claim-0026-complaint_count: PLY-OTHER complaint_count = 245
+- claim-0026-severity_sum: PLY-OTHER severity_sum = 734
+- claim-0026-mean_severity: PLY-OTHER mean_severity = 2.995918
+- claim-0026-priority_score: PLY-OTHER priority_score = 734
+- claim-0027-complaint_count: CAT-LYRICS complaint_count = 245
+- claim-0027-severity_sum: CAT-LYRICS severity_sum = 727
+- claim-0027-mean_severity: CAT-LYRICS mean_severity = 2.967347
+- claim-0027-priority_score: CAT-LYRICS priority_score = 727
+- claim-0028-complaint_count: DLD-LOST complaint_count = 171
+- claim-0028-severity_sum: DLD-LOST severity_sum = 657
+- claim-0028-mean_severity: DLD-LOST mean_severity = 3.842105
+- claim-0028-priority_score: DLD-LOST priority_score = 657
+- claim-0029-complaint_count: CAT-SEARCH complaint_count = 184
+- claim-0029-severity_sum: CAT-SEARCH severity_sum = 577
+- claim-0029-mean_severity: CAT-SEARCH mean_severity = 3.135870
+- claim-0029-priority_score: CAT-SEARCH priority_score = 577
+- claim-0030-complaint_count: GEN-POLICY complaint_count = 242
+- claim-0030-severity_sum: GEN-POLICY severity_sum = 534
+- claim-0030-mean_severity: GEN-POLICY mean_severity = 2.206612
+- claim-0030-priority_score: GEN-POLICY priority_score = 534
+- claim-0031-complaint_count: BIL-CANCEL complaint_count = 120
+- claim-0031-severity_sum: BIL-CANCEL severity_sum = 495
+- claim-0031-mean_severity: BIL-CANCEL mean_severity = 4.125000
+- claim-0031-priority_score: BIL-CANCEL priority_score = 495
+- claim-0032-complaint_count: USE-PREVIEW complaint_count = 147
+- claim-0032-severity_sum: USE-PREVIEW severity_sum = 477
+- claim-0032-mean_severity: USE-PREVIEW mean_severity = 3.244898
+- claim-0032-priority_score: USE-PREVIEW priority_score = 477
+- claim-0033-complaint_count: BIL-CHARGE complaint_count = 106
+- claim-0033-severity_sum: BIL-CHARGE severity_sum = 476
+- claim-0033-mean_severity: BIL-CHARGE mean_severity = 4.490566
+- claim-0033-priority_score: BIL-CHARGE priority_score = 476
+- claim-0034-complaint_count: GEN-PRIVACY complaint_count = 115
+- claim-0034-severity_sum: GEN-PRIVACY severity_sum = 459
+- claim-0034-mean_severity: GEN-PRIVACY mean_severity = 3.991304
+- claim-0034-priority_score: GEN-PRIVACY priority_score = 459
+- claim-0035-complaint_count: CAT-OTHER complaint_count = 120
+- claim-0035-severity_sum: CAT-OTHER severity_sum = 346
+- claim-0035-mean_severity: CAT-OTHER mean_severity = 2.883333
+- claim-0035-priority_score: CAT-OTHER priority_score = 346
+- claim-0036-complaint_count: ACC-OTHER complaint_count = 70
+- claim-0036-severity_sum: ACC-OTHER severity_sum = 248
+- claim-0036-mean_severity: ACC-OTHER mean_severity = 3.542857
+- claim-0036-priority_score: ACC-OTHER priority_score = 248
+- claim-0037-complaint_count: USE-LOCALIZE complaint_count = 69
+- claim-0037-severity_sum: USE-LOCALIZE severity_sum = 168
+- claim-0037-mean_severity: USE-LOCALIZE mean_severity = 2.434783
+- claim-0037-priority_score: USE-LOCALIZE priority_score = 168
+- claim-0038-complaint_count: SUP-UNHELPFUL complaint_count = 24
+- claim-0038-severity_sum: SUP-UNHELPFUL severity_sum = 81
+- claim-0038-mean_severity: SUP-UNHELPFUL mean_severity = 3.375000
+- claim-0038-priority_score: SUP-UNHELPFUL priority_score = 81
+- claim-0039-complaint_count: SUP-CHANNEL complaint_count = 15
+- claim-0039-severity_sum: SUP-CHANNEL severity_sum = 53
+- claim-0039-mean_severity: SUP-CHANNEL mean_severity = 3.533333
+- claim-0039-priority_score: SUP-CHANNEL priority_score = 53
+- claim-0040-complaint_count: SUP-OTHER complaint_count = 18
+- claim-0040-severity_sum: SUP-OTHER severity_sum = 45
+- claim-0040-mean_severity: SUP-OTHER mean_severity = 2.500000
+- claim-0040-priority_score: SUP-OTHER priority_score = 45
+- claim-0041-complaint_count: SUP-NOREPLY complaint_count = 15
+- claim-0041-severity_sum: SUP-NOREPLY severity_sum = 41
+- claim-0041-mean_severity: SUP-NOREPLY mean_severity = 2.733333
+- claim-0041-priority_score: SUP-NOREPLY priority_score = 41

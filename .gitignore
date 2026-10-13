@@ -5,6 +5,7 @@
 
 # Local datasets (raw inputs are never committed)
 data/
+review/
 
 # Local state, runs and checkpoints
 local/
