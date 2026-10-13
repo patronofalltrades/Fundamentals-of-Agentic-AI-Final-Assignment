@@ -223,6 +223,10 @@ function ChecksCard({ checks }: { checks: EvalCheck[] }) {
 
 export default function EvalsSection() {
   const { data, error } = useData(api.evals)
+  // The key lists only the statuses shown on this page.
+  const used = data
+    ? new Set([chooseSet(data.golden) ? "measured" : "pending", ...data.items.filter((i) => i.kind !== "accuracy").map((i) => i.status)])
+    : null
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-3xl bg-card p-6 lg:flex-row lg:items-end lg:justify-between">
@@ -232,7 +236,7 @@ export default function EvalsSection() {
           <p className="mt-3 text-[12px] text-muted-foreground">Every number below is read from a saved, linked report.</p>
         </div>
         <ul className="flex flex-wrap gap-2" aria-label="Status key">
-          {Object.entries(STATUS).map(([key, s]) => (
+          {Object.entries(STATUS).filter(([key]) => !used || used.has(key)).map(([key, s]) => (
             <li key={key} title={s.help} className={cn("rounded-full px-3 py-1 text-[12px]", s.className)}>{s.label}<span className="sr-only">: {s.help}</span></li>
           ))}
         </ul>

@@ -4,7 +4,7 @@
 
 Build the Final Assignment — Multi Agent Large Data Processing Pipeline.
 Use historical Spotify reviews to support a product-priority recommendation.
-The deadline is October 13, 2026, at 11:59 pm Pacific Time.
+The deadline is October 21, 2026, at 11:59 pm Pacific Time.
 
 ## Current accepted-evidence objective (Hanif, October 9 UTC)
 
