@@ -1,0 +1,40 @@
+{
+  "as_of": "2026-10-13",
+  "budget_usd": "49.99",
+  "projected_records": 660622,
+  "empty_texts": 13,
+  "distinct_nonempty_texts": 484189,
+  "output_token_cap_per_unit": null,
+  "cases": {
+    "base": {
+      "retry_fraction": "0.02",
+      "fallback_fraction": "0",
+      "fallback_cost_multiplier": "10",
+      "verify_fraction": "0.10",
+      "complaint_fraction": "0.3033",
+      "output_token_growth": "1.0",
+      "memo_calls": 1,
+      "max_concurrency": 4
+    },
+    "conservative": {
+      "retry_fraction": "0.10",
+      "fallback_fraction": "0.05",
+      "fallback_cost_multiplier": "10",
+      "verify_fraction": "0.10",
+      "complaint_fraction": "0.51",
+      "output_token_growth": "1.25",
+      "memo_calls": 3,
+      "max_concurrency": 2
+    }
+  },
+  "notes": [
+    "Each stage scales by its own work: label and evidence per text sent, verify per sampled text, group per complaint or cancellation record. The memo is one-time work.",
+    "Tokens and seconds per unit are measured on the 100-review pilot at one worker. Elapsed time divides by max_concurrency and is modeled, not measured.",
+    "retry_fraction: base 0.02 is the pilot's 2 quote failures in 100; conservative is 0.10.",
+    "fallback_fraction: no stronger fallback model is configured. The conservative case reserves 5% of evidence work at 10 times the evidence cost.",
+    "verify_fraction 0.10 is the pilot's 10-review verifier sample.",
+    "complaint_fraction: base 0.3033 is the main run (30,400 of 100,229 accepted); conservative 0.51 is the pilot (51 of 100).",
+    "With exact_text_reuse, 484,189 distinct texts are sent; without it, all 660,609 nonempty texts. The 13 empty texts are quarantined with no call.",
+    "Local compute cost is unknown, not zero."
+  ]
+}

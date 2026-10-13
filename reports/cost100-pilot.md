@@ -5,9 +5,9 @@ This isolated one-worker run used the unchanged supplied `cost_100.csv` (SHA-256
 and the approved 41-issue catalog (SHA-256
 `8c73e62059e86aea48b94da0d4b0bf86df048e0d83442e1ce4bf7b44dc105111`).
 The private saved ledger, records, calls, rates, report, and checkpoints are in
-`local/cost100_pilot/` of the run's working copy (not committed). A redacted copy is committed in
-[`cost/pilot/`](../cost/pilot/): the same calls, usage, rates, report and checkpoint counts, with review IDs
-replaced by counts. No source review text, original IDs, or golden answers appear in this aggregate report.
+`local/cost100_pilot/` of the run's working copy (not committed). Since 13 October the same files,
+with the 100 original review IDs, are committed in [`cost/pilot/`](../cost/pilot/), as Hanif approved. The local
+`pilot.db` is not committed. No source review text, original IDs, or golden answers appear in this aggregate report.
 
 | Stage | Calls | Outcome | Recorded API charge |
 | --- | ---: | --- | ---: |

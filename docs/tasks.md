@@ -1,5 +1,21 @@
 # Coordination record
 
+## Claude handoff — 13 October 2026
+
+Branch `docs/readme-rubric-benchmark`, from `main` at `cec5be9`. Owner: Claude (cost, dashboard, README).
+
+- **Changed files:** `README.md`, `cost/README.md`, `cost/scenario_full.json`, `cost/pilot/*`,
+  `tools/cost100_offline_calculator.py`, `tests/test_cost100_calculator.py`, `tests/test_golden_gap_runner.py`,
+  `reports/rubric-benchmark-2026-10-13.md`, `reports/cost100-offline-checks.json`.
+- **Cost calculator:** it adds full-run estimates from `cost/scenario_full.json`, with no model call. The
+  measured pilot results are unchanged.
+- **Pilot files:** `cost/pilot/` holds the unredacted pilot files with the 100 review IDs, as Hanif approved.
+- **Tests:** two golden-gap tests skip without the private plan in `local/`.
+- **Grading release:** release `grading-2026-10-13` holds `grading-110k.zip` and the synthetic resume video.
+  Hanif approved it and runs the publish command.
+- **Checks:** the full suite passes offline, and the calculator runs with no key.
+- **Remaining:** Hanif submits through bCourses. A real-data resume recording is optional.
+
 ## Final merge authorization and checks — 13 October 2026
 
 Hanif approved the normal GitHub merge of `feat/grouping-v4-integration` into
