@@ -15,7 +15,7 @@ the memo traces back to saved records.
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
-| Deadline | 13 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
+| Deadline | 21 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
 | Spend | About US$4.2 measured for the main run (Jev US$2.92, DeepInfra US$1.29). The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Requirement check | [Benchmark against the course requirements](reports/rubric-benchmark-2026-10-13.md) (13 October) |
@@ -182,7 +182,7 @@ Read [AGENTS.md](AGENTS.md) first. The release record is the
 
 **Open items:**
 
-1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific.
+1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific on 21 October.
 2. Optional: a recording of a real resume on saved state, in addition to the synthetic demo.
 3. Keep every disclosure above. Do not change saved data to clear a checker flag.
 
