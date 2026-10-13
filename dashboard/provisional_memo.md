@@ -1,18 +1,36 @@
 # provisional product priority memo
 
-This issue map is model-derived with 51 pilot and 40 blind human overrides. Before those overrides, the grouping agents agreed with a separate model verifier on 511 of 600 cases (85.2%). They agreed with the reviewed human pilot on 39 of 51 (76.5%) and with the blind human review on 16 of 40 (40.0%). Those human cases are no longer untouched holdouts for the final membership. These checks do not validate individual memberships or prove population accuracy.
+Conclusion: ad interruptions (USE-ADS) are the largest product problem in the reviews.
+Next, confirm the issue map with a targeted human review, then decide whether the ad experience needs a change.
 
 ## provisional finding
 
-The leading mapped issue is USE-ADS. It has 5197 mapped complaint or cancellation records and a severity sum of 11874 in the corrected baseline. The public projection excludes 23 known flagged candidates. These counts follow saved model-derived membership and should be checked against human review before a product decision.
+- USE-ADS ranks first: 5197 complaint or cancellation records, severity sum 11874 (claim-0001-complaint_count, claim-0001-severity_sum).
+- PLY-FAIL ranks second with fewer but more severe complaints: 2474 records, mean severity 3.599030 (claim-0002-complaint_count, claim-0002-mean_severity).
+- GEN-GENERAL ranks third: 3648 records of general criticism, mean severity 2.147478 (claim-0003-complaint_count, claim-0003-mean_severity).
 
 ## recommended next action
 
-Review a targeted sample of the leading issue and the catalog gaps, then decide whether the ad experience warrants a product change. Keep the current ranking advisory until that review is complete.
+Review a targeted sample of USE-ADS records and the catalog gaps listed in this memo.
+Keep the ranking advisory until that review is complete.
+
+## confidence
+
+- The issue map is model-made. Blind human agreement was 16 of 40 (40.0%), before human overrides.
+- A separate model verifier agreed on 511 of 600 (85.2%); the reviewed human pilot on 39 of 51 (76.5%).
+- 51 pilot and 40 blind human decisions now override the model, so those cases are no longer holdouts.
+
+## limits
+
+- The counts follow saved model-derived membership, not human-validated assignments.
+- The public ranking leaves out 23 known flagged candidates; the baseline above includes them.
+- Reviews state experiences and intent; they show no revenue, churn or causal effect.
 
 ## catalog gaps
 
-The approved catalog has no separate app-install issue. The handoff also notes free-tier limits, blank saved collections, a disappearing playback control bar, unwanted autoplay or auto-start, songs added to playlists, ads reported by premium users, regional availability, battery or data use, removed features, and lossless audio. These boundaries require review before changing the frozen catalog.
+- The frozen catalog has no separate app-install issue.
+- Also reported: free-tier limits, blank saved collections, a disappearing control bar, unwanted autoplay, songs added to playlists.
+- And: ads for premium users, regional availability, battery or data use, removed features, lossless audio. Review these before changing the catalog.
 
 ## checked claim ledger
 
