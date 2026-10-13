@@ -41,7 +41,7 @@ assigned. The runner does not itself export the course's final `grading/`
 layout or establish label accuracy. The two quote failures require inspection
 before the result could be called complete.
 
-The [offline calculator](../cost/README.actual-pilot.md) recomputed the saved
+The [offline calculator](../cost/README.md) recomputed the saved
 API charge as $0.007410287. Doubling all four saved API rates makes it
 $0.014820574; changing the projected volume from 100 to 100,000 leaves the
 measured pilot fields unchanged. Full-run cost projection is unavailable
