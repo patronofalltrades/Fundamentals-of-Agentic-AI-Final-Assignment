@@ -2,91 +2,170 @@
 
 ![Fundamentals of Agentic AI Final Capstone Project — Spotify Review Insights, 100k Reviews](docs/assets/agentic-ai-capstone-hero-v2.png)
 
-**Spotify Review Insights**
+**Spotify Review Insights.** A multi-agent pipeline reads public Google Play reviews of Spotify. It labels each
+review, groups complaints into product issues, ranks the issues, and writes a short decision memo. Every number in
+the memo traces back to saved records.
 
-This project turns saved Spotify Google Play reviews into an evidence-linked product priority assessment. The assignment scope is **at least 100,000 original source reviews**. The selected run accounts for 110,000 original IDs; 100,229 have structurally accepted labels and evidence. Structural acceptance checks identity, format, and source support. It is not a human accuracy score.
+- **Product question:** which Spotify problems should get product effort first?
+- **Answer (provisional):** ad interruptions (`USE-ADS`) lead the ranking. The memo recommends a targeted human
+  review of that issue before a product change, because the issue map is model-made.
 
-**Deadline:** 13 October 2026, 11:59 pm Pacific Time. **Submission:** public GitHub URL through bCourses, pending.
+| Item | Value |
+| --- | --- |
+| **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
+| Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
+| Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
+| Deadline | 13 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
+| Spend | About US$4.2 measured for the main run (Jev US$2.92, DeepInfra US$1.29). The cap is strictly below US$50. |
+| Requirement check | [Benchmark against the course requirements](reports/rubric-benchmark-2026-10-13.md) (13 October) |
 
-**Public code repository:** [Fundamentals of Agentic AI Final Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment).
+"Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
+a human accuracy score.
 
-## Agent handoff — 13 October 2026 UTC
+## Where each deliverable is
 
-The final integration was merged into main through [PR #22](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/pull/22) at `6a3118ffbb2f0ee8848572a88947517aef457c0b` on 13 October. Its Vercel deployment reached **READY**, and GitHub reported deployment **success**. The final merge checks passed **408 Python tests**, CLI help, the offline cost calculator, and the web privacy test. All 76 checked main cost/dashboard/web files, except the approved evaluation component, were preserved byte-for-byte. Image links, disclosure, and tracked-file privacy checks passed. **Course submission remains pending.**
+| Course requirement | Where | Status |
+| --- | --- | --- |
+| Pipeline program with distinct agent roles | `spotify_pipeline/`, `tools/`; [architecture](docs/architecture.md) | Done. See disclosure 2 for the grouping step. |
+| 100,000-review run | [Completion report](reports/accepted-100k-completion.md) | Done, 9 October |
+| Issue catalog, grouping and baseline ranking | [Frozen catalog](docs/issue-catalog-v1.json), [grouping handoff](reports/grouping-v4-handoff.md) | Done. The ranking is advisory. |
+| Decision memo with checked claims | [Provisional memo](reports/provisional-product-priority-memo.md), live at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/) | Done. All 164 claims match the saved numbers. |
+| Grading folder and `check_submission.py` | Private candidate; [checker flags and dispositions](reports/prepublication-reconciliation-2026-10-12.md) | Built. The checker returns `review_required`. Submission method pending. |
+| 100-review cost and runtime calculator (`cost/`) | [cost/README.md](cost/README.md), [pilot report](reports/cost100-pilot.md) | Measured cold and warm runs. Full-run estimate pending. |
+| Interruption and resume | Cost pilot checkpoints in [`cost/pilot/`](cost/pilot/); a private demo video | Pilot shown. No main-run checkpoints. |
+| Human golden evaluation | [Golden evaluation and checker report](reports/golden-gap-and-checker-2026-10-12.md) | Done; live on the dashboard |
+| Dashboard, backend, database, live URL | [Live site](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) | Done |
 
-- **Production:** the canonical URL below serves the merged main release. Post-merge API checks confirm **110,000 selected / 100,229 accepted**. Rankings, memo, recommendations, and claims match their saved pre-merge fingerprints. The memo page returns HTTP 200. Chrome confirms the golden scores, isolated-evaluator attribution, and diagnostic limits. The earlier one-component deployment was superseded by the successful main deployment.
-- **Golden evaluation — live:** all **50/50** source-only predictions are frozen, scored, and imported: topic **26/50**, intent **38/50**, severity **30/50**, joint **14/50**; severity MAE **0.56**, zero missing predictions, `official=false`. The historical **9/50** result belongs to a separate selected-production-run diagnostic. Both canonical aggregate APIs and Chrome confirm the saved score, isolated-evaluator attribution, and diagnostic limits. Twelve human cases request review, eight source texts overlap development data, and earlier golden influence is unknown.
-- **Import completed:** the user supplied the existing connection through the private local flow. Its file permissions were 0600, and the database matched both the saved and live release identities, 110,000 selected rows, 100,229 classifications, and the classifier configuration. The authorized transaction saved only `dashboard_meta.evaluation:original`; other metadata and checked table counts were unchanged. No import blocker remains. The adapter and evaluation tests passed **13 focused tests** on 13 October. Credentials and private import receipts remain ignored and were not published.
-- **Cost owner — Claude:** his main-branch cost artifacts were preserved. See the [cost guide](cost/README.md), [pilot report](reports/cost100-pilot.md), [dated rates](cost/pilot/rates.json), [measured JSON report](cost/pilot/report.json), and [offline calculator](tools/cost100_offline_calculator.py). No paid inference was added in this closeout.
-- **Images and demo:** the five README images are committed; see [asset provenance](docs/assets/README.md). The private Library file `synthetic-interruption-resume-demo.mp4` records an actual offline SIGINT, disk resume, and zero repeated label requests. Its local path is `local/resume_demo_synthetic_20261013/synthetic-interruption-resume-demo.mp4`. It uses synthetic data and mock responses, with zero outbound calls; it does not replace missing historical main-run checkpoints.
-- **Grading:** the unchanged checker remains **`review_required`**, with no automatic grade. The 660,622-source contract versus 110,000-selected scope and historical provenance/checkpoint gaps remain disclosed. The accepted-evidence count does not clear those flags.
+## Results
 
-The [final release handoff](reports/final-release-handoff-2026-10-12.md) records exact files, deployment evidence, video hash, and remaining limits. Continue from this dated status; earlier reports retain their historical observations.
-
-## Live dashboard
-
-[Open the read-only dashboard](https://hanif-spotify-insights.vercel.app). No login is required. It shows the **100,000-review results**: 110,000 selected source IDs, 100,229 structurally accepted rows, the provisional ranking and memo. The public site serves a sanitized database copy. Opening the page does not run a model. Hanif reported 20 passing browser checks for this release; the checks were not rerun in this branch.
+| Stage | Result |
+| --- | --- |
+| Source accounting | 110,000 selected original IDs: 100,229 accepted, 1,791 quarantined, 1,457 uncertain or blocked, 6,522 pending, 1 empty text. |
+| Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, 10 reviews per request. Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
+| Issue map | 30,400 complaint and cancellation records, one issue each, across 41 catalog issues. Human decisions replace the model in 91 cases, and 7 label corrections are declared. |
+| Ranking | `priority_score = severity_sum`, descending, then issue ID ascending. Top baseline issue: `USE-ADS`, 5,197 records, severity sum 11,874. The public view leaves out 23 flagged records (5,195 and 11,869). Second: `PLY-FAIL`, 2,474 records. |
+| Quality checks | A blind model verifier agreed on 511 of 600 records (85.2%). A blind human review agreed on 16 of 40 (40.0%), before overrides. |
+| Golden 50 | Exact agreement with human labels: topic 26/50, intent 38/50, severity 30/50, all three 14/50. Severity MAE 0.56; zero missing predictions. |
+| Cost pilot (`cost_100.csv`) | 112 metered calls, US$0.007410287, 98 accepted, 2 quarantined. Cold active time 588.4 s; warm replay 0.008 s with zero new calls. |
 
 ### Production screenshots
 
-Captured from the live site on 12 October 2026 at 23:32–23:33 UTC. This is an independent course project and is not affiliated with Spotify. [Capture manifest and hashes](docs/assets/production-2026-10-12/MANIFEST.md).
+Captured from the live site on 12 October 2026 at 23:32–23:33 UTC. This is an independent course project and is
+not affiliated with Spotify. [Capture manifest and hashes](docs/assets/production-2026-10-12/MANIFEST.md).
 
 ![Live review activity showing 110,000 selected source reviews and 100,229 classified reviews](docs/assets/production-2026-10-12/overview-review-activity.jpg)
-
-The live overview shows 110,000 selected source reviews, 100,229 classified reviews, and 30,400 complaint or cancellation candidates.
 
 <details>
 <summary>Public issue ranking and prompt benchmark</summary>
 
 ![Public top-five issue ranking with ads at 5,195 complaints and playback at 2,474](docs/assets/production-2026-10-12/issue-ranking-top-five.jpg)
 
-The public ranking excludes 23 flagged candidates. It shows 5,195 ad-related complaints and severity sum 11,869; the course baseline below includes flagged records and has 5,197 and 11,874. Playback has 2,474 in both. The ranking remains advisory after 40% agreement with the blind human review. The golden card was still pending when this image was captured.
+The public ranking leaves out 23 flagged candidates. The golden card was still pending when this image was
+captured; the live card now shows the saved score.
 
 ![Prompt benchmark comparing rubric v1 and v2 on 100 reviews, with 32 topic changes and one severity change](docs/assets/production-2026-10-12/evaluation-prompt-benchmark.jpg)
 
-This is the 100-review **prompt comparison**, not the golden-50 human evaluation: 32 topic changes, zero intent changes, one severity change, and 16 review-flag changes. These dated captures predate the successful golden-score import on 13 October; the live evaluation card now shows the saved score.
+This is the 100-review prompt comparison, not the golden-50 evaluation.
 
 </details>
 
-## Current result
+## How it works
 
-| Stage | Verified status |
-| --- | --- |
-| Source and evidence | 110,000 selected original IDs; 100,229 structurally accepted and 9,771 nonaccepted. The source ID and hash mapping remains private. [Extraction report](reports/accepted-100k-completion.md). |
-| Issue catalog and grouping | Frozen 41-issue catalog. Corrected membership has 30,400 distinct complaint/cancellation candidates, one issue each. [Grouping handoff](reports/grouping-v4-handoff.md). |
-| Ranking | Deterministic `severity_sum`, descending, then issue ID ascending. The public projection excludes 23 known flagged candidates and ranks 30,377. The top baseline issue is `USE-ADS` with 5,197 mapped records and severity sum 11,874. This ranking is **advisory**. |
-| Product memo | [Provisional memo](reports/provisional-product-priority-memo.md) recommends targeted human review of the leading issue before a product change. Its 164 claim references match saved numbers. Numeric consistency does not establish that the map or recommendation is correct. |
-| Human quality check | Before human overrides, grouping agreed with the blind human review on **16/40 (40.0%)**. The 40 cases are no longer untouched holdouts in final membership. Separate model-verifier agreement was 511/600 (85.2%); this is not human accuracy. |
-| Dashboard release | The 100,000-review results are live with a provisional memo, a dedicated memo page, and one clearly provisional `USE-ADS` recommendation. A private imported database and sanitized public copy were checked locally. The public-copy audit compared 144 API routes with zero differences and found no review IDs, source hashes, long quotes, or exact quotes. |
-| Cold/warm cost pilot | A separate 100-review pilot attempted 100, accepted 98, and quarantined two exact-quote failures. Its 112 metered calls charged $0.007410287. Cold active stages took 588.435 seconds; saved warm replay took 0.008029 seconds with zero outbound calls. A later read-only validation took 0.019757 seconds. Pilot checkpoints are separate from the historical main run. [Pilot report](reports/cost100-partial-checkpoint.md). |
+| Stage | Done by | Saved output |
+| --- | --- | --- |
+| Ingest | Code: parse the CSV, keep every ID and source hash, find exact duplicate texts | Canonical SQLite database; [ingestion profile](reports/contract-ingestion.json) |
+| Enrich | Jev (labels) and DeepInfra `gpt-oss-120b` (evidence quote), in batches with validated IDs | Per-batch results, call log, spend ledger |
+| Verify | A separate blind model relabels a sample without seeing the first answer | Verifier sample and agreement |
+| Group | Agents map each complaint to one issue in a frozen 41-issue catalog | Issue membership |
+| Rank | Code computes the baseline ranking | `ranking.csv` |
+| Recommend | A model writes the memo from saved aggregates; code checks every claim ID | `claims.csv`, memo |
 
-The memo proposes a cautious next action. The historical reviews do not establish observed churn, revenue, or causal impact.
+Code owns parsing, ID validation, hashing, caching, saved state, budget checks, ranking and claim checks. A shared
+ledger reserves the worst-case cost before each call. No unknown outcome is retried automatically.
 
-![Deliverable map: dashboard, evidence, issue rankings, recommendations, evaluation, and cost and reproducibility](docs/assets/required-outputs.png)
+## Run and verify offline
 
-Generated illustration of the requested deliverables. The table above and evaluation limits below record their actual status; the graphic is not a completion certificate. [Asset provenance](docs/assets/README.md).
-
-## Run locally
-
-Use Python 3.9 or newer and the standard library. Run commands from the repository root. The CLI operates offline and requires no credential:
+Use Python 3.9 or newer. No installation, API key or model call is needed. Run from the repository root.
 
 ```sh
-python3 -m spotify_pipeline --help
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -t . -q
+python3 -m unittest discover -s tests -t . -q        # 408 tests; 2 skip without private local files
+python3 -m spotify_pipeline --help                   # ingest, status, checkpoint, cost
+python3 -m tools.cost100_offline_calculator          # recompute the cost pilot from saved usage and rates
 ```
 
-The offline pipeline commands are `ingest`, `status`, `checkpoint`, and `cost`; see [implementation notes](docs/implementation.md). They accept arbitrary contract-shaped input CSV paths. The selected large run used bounded saved batches and is documented in the [completion report](reports/accepted-100k-completion.md). Saved ranking and claims can be replayed without a model call. The frozen catalog is [issue-catalog-v1.json](docs/issue-catalog-v1.json).
+Run the dashboard on your computer with a saved database:
 
-Private results are in ignored, mode-0600 `local/`. The corrected grading folder is `local/grading_v4_final/`; the later `local/grading_v4_submission_candidate/` adds authentic call and ingestion exports plus a separately named copy of the cold/warm pilot. It includes 110,000 selected records and seven declared human label corrections. The [mission-critical handoff](reports/submission-critical-handoff-2026-10-12.md) gives paths, hashes, checker results, and missing historical artifacts. The [public cost deliverable](cost/README.md) has redacted calls, editable dated rates, checkpoints, and an offline calculator; the [private-file calculator notes](cost/README.actual-pilot.md) describe the original pilot. The older `cost/measurements.json` and `cost/rates.json` remain null scaffolds. **Do not publish either private grading folder or the private database.**
+```sh
+python3 -m dashboard serve --db <dashboard.db>       # http://127.0.0.1:8765
+```
 
-The dashboard application is included in this branch. Its read-only HTTP backend queries a saved SQLite or Postgres database. `/api/summary`, `/api/issues`, `/api/claims`, `/api/memo`, `/api/recommendations`, and `/api/reviews` retrieve stored results. From the repository root, `python3 -m dashboard serve --db local/dashboard_public_v4_release.db` serves the prepared local sanitized copy at `http://127.0.0.1:8765`; it makes no model call. See the [dashboard guide](docs/dashboard.md) for private import, public export, API behavior, and web build instructions.
+The [dashboard guide](docs/dashboard.md) covers the private import, the public export and the web build. Paid
+runs use separate tools in `tools/`. Each tool is offline by default and needs an explicit flag and approval to
+make calls.
 
-## Evaluation and limits
+## Disclosures
 
-The 50 human golden labels remain in an isolated private file. All **50 source-only predictions were frozen before scoring**. The isolated evaluator measured 52% topic agreement, 76% intent agreement, 28% exact topic–intent–severity agreement, **30/50 exact severity agreement**, severity mean absolute error 0.56, and sentiment mean absolute error 0.21. Twelve human cases are marked `needs_review`; eight source texts overlap development data. A private aggregate report records topic support, confusion counts, and severity-error distribution without case-level answers. These diagnostics do not establish population accuracy. Any golden-influenced revision needs a fresh untouched holdout; freezing this file before scoring cannot rule out earlier golden influence. See the [aggregate evaluation and cost handoff](reports/golden-gap-and-checker-2026-10-12.md). The independent grouping verifier is a separate model, and the 40-case blind human comparison remains the strongest grouping warning. No untouched grouping holdout remains after 91 human overrides. The public projection excludes known flagged complaint/cancellation records; 47 flagged accepted records are excluded from examples. Public excerpts are screened to at most 30 words and use opaque references.
-
-The original course checker still describes a larger scope. The original 660,622-row CSV was downloaded in place through macOS iCloud and verified against its pinned SHA-256. The **unchanged checker** ran against its independently generated full-source reference and the private 110,000-selected-row candidate; it returned **`review_required`, not a pass**. It validated 100,229 completed-record schemas, issue membership, baseline ranking, and numeric claims, but reported 550,622 records missing under its unchanged full-corpus denominator. Other flags are 7,980 nonaccepted statuses, 949 partial/uncertain call outcomes, 79,797 unknown run phases, 94 unavailable usage fields, 20,938 split/indirect cache-provenance cases, missing verifier/group/memo call records, absent main-run checkpoints, and missing resume proof. Every checker flag and its disposition is listed in the [prepublication audit](reports/prepublication-reconciliation-2026-10-12.md). The instructor permits the 100,000-review scope; the discrepancy is disclosed without changing the checker. The private submission candidate includes the exact full-source ingestion profile and 79,797 authentic main-run call records. Grouping provider per-call token and dollar usage remains **unknown**, not zero. The separate cold/warm 100-review pilot is measured, with 98 accepted, two quote quarantines, and $0.007410287 recorded charge; its authentic checkpoints do not replace missing main-run checkpoints. Offline rate sensitivity is verified; a full-run projection remains unavailable without stage-specific scaling assumptions, and local compute cost is unknown. See the [mission-critical handoff](reports/submission-critical-handoff-2026-10-12.md).
+1. **Scope.** The unchanged contract and checker expect all 660,622 IDs. This run covers 110,000 selected IDs,
+   following the instructor's 100,000-review minimum. The checker reports 550,622 missing IDs.
+2. **Grouping step.** The 100k issue map was made by eight Claude Sonnet 5.5 subagents in Claude Code, with a
+   blind Claude Opus 5.5 verifier. They ran from a chat session, not as a saved program stage. The cost pilot ran
+   grouping as a program stage. Code removed possible names, handles and long numbers before the agents read the
+   text; 1,500 records were mapped before this step was added. The agents saw no review IDs, human decisions or
+   golden answers. Their per-call token usage was not recorded; it is unknown,
+   not zero.
+3. **Issue-map quality.** Blind human agreement was 40%. The ranking is advisory until a targeted human review.
+4. **Checker result.** `check_submission.py` returns `review_required`. Besides the scope, it flags 7,980
+   nonaccepted statuses, 949 partial or uncertain call outcomes, 79,797 unknown run phases, 94 unavailable usage
+   fields, 20,938 rows with split cache or evidence provenance, missing historical verifier, group and memo call
+   records, and missing main-run checkpoints. Each flag and its disposition is in the
+   [prepublication audit](reports/prepublication-reconciliation-2026-10-12.md). No saved data was changed to hide
+   a flag.
+5. **Resume evidence.** The cost pilot shows interruption and resume (0 to 98 completed IDs, no completed ID sent
+   again). The main run has no saved before and after checkpoints. The demo video uses synthetic data.
+6. **Golden set.** Twelve human rows ask for review, eight texts overlap development data, and earlier golden
+   influence cannot be ruled out. The scores are diagnostics, not population accuracy.
+7. **Cost calculator.** The full-run projection is not yet given; it needs stage-specific scaling assumptions.
+   Local compute cost is unknown.
+8. **Data limits.** These are self-selected public reviews from a historical snapshot. They contain no revenue,
+   plan tier or confirmed cancellations. A cancellation review states intent; it does not prove a cancellation.
+   The memo makes no revenue or causal claim.
 
 ## Data boundary
 
-Keep original review IDs, raw text, source hashes, exact quotes, human answer files, private databases, and unsanitized exports outside Git. Saved public examples use opaque IDs with a private mapping. Nonaccepted states are public only as sanitized aggregates. The frozen issue catalog and human corrections are versioned; changing them requires a new review. No paid call or model run is required to inspect saved outputs.
+- The public site serves an audited copy of the results. It reaches records only by random references, shows
+  excerpts of at most 30 words, and leaves out possible personal information. All 144 public routes match the
+  audited copy, with no review IDs, source hashes or full texts.
+- Raw CSVs, original review IDs, exact quotes, human answer files, private databases and credentials stay out of
+  Git, in ignored `local/` folders with mode 0600.
+- Golden answers never enter model prompts, examples, caches or issue discovery.
+- Source: [Kaggle dataset](https://www.kaggle.com/datasets/bwandowando/3-4-million-spotify-google-store-reviews)
+  by BwandoWando, version 2, CC0. Full-file SHA-256
+  `1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6`.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `spotify_pipeline/` | Offline pipeline package: ingest, state, checkpoints, schema, cost replay, Jev adapter |
+| `tools/` | Pilot and run tools, evidence, import, evaluation and the offline cost calculator |
+| `dashboard/`, `web/`, `api/`, `vercel.json` | Read-only backend, web front end and the Vercel deployment |
+| `cost/` | Cost pilot: redacted calls, dated rates, report and checkpoints |
+| `reports/` | Aggregate reports, with no review text, original IDs or private paths |
+| `docs/` | Rubric, catalog, architecture, decisions and the [coordination record](docs/tasks.md) |
+| `tests/` | Offline tests with synthetic fixtures |
+
+## For agents working on this repository
+
+Read [AGENTS.md](AGENTS.md) first. The latest release record is the
+[final release handoff](reports/final-release-handoff-2026-10-12.md).
+
+- **Release.** PR #22 (`6a3118f`) and PR #23 (`cec5be9`) merged the pipeline branch into `main`. Production
+  serves that release from Neon database `dashboard_100k`. The rollback database is `dashboard_5000`.
+- **Open items before the deadline:**
+  - Hanif decides how to submit the grading folder (ZIP or release asset) and the demo video.
+  - Add full-run estimates and a scaling decision to `cost/` (offline).
+  - Hanif submits the URL through bCourses.
+- **Rules.**
+  - No paid call, push or merge without Hanif's approval.
+  - Keep the total budget strictly below US$50.
+  - Do not publish either private grading folder or the private database.

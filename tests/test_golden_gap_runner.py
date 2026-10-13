@@ -43,6 +43,7 @@ class GoldenGapSafety(unittest.TestCase):
         self.b=FakeBudget()
         self.row={'review_id':'synthetic-one','source_sha256':'0'*64}
 
+    @unittest.skipUnless(gap.PLAN.exists(), 'needs the private golden-gap plan in local/ (not in Git)')
     def test_pinned_source_and_cache_provenance(self):
         plan,source=gap.load_plan()
         self.assertEqual((len(plan['rows']),len(source)),(41,50))
@@ -79,6 +80,7 @@ class GoldenGapSafety(unittest.TestCase):
         with self.assertRaises(ValueError):
             gap.call_once(self.b,'jev',[self.row],{},'fake',lambda *_:self.fail('replayed'))
 
+    @unittest.skipUnless(gap.PLAN.exists(), 'needs the private golden-gap plan in local/ (not in Git)')
     def test_scope_and_incremental_cap(self):
         plan,_=gap.load_plan()
         work=[r for r in plan['rows'] if r['action']!='reuse_saved']
