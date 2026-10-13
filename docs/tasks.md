@@ -15,6 +15,12 @@ README handoff and `reports/final-release-handoff-2026-10-12.md`. The unchanged
 full-source grading checker remains `review_required`. Course submission is
 pending. The earlier ownership records below describe their original dates.
 
+PR #22 completed the normal main merge at `6a3118f` on 13 October. Its
+GitHub-triggered Vercel production deployment reached READY with a successful
+GitHub status. Post-deployment API fingerprints, 100,229 accepted rows, and
+golden-50 scores were unchanged. Chrome confirmed the attribution and limits.
+The README and release handoff record this completed integration.
+
 ## Current integration — 12 October 2026
 
 The 100,000-review pipeline integration is owned by Codex on

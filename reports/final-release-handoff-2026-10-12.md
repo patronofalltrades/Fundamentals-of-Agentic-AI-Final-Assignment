@@ -1,5 +1,22 @@
 # Final release handoff — updated 13 October 2026
 
+## Completed main integration
+
+PR #22 merged normally at `6a3118ffbb2f0ee8848572a88947517aef457c0b`
+on 13 October, 02:05:18 UTC. Its tree exactly matched the tested feature head
+`6cd0d92c465804a03c3d50f9623a287b7c6d2da6`. Its GitHub-triggered production
+deployment `dpl_2bPxVtvpjskBWLmMbuDgyi8UtAzB` reached `READY`, included the
+canonical alias, and reported `success` to GitHub. No check or protection was
+bypassed. There are no GitHub Actions workflows in this repository; the
+reported remote gate was Vercel. The full local test evidence is below.
+
+After deployment, selected/accepted counts and golden-50 values were unchanged.
+Rankings, memo, recommendations, and claims matched their pre-merge SHA-256
+fingerprints. The memo page returned HTTP 200. Chrome confirmed the golden
+scores, correct scorer, and all diagnostic limits. The private aggregate-only
+verification receipt is `local/final_merge_20261013/live_after.json`.
+The following deployment details preserve the earlier narrow release history.
+
 ## Published branch and deployment
 
 - Branch: `feat/grouping-v4-integration`.
@@ -7,7 +24,7 @@
 - README asset commit: `504d064335840118b975d07fafde716b19610e1c`.
 - The explicit GitHub feature ref was verified at `504d064` after image integration and at `b8dd5bc` after the live golden-import handoff. These checks preceded the approved final merge. Course submission remains pending.
 - Canonical dashboard: <https://hanif-spotify-insights.vercel.app>.
-- Production deployment: `dpl_5ZGRgcJrvoaXxQRwzjtmeTQPUkoN`, verified `READY` and promoted.
+- Earlier narrow production deployment: `dpl_5ZGRgcJrvoaXxQRwzjtmeTQPUkoN`, verified `READY` and promoted on 12 October; superseded by the main deployment above.
 - Deployed source is an archive of main `00ad910f64f0f8664d42c01740eac9b320ceae5a`, with only `web/src/components/dashboard/evals-section.tsx` replaced by its reviewed version from `628caef`. This one-file difference was checked before upload. No broad feature-branch deployment occurred.
 - Canonical HTML serves `/_astro/evals-section.DT9ubAyz.js`. The verified bundle includes the isolated evaluator attribution and the 12-review, eight-overlap, and earlier-influence limits. Chrome rendered the canonical card successfully. These conditional details appear when the matching source-only aggregate is saved.
 - Canonical API after promotion on 12 October: 110,000 selected source rows, 100,229 completed rows, golden status `pending`. After the authorized aggregate import on 13 October, the counts are unchanged and golden status is `saved`.
