@@ -151,7 +151,7 @@ make calls.
 | `spotify_pipeline/` | Offline pipeline package: ingest, state, checkpoints, schema, cost replay, Jev adapter |
 | `tools/` | Pilot and run tools, evidence, import, evaluation and the offline cost calculator |
 | `dashboard/`, `web/`, `api/`, `vercel.json` | Read-only backend, web front end and the Vercel deployment |
-| `cost/` | Cost pilot: redacted calls, dated rates, report and checkpoints |
+| `cost/` | Cost pilot: records, calls, dated rates, report, checkpoints and the full-run scenario |
 | `reports/` | Aggregate reports, with no review text, original IDs or private paths |
 | `docs/` | Rubric, catalog, architecture, decisions and the [coordination record](docs/tasks.md) |
 | `tests/` | Offline tests with synthetic fixtures |
