@@ -25,7 +25,8 @@ PILOT = "reports/jev-pilot-100.json"
 RUBRIC = "reports/jev-rubric-v1-v2-100.json"
 CHECKPOINT = "reports/jev-checkpoint-500.json"
 INTENT = "reports/golden-50-intent.json"
-EXTRACTOR = "reports/extractor-benchmark.json"  # optional; written by the extractor benchmark when final
+EXTRACTOR = "reports/extractor-benchmark-aggregate.json"  # written by tools/build_run_aggregates.py
+RUN = "reports/run-110k-calls-aggregate.json"  # written by tools/build_run_aggregates.py
 
 
 def _load(path, sources):
@@ -123,26 +124,49 @@ def run_benchmark(p, c):
     }
 
 
-def projection(c):
+def _usd(nusd):
+    return "%.9f" % (nusd / 1e9)
+
+
+def projection(c, run):
     f = c["first_100000_full_file_rows_candidate"]
+    jev, ev = run["stages"]["jev"], run["stages"]["evidence"]
     return {
         "id": "projection-100k",
-        "kind": "projection",
-        "title": "Projection: the 100,000-review run",
-        "question": "What will the required 100,000-review run cost and how long will labelling take?",
-        "sample": "The first 100,000 rows of the full review file, counted before any model call",
-        "truth": "Linear estimate from the 500-review checkpoint. Not a measurement.",
-        "status": "estimate",
+        "kind": "run",
+        "title": "The 100,000-review run: estimate against measured",
+        "question": "What did the required run cost, and how close was the estimate made before it?",
+        "sample": "Estimate: the first 100,000 rows, before any model call. Measured: every call of the 110,000-row selection.",
+        "truth": "Measured charges are usage-derived from the saved call ledger in the grading release.",
+        "status": "measured",
         "metrics": [
-            metric("Distinct review texts", f["distinct_nonempty_texts"], "int",
+            metric("Measured API cost, all stages", _usd(run["total_charged_nusd"]), "usd",
+                   note="labels and evidence quotes"),
+            metric("Measured labelling cost", _usd(jev["charged_nusd"]), "usd",
+                   note="estimated beforehand: $%.2f" % float(f["jev_label_only_linear_estimate_usd"])),
+            metric("Distinct review texts in the estimate", f["distinct_nonempty_texts"], "int",
                    note="of %s non-empty rows; duplicates reuse one label" % format(f["nonempty_rows"], ",")),
-            metric("Estimated labelling cost", f["jev_label_only_linear_estimate_usd"], "usd"),
-            metric("Estimated labelling time", f["jev_serial_label_stage_linear_estimate_hours"], "hours",
-                   note="serial; parallel requests reduce it"),
         ],
-        "limits": ["The estimate scales the checkpoint linearly. Retries, rate limits and parallelism change it.",
-                   "Evidence extraction is a separate stage with its own cost."],
-        "sources": [CHECKPOINT],
+        "compare": {
+            "columns": ["Estimate", "Measured"],
+            "rows": [
+                {"label": "Labelling cost (USD)", "format": "usd",
+                 "values": [f["jev_label_only_linear_estimate_usd"], _usd(jev["charged_nusd"])]},
+                {"label": "Evidence cost (USD)", "format": "usd", "values": [None, _usd(ev["charged_nusd"])],
+                 "note": "Not estimated beforehand."},
+                {"label": "Labelling request time", "format": "hours",
+                 "values": [f["jev_serial_label_stage_linear_estimate_hours"], "%.4f" % (jev["request_seconds"] / 3600)],
+                 "note": "Estimate: serial. Measured: summed request time, not wall time."},
+                {"label": "Labelling calls", "format": "int", "values": [None, jev["calls"]]},
+                {"label": "Evidence calls", "format": "int", "values": [None, ev["calls"]]},
+                {"label": "Uncertain calls, held without retry", "format": "int",
+                 "values": [None, jev["outcomes"].get("uncertain", 0) + ev["outcomes"].get("uncertain", 0)]},
+            ],
+        },
+        "limits": ["The estimate scaled the 500-review checkpoint linearly and covered labelling only.",
+                   "The measured run covers 110,000 selected rows, not the first 100,000 rows of the file.",
+                   run["note"]],
+        "sources": [CHECKPOINT, RUN],
     }
 
 
@@ -192,22 +216,38 @@ def intent_accuracy(g):
     }
 
 
-def extractor(sources):
-    if (ROOT / EXTRACTOR).exists():
-        item = _load(EXTRACTOR, sources)
-        item.setdefault("sources", [EXTRACTOR])
-        return item
+def extractor(x):
+    di, gq = x["routes"]["deepinfra"], x["routes"]["groq"]
+    n = x["source_reviews"]
     return {
         "id": "extractor-benchmark",
         "kind": "benchmark",
         "title": "Evidence extractor benchmark",
         "question": "Which hosted model extracts exact evidence quotes and product entities most reliably and cheaply?",
-        "sample": "The same 100 development reviews, sent to each candidate route",
-        "truth": "Agreement with saved development evidence, plus exact-quote checks against the source text.",
-        "status": "pending",
-        "metrics": [],
-        "limits": ["Results appear here when the benchmark saves its final report."],
-        "sources": [],
+        "sample": "The same %d development reviews, sent to each candidate route" % n,
+        "truth": "Exact-quote checks against the source text. Agreement with saved development evidence is in the report.",
+        "status": "partial",
+        "metrics": [
+            metric("DeepInfra reviews with accepted evidence", di["reviews_accepted"], "count", of=n),
+            metric("Groq reviews with accepted evidence", gq["reviews_accepted"], "count", of=n,
+                   note="%d reviews never sent" % (n - gq["reviews_attempted"])),
+            metric("Known charge, both routes", _usd(di["charged_nusd"] + gq["charged_nusd"]), "usd"),
+        ],
+        "compare": {
+            "columns": ["DeepInfra", "Groq"],
+            "rows": [
+                {"label": "Calls", "format": "int", "values": [di["calls"], gq["calls"]]},
+                {"label": "Accepted", "format": "int", "values": [di["reviews_accepted"], gq["reviews_accepted"]]},
+                {"label": "Invalid responses", "format": "int",
+                 "values": [di["outcomes"].get("invalid_response", 0), gq["outcomes"].get("invalid_response", 0)]},
+                {"label": "Cost (USD)", "format": "usd", "values": [_usd(di["charged_nusd"]), _usd(gq["charged_nusd"])]},
+                {"label": "Summed request time", "format": "seconds", "values": [di["request_seconds"], gq["request_seconds"]]},
+            ],
+        },
+        "decision": "DeepInfra became the evidence extractor: it completed more of the set with fewer invalid "
+                    "responses. Groq was faster per request.",
+        "limits": [x["note"], "The paired comparison against development evidence is in reports/openrouter-extractor-benchmark.md."],
+        "sources": [EXTRACTOR],
     }
 
 
@@ -215,7 +255,7 @@ def build():
     sources = []
     pilot, rubric, checkpoint = _load(PILOT, sources), _load(RUBRIC, sources), _load(CHECKPOINT, sources)
     items = [intent_accuracy(_load(INTENT, sources)), rubric_benchmark(rubric, sources), run_benchmark(pilot, checkpoint),
-             projection(checkpoint), extractor(sources)]
+             projection(checkpoint, _load(RUN, sources)), extractor(_load(EXTRACTOR, sources))]
     return {"version": 1, "model": checkpoint["model"], "prompt_version": checkpoint["prompt_version"],
             "built_from": sources, "items": items}
 
