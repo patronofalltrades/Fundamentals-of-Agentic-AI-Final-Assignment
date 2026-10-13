@@ -1,5 +1,20 @@
 # Coordination record
 
+## Final merge authorization and checks — 13 October 2026
+
+Hanif approved the normal GitHub merge of `feat/grouping-v4-integration` into
+main and its resulting Vercel deployment. Codex owns this bounded closeout in
+`spotify-v4-worktree`. Main was checked at `00ad910`; there were no newer
+commits to reconcile. Final checks passed 408 Python tests, CLI help, the
+offline cost calculator, and the web privacy test. Claude's cost artifacts and
+main's dashboard, memo, and polish files were preserved. No private files are
+tracked. The only web change is the reviewed evaluation attribution component.
+
+The golden-50 aggregate is already imported and verified live. See the dated
+README handoff and `reports/final-release-handoff-2026-10-12.md`. The unchanged
+full-source grading checker remains `review_required`. Course submission is
+pending. The earlier ownership records below describe their original dates.
+
 ## Current integration — 12 October 2026
 
 The 100,000-review pipeline integration is owned by Codex on

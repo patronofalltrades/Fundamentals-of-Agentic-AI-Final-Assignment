@@ -5,7 +5,7 @@
 - Branch: `feat/grouping-v4-integration`.
 - Reconciliation commit: `628caefe22852c282492fc0eaa7d8642b45a23f8`.
 - README asset commit: `504d064335840118b975d07fafde716b19610e1c`.
-- The explicit GitHub feature ref was verified at `504d064`. No remote main merge or course submission occurred.
+- The explicit GitHub feature ref was verified at `504d064` after image integration and at `b8dd5bc` after the live golden-import handoff. These checks preceded the approved final merge. Course submission remains pending.
 - Canonical dashboard: <https://hanif-spotify-insights.vercel.app>.
 - Production deployment: `dpl_5ZGRgcJrvoaXxQRwzjtmeTQPUkoN`, verified `READY` and promoted.
 - Deployed source is an archive of main `00ad910f64f0f8664d42c01740eac9b320ceae5a`, with only `web/src/components/dashboard/evals-section.tsx` replaced by its reviewed version from `628caef`. This one-file difference was checked before upload. No broad feature-branch deployment occurred.
@@ -51,6 +51,7 @@ This new run saved a disk checkpoint after 100 mock label requests, received an 
 
 ## Checks and remaining grading limits
 
+- Final merge gate on 13 October: main was still `00ad910`, with no new commits to reconcile. The full 408-test Python suite, CLI help, offline cost calculator, and web privacy test passed again. All 76 checked main cost/dashboard/web files were byte-identical, excluding the approved evaluation component. Tracked-file privacy and README links/disclosure passed. Hanif approved the normal GitHub merge and resulting deployment; no branch protection or failed check may be bypassed.
 - The reconciled implementation passed 408 Python tests, the CLI help check, the default offline cost calculator, and the web privacy test before commit `628caef`.
 - Before the production import, 13 focused adapter, evaluation-import, and evaluation-route tests passed: `python3 -m unittest tests.test_adapt_golden_evaluation tests.test_dashboard_trends.EvaluationTests tests.test_dashboard_evals -q`.
 - Image integration passed link, hash, staged-diff, and whitespace checks.

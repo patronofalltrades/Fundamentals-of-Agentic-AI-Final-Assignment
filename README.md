@@ -8,11 +8,11 @@ This project turns saved Spotify Google Play reviews into an evidence-linked pro
 
 **Deadline:** 13 October 2026, 11:59 pm Pacific Time. **Submission:** public GitHub URL through bCourses, pending.
 
-**Public code repository:** [Fundamentals of Agentic AI Final Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment). This feature branch is the integration candidate.
+**Public code repository:** [Fundamentals of Agentic AI Final Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment).
 
 ## Agent handoff — 13 October 2026 UTC
 
-Verified on `feat/grouping-v4-integration`: code reconciliation `628caef`, image integration `504d064`, and release record `1a2ee6e` were pushed to the explicit GitHub feature branch. No remote main merge or course submission occurred. The reconciled code passed **408 Python tests**, CLI help, the offline cost calculator, and the web privacy test. Image links, hashes, and staged diffs passed checks.
+Verified on `feat/grouping-v4-integration`: code reconciliation `628caef`, image integration `504d064`, release record `1a2ee6e`, and live golden-import record `b8dd5bc` were pushed to GitHub. Hanif approved the normal final merge into main and resulting deployment on 13 October. The final merge checks passed **408 Python tests**, CLI help, the offline cost calculator, and the web privacy test. All 76 checked main cost/dashboard/web files, except the approved evaluation component, were preserved byte-for-byte. Image links, disclosure, and tracked-file privacy checks passed. **Course submission remains pending.**
 
 - **Production:** deployment `dpl_5ZGRgcJrvoaXxQRwzjtmeTQPUkoN` is live at the canonical URL below. It contains main `00ad910` plus only the reviewed evaluation attribution component. The build passed; canonical API checks still show **110,000 selected / 100,229 accepted**. The corrected bundle includes the isolated-evaluator attribution and diagnostic limits.
 - **Golden evaluation — live:** all **50/50** source-only predictions are frozen, scored, and imported: topic **26/50**, intent **38/50**, severity **30/50**, joint **14/50**; severity MAE **0.56**, zero missing predictions, `official=false`. The historical **9/50** result belongs to a separate selected-production-run diagnostic. Both canonical aggregate APIs and Chrome confirm the saved score, isolated-evaluator attribution, and diagnostic limits. Twelve human cases request review, eight source texts overlap development data, and earlier golden influence is unknown.
