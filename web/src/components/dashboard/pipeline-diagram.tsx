@@ -102,7 +102,7 @@ function analysis(s: Summary): Step[] {
     { kind: "handoff", title: "Grouping-agent handoff", detail: <>Historical: saved assignments to a {issues ?? 41}-issue catalog. Not a program stage.</>,
       branches: [
         { label: "Blind verifier handoff", to: "511 of 600 assignments agreed (85.2%); its saved trail was recovered on 16 October", tone: "warn" },
-        { label: "Recorded stage, 16 October", to: "regrouped 600 members with every call saved; 449 of 580 matched", tone: "warn" },
+        { label: "Recorded grouping sample", to: "600 selected, 580 valid outputs, 20 missing; 449 of 580 matched the historical map", tone: "warn" },
         { label: "Gap", to: "the handoff's token usage was not recorded", tone: "gap" },
       ] },
     { kind: "code", title: "Validate membership", detail: "Apply reviewed corrections and overrides" },
