@@ -75,7 +75,7 @@ def _claims(ranking):
 def _memo(ranking, claims, report):
     top = ranking[0]
     lines = ["# provisional product priority memo", "",
-        "This issue map is model-derived with 51 pilot and 40 blind human overrides. Before those overrides, the grouping agents agreed with a separate model verifier on 511 of 600 cases (85.2%). They agreed with the reviewed human pilot on 39 of 51 (76.5%) and with the blind human review on 16 of 40 (40.0%). Those human cases are no longer untouched holdouts for the final membership. These checks do not validate individual memberships or prove population accuracy.",
+        "This issue map is model-derived with 51 pilot and 40 blind human overrides. Before those overrides, the grouping agents agreed with a separate model verifier on 511 of 600 cases (85.2%). They agreed with the reviewed human pilot on 39 of 51 (76.5%). Separately, one assistant's manual assignments agreed with human answers on 16 of 40 (40.0%); this did not evaluate the production grouping model. Aggregate human family counts were visible before the assistant's assignments were frozen, and the sample had five cases per topic. The human override cases are no longer untouched holdouts for the final membership. These checks do not validate individual memberships or prove population accuracy.",
         "", "## provisional finding", "",
         "The leading mapped issue is %s. It has %s mapped complaint or cancellation records and a severity sum of %s in the corrected baseline. The public projection excludes 23 known flagged candidates. These counts follow saved model-derived membership and should be checked against human review before a product decision." %
         (top["issue_id"], top["complaint_count"], top["severity_sum"]),

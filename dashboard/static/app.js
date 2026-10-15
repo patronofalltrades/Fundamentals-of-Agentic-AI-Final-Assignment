@@ -54,7 +54,7 @@ async function showMemo() {
   if (!data.text) { $('memo').append(el('p', 'note', 'Pending saved memo. The memo comes from the pipeline export and cites claim IDs.')); return; }
   const checked = data.status === 'claims_checked' || data.status === 'claims_checked_provisional';
   $('memo').append(el('p', checked ? 'note' : 'note warn', checked ?
-    (data.status === 'claims_checked_provisional' ? 'Provisional, model-derived memo. Every numeric claim matches its saved value; pre-override blind human agreement was 16/40 (40%).' : 'Every claim ID in the memo matches its saved value.') :
+    (data.status === 'claims_checked_provisional' ? 'Provisional, model-derived memo. Every numeric claim matches its saved value. Separately, one assistant\'s manual assignments agreed with human answers on 16/40 (40%); this did not evaluate the production grouping model.' : 'Every claim ID in the memo matches its saved value.') :
     `Claim check: ${data.status.replaceAll('_', ' ')}. Do not rely on this memo yet.`));
   $('memo').append(el('pre', 'memo-text', data.text));
 }
