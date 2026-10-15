@@ -98,8 +98,7 @@ A database error returns `503` with no connection detail.
 | `DASHBOARD_DB` | SQLite file, read-only | Local checks |
 
 The code uses the Python standard library only. It sends Postgres queries over HTTPS, so the Function has
-no database driver dependency. **The Neon path has synthetic tests only. It has not run against a live
-Neon database yet.**
+no database driver dependency. The live site reads Neon Postgres `dashboard_100k` through this path.
 
 ### Import contract (`dashboard/bundle.py`)
 

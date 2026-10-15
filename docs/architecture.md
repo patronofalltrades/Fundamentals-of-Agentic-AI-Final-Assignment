@@ -1,8 +1,9 @@
 # Agent collaboration and planned runtime
 
 The two groups have different jobs. Development agents help build and review
-the code. Runtime roles will process reviews after access, quality, and budget
-checks. The offline foundation is under review. The runtime has not run.
+the code. The runtime part below is the original plan, written before the main
+run. For what actually ran, see `docs/pipeline-extraction.mmd` and
+`docs/pipeline-analysis.mmd` (also drawn on the dashboard's Pipeline section).
 
 ```mermaid
 flowchart TB
@@ -22,7 +23,7 @@ flowchart TB
         Hanif --> Golden
     end
 
-    subgraph RUN[Planned runtime: not run]
+    subgraph RUN[Planned runtime: original design]
         Python[Python orchestration]
         Prepare[Code: prepare, hash and deduplicate]
         Classify[Classifier TBD: at most 50 reviews per request]

@@ -124,7 +124,8 @@ Added on 13 October, offline with no model call:
    exact-text reuse (484,189 distinct texts), in a base and a conservative case. The budget, retry and fallback
    fractions, verifier sample, output growth or cap, and maximum concurrency are all editable. A scenario above
    the budget is flagged. Results: US$35.11 to US$62.89, and the last case is flagged. Projected to 110,000 rows,
-   the base estimate (US$5.85) is close to the main run's measured US$4.21.
+   its labels and evidence (US$4.95) are close to the run's measured US$4.73 for all calls (corrected
+   16 October; the earlier US$4.21 was the scale queue only).
 2. **`pilot_records.jsonl`** and unredacted calls and checkpoints with the 100 original IDs. The IDs match
    `cost_100.csv` in order. Hanif approved this.
 3. **Pilot execution commands** for `tools/cost100_harness.py` in `cost/README.md`.
@@ -160,7 +161,8 @@ Vercel. The database is Neon Postgres `dashboard_100k`, loaded from an audited p
 
 ### M. Budget — Met
 
-Measured main-run charges were US$2.92 for Jev and US$1.29 for DeepInfra. The total stays well below the US$50
+Metered charges for all calls of the 110,000-review run were US$3.26 for Jev and US$1.46 for DeepInfra, US$4.73 in
+total ([call aggregate](run-110k-calls-aggregate.json)). The scale queue alone was US$4.21. The total stays well below the US$50
 ceiling and the instructor's expected US$10 for 100,000 reviews. The grouping agents' token usage is unknown,
 not zero.
 

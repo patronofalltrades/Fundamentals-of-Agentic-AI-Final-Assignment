@@ -16,7 +16,7 @@ the memo traces back to saved records.
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
 | Deadline | 21 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
-| Spend | About US$4.2 measured for the main run (Jev US$2.92, DeepInfra US$1.29). The cap is strictly below US$50. |
+| Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Requirement check | [Benchmark against the course requirements](reports/rubric-benchmark-2026-10-13.md) (13 October) |
 
