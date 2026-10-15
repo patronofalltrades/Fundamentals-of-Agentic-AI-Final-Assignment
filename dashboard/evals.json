@@ -292,7 +292,13 @@
       "question": "Can the labelling step run cheaply, without errors, and be replayed without new model calls?",
       "sample": "Pilot: 100 reviews (prompt v1). Checkpoint: 500 reviews (prompt v2).",
       "truth": "Structural checks only: schema, source identity and exact evidence quotes. Not label accuracy.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Historical error count unavailable",
+          "detail": "The checkpoint report did not save schema or identity-error counts. Final valid outputs cannot recover failed attempts; the missing cell stays unknown."
+        }
+      ],
       "metrics": [
         {
           "label": "Checkpoint reviews labelled",
@@ -410,7 +416,17 @@
       "question": "What did the required run cost, and how close was the estimate made before it?",
       "sample": "Estimate: the first 100,000 rows, before any model call. Measured: every call of the 110,000-row selection.",
       "truth": "Measured charges are usage-derived from the saved call ledger in the grading release.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Billing unresolved",
+          "detail": "46 calls have unknown charges. Known charges are not the final bill; full reservations remain held."
+        },
+        {
+          "label": "Historical forecast gaps",
+          "detail": "Evidence-cost and call-count forecasts were not saved before the run. New estimates cannot reconstruct them."
+        }
+      ],
       "metrics": [
         {
           "label": "Known main-run charge",
@@ -512,7 +528,13 @@
       "question": "Which hosted model extracts exact evidence quotes and product entities most reliably and cheaply?",
       "sample": "The same 100 development reviews selected for each route; DeepInfra attempted 100, Groq attempted 82.",
       "truth": "Exact-quote checks against the source text. Agreement with saved development evidence is in the report.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Attempt coverage incomplete",
+          "detail": "82 of 100 Groq reviews were attempted; 18 remain untouched. Invalid responses are observed failures, not missing attempts."
+        }
+      ],
       "metrics": [
         {
           "label": "DeepInfra reviews with accepted evidence",
@@ -586,7 +608,7 @@
         "The benchmark stopped before Groq finished; its untouched reviews were never sent. request_seconds is summed request time, not wall time.",
         "The paired comparison against development evidence is in reports/openrouter-extractor-benchmark.md.",
         "Exact quotation is a structural check. Entity relevance and evidence quality lack human scoring.",
-        "Untouched reviews and invalid responses remain incomplete; no new calls were made for this audit."
+        "Untouched reviews remain missing. Invalid responses remain measured failures; no new calls were made for this audit."
       ],
       "sources": [
         "reports/extractor-benchmark-aggregate.json"
@@ -599,7 +621,13 @@
       "question": "Does an independent model, shown only the text and the rubric, give the same labels as Jev?",
       "sample": "1000 accepted reviews from the main run, drawn by a fixed SHA-256 order; golden and pilot IDs excluded",
       "truth": "None. This is model-to-model agreement. It shows where two labellers differ, not which one is right.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Output coverage incomplete",
+          "detail": "980 of 1000 valid outputs; 20 missing. Agreement uses observed outputs only."
+        }
+      ],
       "metrics": [
         {
           "label": "Valid verifier outputs",
@@ -728,7 +756,13 @@
       "question": "Does a saved, code-run grouping stage put reviews in the same issue as the historical agent handoff?",
       "sample": "600 complaint and cancellation reviews from the historical issue map, blind to their issue",
       "truth": "The historical issue map. It was not validated by people, so disagreement is not proof of error.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Output coverage incomplete",
+          "detail": "580 of 600 valid outputs; 20 missing. The historical model map is the comparator, not human truth."
+        }
+      ],
       "metrics": [
         {
           "label": "Valid grouping outputs",
@@ -772,7 +806,13 @@
       "question": "Do auditors flag changed model claims, and do synthetic instructions change model outputs?",
       "sample": "43 observed changed-label cases, 50 changed-issue cases, and 8 synthetic attack pairs",
       "truth": "Code altered saved model claims. These changes are not human-validated errors. Synthetic texts are excluded from all business results.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Auditor and paired coverage incomplete",
+          "detail": "43 changed-label and 47 unchanged-label auditor outputs are saved; one ten-row label-auditor batch is missing. Blind comparisons also lack 2 label and 4 issue outputs."
+        }
+      ],
       "metrics": [
         {
           "label": "Planted labels the auditor caught",
@@ -930,7 +970,13 @@
       "question": "What is known about charges, held reservations and requests after the restart?",
       "sample": "337 attempts for 213 logical requests in the separate verification and robustness experiments.",
       "truth": "Recomputed from public text-free call logs. Unknown charges retain their full reservation.",
-      "status": "partial",
+      "status": "measured",
+      "gaps": [
+        {
+          "label": "Billing unresolved",
+          "detail": "125 attempts have unknown charges; all reservations remain held. 1 of 213 logical requests have no settled result."
+        }
+      ],
       "metrics": [
         {
           "label": "Known charges",

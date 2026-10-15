@@ -1,5 +1,24 @@
 # Coordination record
 
+## Measurement status follow-up — 15 October 2026
+
+Owner: Codex, `feat/measurement-status-scope`, existing isolated
+`spotify-rubric-pr33` worktree. Base: deployed PR #35, `0034e20`.
+Scope: distinguish saved measurements from missing evidence in the evaluation
+registry and cards; affected tests; one bounded paid follow-up and this handoff.
+The seven affected cards now say Measured locally, with coverage, billing and
+historical gaps always visible. All numerical metrics and source fingerprints
+are unchanged. Python: 431 tests, two skips; frontend: build, typecheck and four
+Node tests passed using identical source and pinned dependencies restored from
+the existing offline cache. The original dependency tree stalled on file reads.
+
+Hanif approved the five-batch US$0.38 run and source-data sharing on 15 October.
+No inference has run: project-wide headroom remains unverified because omitted
+historical costs have no upper bound. See the
+[follow-up report](../reports/measurement-status-followup-2026-10-15.md) and
+[read-only budget check](../reports/project-headroom-preflight-2026-10-15.json).
+No human20, push, merge, deploy or production database writes.
+
 ## Production measurement audit — 15 October 2026
 
 Owner: Codex, `feat/production-measurement-audit`, isolated `spotify-rubric-pr33`
