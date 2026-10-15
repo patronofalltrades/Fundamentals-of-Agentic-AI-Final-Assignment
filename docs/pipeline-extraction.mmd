@@ -1,0 +1,16 @@
+flowchart TB
+    A["Immutable source CSV<br/>660,622 original IDs"] --> B["Code: parse and hash exact fields<br/>Freeze 110,000 selected IDs"]
+    B --> C["Durable SQLite queue<br/>Configuration-safe exact-text cache"]
+    C -->|"Missing labels"| D["Jev classifier<br/>One review per request"]
+    D --> E["Code: validate and save labels"]
+    C -->|"Valid label cache"| E
+    E --> F["DeepInfra evidence extractor<br/>Up to 25 distinct texts per request"]
+    C -->|"Valid evidence cache"| G
+    F --> G["Code: check IDs, schema, source spans<br/>Save per-ID evidence and provenance"]
+    G -->|"Structurally valid"| H["100,229 accepted source IDs<br/>Semantic flags remain separate"]
+    G -->|"Invalid evidence"| Q["Quarantine with reason"]
+    D -.->|"Unknown delivery"| U["Uncertain request<br/>Keep full reservation; reconcile"]
+    F -.->|"Unknown delivery"| U
+    L["Atomic shared ledger<br/>Reserve before dispatch; settle usage"] -.-> D
+    L -.-> F
+    S["Bounded workers and graceful stop<br/>Saved queue state; reviewed resume"] -.-> C

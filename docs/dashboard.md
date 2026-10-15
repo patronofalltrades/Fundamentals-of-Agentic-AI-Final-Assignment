@@ -27,6 +27,7 @@ All API routes are GET and return JSON.
 | `/api/issues` | Accepted issue ranking, or an explicit pending state. |
 | `/api/issues/{issue_id}` | Ranked issue and up to 20 linked evidence rows. |
 | `/api/recommendations` | Saved draft recommendations with supporting issue IDs, or pending. |
+| `/api/flow` | Complaint flow for the Sankey: public members as intent → topic → issue links. Each layer sums to the public member count. The five leading issues keep their own node; the rest are combined. Pending until an issue map is loaded. |
 
 The server reads from SQLite for each request. No issue or recommendation is seeded from topic labels. The issue endpoint stays pending until an accepted membership handoff is imported.
 

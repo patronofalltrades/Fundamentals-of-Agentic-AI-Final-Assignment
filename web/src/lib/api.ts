@@ -182,7 +182,21 @@ export type Evals = {
   checks: EvalCheck[]
 }
 
-export const TOPICS = ["access", "usability", "playback", "downloads", "catalog", "billing", "support", "other"] as const
+/** Complaint flow (dashboard/server.py `flow`): intent -> topic -> issue, each record counted once per column. */
+export type FlowNode = { id: string; column: 0 | 1 | 2; label: string; records: number }
+export type Flow = {
+  status: string
+  run_id?: string
+  unit?: string
+  records?: number
+  flagged_members_excluded?: number | null
+  leading_issues?: number
+  combined_issues?: number
+  nodes: FlowNode[]
+  links: { source: string; target: string; records: number }[]
+}
+
+export const TOPICS =["access", "usability", "playback", "downloads", "catalog", "billing", "support", "other"] as const
 
 const cache = new Map<string, Promise<unknown>>()
 
@@ -208,6 +222,7 @@ export const api = {
   memo: () => once<Memo>("/api/memo"),
   recommendations: () => once<Recommendations>("/api/recommendations"),
   evals: () => once<Evals>("/api/evals"),
+  flow: () => once<Flow>("/api/flow"),
   reviews: (params: { topic?: string; q?: string; offset?: number; limit?: number }) => {
     const search = new URLSearchParams()
     if (params.topic) search.set("topic", params.topic)

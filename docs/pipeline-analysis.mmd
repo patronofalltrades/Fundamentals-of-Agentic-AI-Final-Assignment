@@ -1,0 +1,17 @@
+flowchart TB
+    A["Accepted labels and evidence"] --> B["Code: corrected complaint/cancellation frame"]
+    B --> C["Historical grouping-agent handoff<br/>Saved assignments; 41-issue catalog"]
+    C --> D["Code: validate membership<br/>Apply reviewed corrections and overrides"]
+    D --> E["30,400 baseline members<br/>One issue per source record"]
+    E --> F["Code: rank severity_sum<br/>Descending, then issue ID ascending"]
+    E -->|"Exclude 23 flagged members"| P["30,377 public members"]
+    P --> F
+    F --> M["Saved memo and recommendations<br/>Code checks numeric claims"]
+    M --> DB["Sanitized release database<br/>Local SQLite / deployed Postgres"]
+    DB --> API["Read-only Python backend<br/>Stored-result API"]
+    API --> UI["Astro dashboard and memo page<br/>Vercel live URL"]
+    V["Historical blind verifier handoff<br/>511/600 agreement reported"] -.-> C
+    V -.-> GAP["Case-level verifier and usage gaps<br/>Aggregate is not a complete audit trail"]
+    H["Human-only answers"] --> EV["Isolated offline evaluator<br/>50 source-only predictions complete"]
+    A --> EV
+    EV --> AG["Aggregate diagnostic scores<br/>Answers excluded from model prompts"]

@@ -117,6 +117,33 @@ class AcceptedGradingTests(unittest.TestCase):
             for rid, *_ in SOURCE:
                 self.assertNotIn('"%s"' % rid, body)
 
+    def test_flow_counts_each_public_member_once_per_layer(self):
+        _, db = self.run_import()
+        self.assertEqual(self.get(db, "/api/flow")[1]["status"], "pending")  # no issue map loaded yet
+        self.load(db, self.folder())
+        status, f, _ = self.get(db, "/api/flow")
+        self.assertEqual(status, 200)
+        self.assertEqual((f["records"], f["flagged_members_excluded"]), (4, 1))
+        cols = {c: [n for n in f["nodes"] if n["column"] == c] for c in (0, 1, 2)}
+        for c in cols.values():
+            self.assertEqual(sum(n["records"] for n in c), 4)
+        for layer in ("intent:", "topic:"):
+            self.assertEqual(sum(l["records"] for l in f["links"] if l["source"].startswith(layer)), 4)
+        _, issues, _ = self.get(db, "/api/issues")
+        self.assertEqual([(n["id"], n["label"], n["records"]) for n in cols[2]],
+                         [("issue:" + i["issue_id"], i["title"], i["review_count"]) for i in issues["items"]])
+        self.assertNotIn("issue:BIL-CHARGE", {n["id"] for n in f["nodes"]})  # flagged member only
+
+    def test_flow_combines_issues_below_the_leading_ones(self):
+        from dashboard.server import flow
+        _, db = self.run_import()
+        self.load(db, self.folder())
+        with SQLiteBackend(db) as conn:
+            f = flow(conn, top=1)
+        self.assertEqual((f["leading_issues"], f["combined_issues"]), (1, 1))
+        self.assertEqual([(n["id"], n["label"], n["records"]) for n in f["nodes"] if n["column"] == 2],
+                         [("issue:PLY-FAIL", "Playback fails or stops", 3), ("issue:OTHER", "1 other issue", 1)])
+
     def test_checked_memo_action_is_an_advisory_recommendation(self):
         _, db = self.run_import()
         checked_claims = claims_from(rank(MEMBERSHIP, self.records()))
