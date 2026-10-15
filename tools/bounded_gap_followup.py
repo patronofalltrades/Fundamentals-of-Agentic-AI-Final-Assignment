@@ -262,7 +262,7 @@ def summarize(out, plan, old, calls, identity):
         if set(fresh[role]) & set(parsed):
             raise ValueError("duplicate accepted result")
         fresh[role].update(parsed)
-    merged = {r: {**old[r], **fresh[r]} for r in ROLE_COUNTS}
+    merged = {r: {**old[r], **fresh[r]} for r in old}
     for r in merged:
         if set(old[r]) & set(fresh[r]):
             raise ValueError("original output overwritten")

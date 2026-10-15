@@ -138,5 +138,26 @@ class BoundedFollowupTest(unittest.TestCase):
         self.assertEqual(self.sent, 0)
         self.assertEqual(r.db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0], 1)
 
+    def test_offline_report_keeps_unchanged_issue_auditor_for_paired_joins(self):
+        r = self.runner(); r.run()
+        audit_ids = self.calls[4][2]
+        verify_ids = self.calls[0][2] + self.calls[1][2] + audit_ids
+        group_ids = self.calls[2][2] + self.calls[3][2]
+        label = {"topic": "playback", "intent": "complaint", "severity": 3}
+        old = {"verify": {i: dict(label) for i in audit_ids}, "group": {}, "audit_label": {},
+               "audit_group": {i: {"supported": True} for i in group_ids}}
+        plan = {"verify_ids": verify_ids, "group_ids": group_ids,
+                "jev_labels": {i: dict(label) for i in verify_ids},
+                "historical_issue": {i: "PLY-FAIL" for i in group_ids},
+                "label_claims": {i: {"planted": "severity" if n < 7 else None, "claim": dict(label)} for n, i in enumerate(audit_ids)},
+                "group_claims": {i: {"planted": True, "claim": "PLY-FAIL"} for i in group_ids}}
+        report = b.summarize(self.out, plan, old, self.calls, {"synthetic": True})
+        self.assertEqual(report["new_outputs"], {"verify": 20, "group": 20, "audit_label": 10})
+        self.assertEqual(report["paired_issue_coverage"]["n"], 20)
+        self.assertEqual(report["paired_label_coverage"]["n"], 7)
+        self.assertEqual(sum(report["paired_issue_table"].values()), 20)
+        saved = json.loads((self.out / "merged-machine-outputs.json").read_text())
+        self.assertEqual(saved["audit_group"], old["audit_group"])
+
 
 if __name__ == '__main__': unittest.main()

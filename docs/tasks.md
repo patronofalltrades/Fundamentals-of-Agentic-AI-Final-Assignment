@@ -14,6 +14,17 @@ to Crusoe, at most two attempts per batch and ten total. Preserve old costs,
 holds and outputs. Keep the existing provider caps. Stop on uncertain delivery.
 No production database writes, grading release changes or course submission.
 
+Execution used all ten attempts: two valid batches, two metered invalid batches
+with unknown/repeated IDs, and six HTTP 429 rejections. New valid outputs:
+grouping ten, label auditor ten, verifier zero. Known charges: US$0.001146700;
+unresolved reservations: US$0.216267600; combined exposure: US$0.217414300.
+The attempt limit is exhausted. No further call is authorized by this run.
+Original run files and historical ledger rows/caps are unchanged. All receipts,
+recomputed aggregates and paired joins remain private and ignored. A final
+report-join error was fixed offline and covered by a regression test; no call
+was repeated for that repair. Combined coverage is verifier 980/1,000,
+grouping 590/600, label auditor 100/100; paired labels 48/50 and issues 47/50.
+
 ## Measurement status follow-up — 15 October 2026
 
 Owner: Codex, `feat/measurement-status-scope`, existing isolated
