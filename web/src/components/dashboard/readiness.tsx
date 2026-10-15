@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, fmt, type Summary } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { verificationState } from "@/lib/measurement"
 import { useData } from "./use-data"
 
 type Stage = { name: string; state: "done" | "sample" | "pending" }
@@ -11,8 +12,7 @@ type Stage = { name: string; state: "done" | "sample" | "pending" }
 function stages(s: Summary): Stage[] {
   const c = s.coverage
   const state = (done: boolean): Stage["state"] => (done ? "done" : "pending")
-  // The blind verifier checked a sample of the issue map. Its result is in the memo, not in this database.
-  const verify = s.quality.blind_verifier !== "pending" ? "done" : s.analysis.grouping === "accepted" ? "sample" : "pending"
+  const verify = verificationState(s.quality)
   return [
     { name: "Ingest", state: state(c.source_rows > 0) },
     { name: "Classify", state: state(c.completed_rows >= s.target.minimum_source_rows) },
@@ -48,7 +48,7 @@ export default function Readiness() {
       </ol>
       <p className="mt-3 text-[13px] text-muted-foreground">
         Classify counts {fmt.int(s.coverage.completed_rows)} accepted reviews against the {fmt.int(s.target.minimum_source_rows)} minimum.
-        {sampled && " Verify ran on a sample: a blind second model checked 600 issue assignments (see the memo's confidence section)."}
+        {sampled && s.quality.verification && ` Verify has ${fmt.int(s.quality.verification.observed)} valid outputs from ${fmt.int(s.quality.verification.selected)} selected reviews; ${fmt.int(s.quality.verification.missing)} are missing. This measures model agreement on a sample. See Evals for results.`}
       </p>
     </section>
   )

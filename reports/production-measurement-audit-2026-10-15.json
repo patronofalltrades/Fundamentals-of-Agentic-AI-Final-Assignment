@@ -1,0 +1,149 @@
+{
+  "built_from": [
+    {
+      "path": "reports/gap-closure-2026-10-16/aggregate.json",
+      "sha256": "0ed742600413ed8ca57892328b52ecfa44b2b2452bbf7265b8f732f1a3d52689"
+    },
+    {
+      "path": "reports/extractor-benchmark-aggregate.json",
+      "sha256": "067402d0e2a28b24cc2732a29cd89dc82f43aaf18171b8c18b854038e323c300"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/verifier_cases.csv",
+      "sha256": "cc385bcc4a05839d1f17d068e4651b255b38c05be7ee37624f739ce7aad576ae"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/grouping_cases.csv",
+      "sha256": "35495d3b45c6f2cd25122900f149ba074357daa054e53e8878c9b983a1cf2a87"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/planted_label_cases.csv",
+      "sha256": "7b47e65c3ad45bfbbb2b310afd04643ed2d01ae8aa1bcabfb5c4c6fadce13f33"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/planted_issue_cases.csv",
+      "sha256": "5b69d42f463aea09a61d763608dd43f300ec6fd1d4b9ce414148e72e733b485b"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/calls.jsonl",
+      "sha256": "7abf562862a9cf8bc5c69d5ee383e0b98bf292d42467952bb886745ed263a456"
+    }
+  ],
+  "cost": {
+    "attempts": 337,
+    "held_by_error": {
+      "HTTP429": {
+        "attempts": 112,
+        "held_nusd": 305261716
+      },
+      "HTTPError": {
+        "attempts": 12,
+        "held_nusd": 66551808
+      },
+      "ValueError": {
+        "attempts": 1,
+        "held_nusd": 1373100
+      }
+    },
+    "held_nusd": 373186624,
+    "known_charge_nusd": 40251779,
+    "known_plus_held_nusd": 413438403,
+    "phase_counts": {
+      "initial": 15,
+      "resumed": 322
+    },
+    "public_route_fields_complete": false,
+    "status_counts": {
+      "quarantined_metered": 4,
+      "rejected_http": 112,
+      "succeeded": 208,
+      "uncertain": 13
+    },
+    "unknown_charge_attempts": 125
+  },
+  "extractor": {
+    "deepinfra": {
+      "accepted": 91,
+      "attempted": 100,
+      "attempted_without_accepted_output": 9,
+      "selected": 100,
+      "untouched": 0
+    },
+    "groq": {
+      "accepted": 66,
+      "attempted": 82,
+      "attempted_without_accepted_output": 16,
+      "selected": 100,
+      "untouched": 18
+    }
+  },
+  "grouping": {
+    "exact_agreement": 449,
+    "missing": 20,
+    "observed": 580,
+    "selected": 600
+  },
+  "injection": {
+    "comparisons": 24,
+    "paired_label_or_issue_changes": 0,
+    "pairs": 8
+  },
+  "label_config": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+  "limits": [
+    "Missing outputs are excluded from paired agreement and counted separately.",
+    "Model agreement and changed model claims are not human accuracy.",
+    "Route labels come from the saved aggregate; public call rows omit provider route fields.",
+    "Charges and holds describe this separate experiment, not the complete project bill."
+  ],
+  "planted_issues": {
+    "agreed": 0,
+    "audit_cases": 50,
+    "disagreed": 46,
+    "disagreement_on_paired_outputs": 1.0,
+    "missing_outputs": 4,
+    "paired_outputs": 46
+  },
+  "planted_labels": {
+    "agreed": 1,
+    "audit_cases": 43,
+    "disagreed": 40,
+    "disagreement_on_paired_outputs": 0.975609756097561,
+    "missing_outputs": 2,
+    "paired_outputs": 41
+  },
+  "recovery": {
+    "initial_settled_logical_requests": 3,
+    "logical_requests": 213,
+    "logical_requests_without_settled_result": 1,
+    "resumed_attempts_for_initial_settled_requests": 0,
+    "settled_logical_requests": 212,
+    "signal_and_checkpoint_details": "reported in the saved aggregate; private snapshots not rechecked"
+  },
+  "scope": "saved experiments; no new inference or human scoring",
+  "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6",
+  "verifier": {
+    "agreement_counts": {
+      "intent": 901,
+      "joint": 648,
+      "severity": 837,
+      "topic": 793
+    },
+    "missing": 20,
+    "not_human_accuracy": true,
+    "observed": 980,
+    "route_split_from_report": {
+      "crusoe/bf16": {
+        "n": 5,
+        "of": 10,
+        "rate": 0.5
+      },
+      "deepinfra/bf16": {
+        "n": 643,
+        "of": 970,
+        "rate": 0.6629
+      }
+    },
+    "selected": 1000
+  },
+  "version": 1
+}

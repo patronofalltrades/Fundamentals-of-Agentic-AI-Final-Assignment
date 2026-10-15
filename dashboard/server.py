@@ -172,6 +172,31 @@ def _reason_categories(ag):
     return result
 
 
+def _saved_verification(source_hash, config_hash):
+    """Attach only a validated sample measurement for this source and label config."""
+    try:
+        saved = json.loads(EVALS.read_text(encoding="utf-8"))["verification"]
+        if (not source_hash or not config_hash or saved["source_sha256"] != source_hash
+                or saved["config_hash"] != config_hash or saved["status"] != "sample_measured"
+                or saved["not_human_accuracy"] is not True):
+            return None
+        selected, observed, missing = (saved[k] for k in ("selected", "observed", "missing"))
+        if any(type(n) is not int for n in (selected, observed, missing)):
+            return None
+        if not 0 < observed <= selected or missing != selected - observed:
+            return None
+        counts = {field: saved["agreement_counts"][field] for field in ("topic", "intent", "severity", "joint")}
+        if any(type(n) is not int or not 0 <= n <= observed for n in counts.values()):
+            return None
+        if counts["joint"] > min(counts[f] for f in ("topic", "intent", "severity")):
+            return None
+        return {"status": "sample_measured", "selected": selected, "observed": observed,
+                "missing": missing, "agreement_counts": counts, "not_human_accuracy": True,
+                "note": "Blind model agreement on a sample; missing outputs counted separately. Not population accuracy."}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def summary(conn):
     ag = _aggregates(conn)
     rows = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
@@ -181,11 +206,13 @@ def summary(conn):
     config = conn.execute("SELECT DISTINCT config_hash FROM record_state LIMIT 1").fetchone()
     run = _run(conn)
     saved_evaluation = evaluation(conn)
+    verification = _saved_verification(source["file_sha256"], config[0] if config else None)
     return {
         "source": {"basename": source["source_basename"], "sha256": source["file_sha256"], "config_hash": config[0] if config else None},
         "coverage": {"source_rows": rows, "nonempty_rows": ag.get("source_status", {}).get("nonempty", 0), "distinct_nonempty_texts": distinct, "completed_rows": ag.get("processing_status", {}).get("completed", 0), "empty_rows": ag.get("source_status", {}).get("empty", 0)},
         "raw_labels": {"topic": ag.get("topic", {}), "intent": ag.get("intent", {}), "severity": ag.get("severity", {})},
-        "quality": {"classifier_agreement": None, "blind_verifier": "pending", "human_evaluation": saved_evaluation["status"]},
+        "quality": {"classifier_agreement": None, "blind_verifier": "sample_measured" if verification else "pending",
+                    "verification": verification, "human_evaluation": saved_evaluation["status"]},
         "analysis": {"grouping": run["grouping_status"] if run else "pending", "ranking": "saved_membership_severity_sum" if run else "pending", "recommendations": recommendations(conn)["status"], "memo": memo(conn)["status"], "run_id": run["run_id"] if run else None},
         "trends": _trends(ag),
         "evaluation": saved_evaluation,
@@ -490,6 +517,8 @@ def _check(name, status, detail):
 def evals(conn):
     """Saved benchmarks (evals.json) plus the live golden evaluation and integrity checks."""
     registry = json.loads(EVALS.read_text(encoding="utf-8")) if EVALS.exists() else {"items": []}
+    # Source/config matching is internal. Summary exposes only validated aggregate counts.
+    registry.pop("verification", None)
     run, saved_memo = _run(conn), memo(conn)
     source = conn.execute("SELECT value FROM meta WHERE key='file_sha256'").fetchone()
     memo_state = {"claims_checked": "passed", "claims_checked_provisional": "passed",

@@ -13,14 +13,14 @@ const REPO = "https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Fi
 
 const STATUS: Record<string, { label: string; className: string; help: string }> = {
   measured: { label: "Measured", className: "bg-primary/15 text-primary", help: "Read from a saved run report" },
-  partial: { label: "Partial", className: "bg-chart-2/15 text-chart-2", help: "Some of the sample is done" },
+  partial: { label: "Partial", className: "bg-chart-2/15 text-chart-2", help: "Saved results have missing outputs or unresolved measurements" },
   estimate: { label: "Estimate", className: "bg-chart-3/15 text-chart-3", help: "Projected, not measured" },
   pending: { label: "Pending", className: "bg-tile text-muted-foreground", help: "Not run or not saved yet" },
 }
 
 function StatusChip({ status }: { status: string }) {
   const s = STATUS[status] ?? STATUS.pending
-  return <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px]", s.className)}>{s.label}</span>
+  return <span title={s.help} className={cn("shrink-0 rounded-full px-3 py-1 text-[12px]", s.className)}>{s.label}</span>
 }
 
 function MetricTile({ m }: { m: EvalMetric }) {
@@ -201,7 +201,7 @@ function ChecksCard({ checks }: { checks: EvalCheck[] }) {
         <div>
           <p className="text-[12px] tracking-[0.12em] text-primary uppercase">Integrity</p>
           <h3 className="mt-1 text-lg">Automatic checks on this page's data</h3>
-          <p className="mt-1 text-[15px] text-muted-foreground">Run by the server on every request, against the live database.</p>
+          <p className="mt-1 text-[15px] text-muted-foreground">Saved import checks and current checks against this database.</p>
         </div>
         <span className="shrink-0 text-[15px] tabular-nums">{passed} of {checks.length}</span>
       </header>

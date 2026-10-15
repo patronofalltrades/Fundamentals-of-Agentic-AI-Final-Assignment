@@ -1,5 +1,22 @@
 # Coordination record
 
+## Production measurement audit — 15 October 2026
+
+Owner: Codex, `feat/production-measurement-audit`, isolated `spotify-rubric-pr33`
+worktree, based on merged PR #34 main `65d1396`. Scope: public measurement
+coverage arithmetic and aggregate report, evaluation registry/API/UI, regression
+tests, and a measurement-gap inventory. Preserve historical reports, cost files,
+private answers, original databases and attribution. No paid calls, human20,
+production database writes, push, merge or deployment are authorized.
+
+Local result: completed measurement inventory and source/config-scoped sample
+display fixes. New full-warm replay: six stages, zero paid/transport/socket
+attempts, original database unchanged. Checks: 430 Python tests (428 passed,
+two private-plan skips), four Node tests, CLI and generated-report checks.
+Astro build remains blocked by absent dependencies; no install was authorized.
+See `reports/production-measurement-audit-2026-10-15.md` for remaining evidence
+gaps and publication approval boundaries.
+
 ## Submission closeout — verified 15 October 2026
 
 Owner: Codex, `docs/submission-closeout-current-2026-10-15`, isolated
