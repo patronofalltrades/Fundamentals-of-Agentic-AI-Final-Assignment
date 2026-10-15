@@ -1,0 +1,282 @@
+{
+  "checked_utc": "2026-10-15T21:12:32.635446+00:00",
+  "provider_catalog": {
+    "checked_utc": "2026-10-15T21:03:50.606198+00:00",
+    "source": "anonymous OpenRouter public API GETs",
+    "routes": [
+      {
+        "model": "openai/gpt-oss-120b",
+        "url": "https://openrouter.ai/api/v1/models/openai/gpt-oss-120b/endpoints",
+        "response_sha256": "76105727178c1316983897d584172a8d48d882d55c35286bc726315c1124d540",
+        "tag": "deepinfra/bf16",
+        "provider_name": "DeepInfra",
+        "pricing": {
+          "prompt": "0.000000037",
+          "completion": "0.00000017",
+          "discount": 0
+        },
+        "context_length": 131072,
+        "max_completion_tokens": 117964,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "top_k",
+          "seed",
+          "min_p",
+          "tools",
+          "tool_choice",
+          "structured_outputs",
+          "logit_bias",
+          "response_format",
+          "reasoning_effort"
+        ],
+        "status": -2,
+        "listed_zdr": true
+      },
+      {
+        "model": "openai/gpt-oss-120b",
+        "url": "https://openrouter.ai/api/v1/models/openai/gpt-oss-120b/endpoints",
+        "response_sha256": "76105727178c1316983897d584172a8d48d882d55c35286bc726315c1124d540",
+        "tag": "crusoe/bf16",
+        "provider_name": "Crusoe",
+        "pricing": {
+          "prompt": "0.00000005",
+          "completion": "0.00000025",
+          "input_cache_read": "0.00000005",
+          "discount": 0
+        },
+        "context_length": 131072,
+        "max_completion_tokens": 117964,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "seed",
+          "min_p",
+          "repetition_penalty",
+          "top_k",
+          "logit_bias",
+          "structured_outputs",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "status": 0,
+        "listed_zdr": true
+      },
+      {
+        "model": "openai/gpt-oss-20b",
+        "url": "https://openrouter.ai/api/v1/models/openai/gpt-oss-20b/endpoints",
+        "response_sha256": "f50ef9e9761a02d7f3620eca6cf17e7f5a8293561b98a598b67d9fe5daf80069",
+        "tag": "groq",
+        "provider_name": "Groq",
+        "pricing": {
+          "prompt": "0.000000075",
+          "completion": "0.0000003",
+          "input_cache_read": "0.0000000375",
+          "discount": 0
+        },
+        "context_length": 131072,
+        "max_completion_tokens": 65536,
+        "supported_parameters": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "seed",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "structured_outputs",
+          "reasoning_effort"
+        ],
+        "status": 0,
+        "listed_zdr": true
+      }
+    ],
+    "zdr": {
+      "url": "https://openrouter.ai/api/v1/endpoints/zdr",
+      "response_sha256": "1140a1458f57e4d95e6f7cf68d32bb47a8a7dc2e91c34107c2af6e6f576b2f41"
+    }
+  },
+  "private_plan_verified": {
+    "plan_sha256": "797d89195ac3b918a4ff8fb4bc598ac5291b811377dc02bd7516c3af0b4ed599",
+    "matches_public_plan": true,
+    "matches_db_plan": true,
+    "private_modes": {
+      "plan.json": "0o600",
+      "run.db": "0o600"
+    },
+    "quick_check": "ok",
+    "selection_sizes": {
+      "verify": 1000,
+      "group": 600
+    },
+    "source_texts_available": {
+      "verify": 1000,
+      "group": 600
+    },
+    "group_context_available": 600,
+    "inputs": {
+      "catalog_sha256": "8c73e62059e86aea48b94da0d4b0bf86df048e0d83442e1ce4bf7b44dc105111",
+      "excluded_ids": 150,
+      "instructions": "7062c5860125a42d8c714460de39d8b6e12eac57f27e2b63ec44962803b4c9d5",
+      "jev_config": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+      "membership_sha256": "e7ce3bc5f1349c24c7e086843e49a162406b92d30f2ce5e7d915c984929a60fe",
+      "records_sha256": "7b61ee62fc89cd67c27ebbd1b14ae33ce04dc71e0b248206495ec89bcd218c31",
+      "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6"
+    },
+    "verify": {
+      "valid": 980,
+      "missing": 20,
+      "missing_have_text": 20
+    },
+    "group": {
+      "valid": 580,
+      "missing": 20,
+      "missing_have_text": 20
+    }
+  },
+  "source_and_missing_batch_checks": [
+    {
+      "role": "verify",
+      "missing_rows": 20,
+      "batches": 2,
+      "max_new_attempts": 4,
+      "all_source_texts_available": true,
+      "latest_batch_states": [
+        {
+          "status": "uncertain",
+          "error_class": "ValueError",
+          "saved_response_count": 3
+        },
+        {
+          "status": "quarantined_metered",
+          "error_class": "ValueError",
+          "saved_response_count": 2
+        }
+      ]
+    },
+    {
+      "role": "group",
+      "missing_rows": 20,
+      "batches": 2,
+      "max_new_attempts": 4,
+      "all_source_texts_available": true,
+      "latest_batch_states": [
+        {
+          "status": "quarantined_metered",
+          "error_class": "ValueError",
+          "saved_response_count": 1
+        },
+        {
+          "status": "quarantined_metered",
+          "error_class": "ValueError",
+          "saved_response_count": 1
+        }
+      ]
+    },
+    {
+      "role": "audit_label",
+      "missing_rows": 10,
+      "batches": 1,
+      "max_new_attempts": 2,
+      "all_source_texts_available": true,
+      "latest_batch_states": [
+        {
+          "status": "quarantined_metered",
+          "error_class": "ValueError",
+          "saved_response_count": 1
+        }
+      ]
+    }
+  ],
+  "groq_sources": {
+    "source_file_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+    "matches_frozen_ledger": true,
+    "source_rows": 100,
+    "distinct_ids": 100,
+    "groq_untouched": 18,
+    "untouched_nonempty": 18,
+    "matching_baselines": [
+      {
+        "name": "jev_pilot_v2_evidence.db",
+        "source_row_hashes_match": true,
+        "labels_available_for_untouched": 18
+      },
+      {
+        "name": "jev_pilot_v2.db",
+        "source_row_hashes_match": true,
+        "labels_available_for_untouched": 18
+      },
+      {
+        "name": "jev_checkpoint500_v2.db",
+        "source_row_hashes_match": true,
+        "labels_available_for_untouched": 18
+      }
+    ]
+  },
+  "benchmark_exposure_nusd": 725867396,
+  "shared_api_budget": {
+    "openrouter": {
+      "cap_nusd": 5000000000,
+      "exposure_nusd": 2889317771,
+      "remaining_nusd": 2110682229
+    },
+    "jev": {
+      "cap_nusd": 5000000000,
+      "exposure_nusd": 3320208108,
+      "remaining_nusd": 1679791892
+    }
+  },
+  "proposed_new_work": {
+    "role_full_endpoint_reservation_usd": "0.03604460",
+    "verify_max_calls": 4,
+    "verify_maximum_reservations_usd": "0.14417840",
+    "group_max_calls": 4,
+    "group_maximum_reservations_usd": "0.14417840",
+    "verify_plus_group_cap_usd": "0.30",
+    "optional_audit_label_max_calls": 2,
+    "optional_audit_label_cap_usd": "0.08",
+    "groq_full_endpoint_reservation_usd": "0.029491200",
+    "groq_max_calls": 18,
+    "groq_retries": 0,
+    "groq_all18_worst_case_usd": "0.530841600",
+    "groq_bounded_attempt_cap_usd": "0.26",
+    "benchmark_ceiling_with_bounded_attempt_cap_usd": "0.985867396",
+    "groq_full18_headroom_release_needed_for_099_ceiling_usd": "0.266708996",
+    "combined_optional_new_caps_usd": "0.64",
+    "not_authorized": true
+  },
+  "frontend": {
+    "node": "26.8.2",
+    "npm": "11.19.1",
+    "registry": "https://registry.npmjs.org",
+    "lockfile_sha256": "6db7a0c31e9c59cc84aa8695ef80192e3200e81dc3d2632fbd742dd37c82db47",
+    "lockfile_unchanged": true,
+    "install": "npm ci --ignore-scripts --no-audit --no-fund; empty isolated npm configs",
+    "packages_restored": 780,
+    "build": "passed, two static pages, 13.13 seconds",
+    "astro_check": {
+      "files": 36,
+      "errors": 0,
+      "warnings": 0,
+      "hints": 0
+    }
+  }
+}

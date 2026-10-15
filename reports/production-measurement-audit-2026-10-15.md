@@ -110,9 +110,11 @@ fabricated historical cold phase or checkpoint.
   gaps. If unavailable, disclose them. A new run can measure future behavior only.
 - **Human/product quality:** no new human20 is authorized. Human answers cannot
   be generated. Business impact requires real outcome evidence.
-- **Frontend production build:** this isolated worktree has no `node_modules`.
-  No dependency install is authorized. Pure TypeScript tests run with installed
-  Node; an Astro build remains a release check in a dependency-ready environment.
+- **Frontend build gate — closed:** the follow-up request authorized restoring
+  existing official-registry lockfile dependencies. Astro built both pages;
+  typecheck passed for 36 files with zero errors, warnings or hints. Lockfiles and
+  package declarations are unchanged. See the [concrete closure and approval
+  plan](production-measurement-closure-plan-2026-10-15.md).
 
 ## Checks and handoff
 

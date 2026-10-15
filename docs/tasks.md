@@ -13,7 +13,10 @@ Local result: completed measurement inventory and source/config-scoped sample
 display fixes. New full-warm replay: six stages, zero paid/transport/socket
 attempts, original database unchanged. Checks: 430 Python tests (428 passed,
 two private-plan skips), four Node tests, CLI and generated-report checks.
-Astro build remains blocked by absent dependencies; no install was authorized.
+Follow-up: the authorized lockfile-only dependency restore completed; Astro
+build and 36-file typecheck passed. No package/lockfile changes. The closure plan
+records verified source availability, current provider prices and bounded paid
+options; none is approved or executed.
 See `reports/production-measurement-audit-2026-10-15.md` for remaining evidence
 gaps and publication approval boundaries.
 
