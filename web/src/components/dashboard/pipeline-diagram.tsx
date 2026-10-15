@@ -101,8 +101,9 @@ function analysis(s: Summary): Step[] {
       detail: corrections ? `With ${corrections} declared human label corrections` : undefined },
     { kind: "handoff", title: "Grouping-agent handoff", detail: <>Historical: saved assignments to a {issues ?? 41}-issue catalog. Not a program stage.</>,
       branches: [
-        { label: "Blind verifier handoff", to: "511 of 600 assignments agreed (85.2%)", tone: "warn" },
-        { label: "Gap", to: "case-level verifier trail and usage are incomplete; the aggregate is not a full audit", tone: "gap" },
+        { label: "Blind verifier handoff", to: "511 of 600 assignments agreed (85.2%); its saved trail was recovered on 16 October", tone: "warn" },
+        { label: "Recorded stage, 16 October", to: "regrouped 600 members with every call saved; 449 of 580 matched", tone: "warn" },
+        { label: "Gap", to: "the handoff's token usage was not recorded", tone: "gap" },
       ] },
     { kind: "code", title: "Validate membership", detail: "Apply reviewed corrections and overrides" },
     { kind: "result", title: `${fmt.int(cand?.contract_baseline ?? 30400)} baseline members`, detail: "One issue per review",
@@ -130,6 +131,7 @@ export default function PipelineDiagram() {
       <Reflection className="mt-2">
         Code owns every ID, hash, count and check; the models only answer bounded questions. Dashed boxes mark what is not
         a program stage: the issue grouping and the blind verifier were agent handoffs, saved and audited after the fact.
+        A recorded grouping stage was added later to measure them.
       </Reflection>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0">

@@ -16,16 +16,17 @@ the memo traces back to saved records.
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
 | Deadline | 21 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
-| Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The cap is strictly below US$50. |
+| Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The 16 October [gap-closure run](reports/gap-closure-2026-10-16.md) added US$0.040. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (16 October; evidence checked 15 October) |
+| Gap closure | [Verification, grouping, attacks and recovery](reports/gap-closure-2026-10-16.md) (16 October): blind verifier, recorded grouping stage, planted errors, prompt injection, real interruption and resume, Jev at ten reviews per request, and the recovered 600-case verifier trail |
 
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
 a human accuracy score.
 
-Prepared on the local review branch: the [expanded decision memo](reports/product-decision-memo-2026-10-13.md)
-and [full warm orchestration audit](reports/cost100-full-warm-audit.md).
-Their publication awaits approval. See the [attribution and inclusion handoff](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
+Also published: the [expanded decision memo](reports/product-decision-memo-2026-10-13.md) and the
+[full warm orchestration audit](reports/cost100-full-warm-audit.md). See the
+[attribution and inclusion handoff](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
 
 ## Where each deliverable is
 
@@ -37,7 +38,7 @@ Their publication awaits approval. See the [attribution and inclusion handoff](r
 | Decision memo with checked claims | [Provisional memo](reports/provisional-product-priority-memo.md), live at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/) | Done. All 164 claims match the saved numbers. |
 | Grading folder and `check_submission.py` | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13); [checker flags and dispositions](reports/prepublication-reconciliation-2026-10-12.md) | Published. The checker returns `review_required`. |
 | 100-review cost and runtime calculator (`cost/`) | [cost/README.md](cost/README.md), [pilot report](reports/cost100-pilot.md) | Measured cold and warm runs, pilot IDs, and full-run estimates. |
-| Interruption and resume | Cost pilot checkpoints in [`cost/pilot/`](cost/pilot/); demo video in the [release](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13) | Pilot shown. No main-run checkpoints. |
+| Interruption and resume | Cost pilot checkpoints in [`cost/pilot/`](cost/pilot/); demo video in the [release](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13); [real SIGINT and resume](reports/gap-closure-2026-10-16.md#6-interruption-and-resume) in the 16 October paid run | Shown on the pilot and on a paid run, with zero settled requests resent. No main-run checkpoints. |
 | Human golden evaluation | [Golden evaluation and checker report](reports/golden-gap-and-checker-2026-10-12.md) | Done; live on the dashboard |
 | Dashboard, backend, database, live URL | [Live site](https://hanif-spotify-insights.vercel.app), [dashboard guide](docs/dashboard.md) | Done |
 
@@ -46,10 +47,10 @@ Their publication awaits approval. See the [attribution and inclusion handoff](r
 | Stage | Result |
 | --- | --- |
 | Source accounting | 110,000 selected original IDs: 100,229 accepted, 1,791 quarantined, 1,457 uncertain or blocked, 6,522 pending, 1 empty text. |
-| Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, one review per request (76,523 requests in the main run; the instructor asked for 10 per request). Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
+| Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, one review per request (76,523 requests in the main run; the instructor asked for 10 per request). A later test sent Jev 10 reviews per request: it used 16% fewer input tokens but changed at least one label in 36 of 100 reviews, so the published labels stay ([test](reports/gap-closure-2026-10-16.md#2-jev-ten-reviews-per-request)). Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
 | Issue map | 30,400 complaint and cancellation records, one issue each, across 41 catalog issues. Human decisions replace the model in 91 cases, and 7 label corrections are declared. |
 | Ranking | `priority_score = severity_sum`, descending, then issue ID ascending. Top baseline issue: `USE-ADS`, 5,197 records, severity sum 11,874. The public view leaves out 23 flagged records (5,195 and 11,869). Second: `PLY-FAIL`, 2,474 records. |
-| Quality checks | A separate model verifier agreed with the grouping agents on 511 of 600 records (85.2%). Separately, one assistant's manual assignments agreed with human answers on 16 of 40 (40.0%); this did not evaluate the production grouping model. See the [40-case provenance](reports/issue-grouping-independent40-score.md). |
+| Quality checks | A separate model verifier agreed with the grouping agents on 511 of 600 records (85.2%); its saved inputs and outputs were [recovered](reports/grouping-trail-recovery-2026-10-16/aggregate.json) on 16 October and reproduce that figure. A recorded grouping stage matched the historical issue on 449 of 580 (77.4%). A blind verifier, 10 reviews per request, matched Jev on all three labels for 648 of 980 reviews (topic 80.9%, intent 91.9%). Auditors caught 40 of 43 planted wrong labels and 48 of 50 planted wrong issues. No prompt-injection attack reached its target (0 of 24). See the [gap-closure report](reports/gap-closure-2026-10-16.md). Separately, one assistant's manual assignments agreed with human answers on 16 of 40 (40.0%); this did not evaluate the production grouping model. See the [40-case provenance](reports/issue-grouping-independent40-score.md). |
 | Golden 50 | Exact agreement with human labels: topic 26/50, intent 38/50, severity 30/50, all three 14/50. Severity MAE 0.56; zero missing predictions. |
 | Cost pilot (`cost_100.csv`) | 112 metered calls, US$0.007410287, 98 accepted, 2 quarantined. Cold active time 588.4 s; warm replay 0.008 s with zero new calls. |
 
@@ -117,16 +118,20 @@ make calls.
    grouping as a program stage. Code removed possible names, handles and long numbers before the agents read the
    text; 1,500 records were mapped before this step was added. The agents saw no review IDs, human decisions or
    golden answers. Their per-call token usage was not recorded; it is unknown,
-   not zero.
+   not zero. Their saved input batches, outputs and the verifier's 600 blind cases were recovered on 16 October
+   ([trail](reports/grouping-trail-recovery-2026-10-16/aggregate.json)). A recorded program stage then regrouped
+   600 members with every call saved ([gap-closure report](reports/gap-closure-2026-10-16.md)).
 3. **Issue-map quality.** The 40% result compares an assistant's manual assignments with human answers. It is not production grouping accuracy. Aggregate human family counts were visible before those assignments were frozen, and the sample had five cases per topic. The ranking remains advisory until targeted human review. [Attribution and historical audit limits](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
 4. **Checker result.** `check_submission.py` returns `review_required`. Besides the scope, it flags 7,980
    nonaccepted statuses, 949 partial or uncertain call outcomes, 79,797 unknown run phases, 94 unavailable usage
    fields, 20,938 rows with split cache or evidence provenance, missing historical verifier, group and memo call
-   records, and missing main-run checkpoints. Each flag and its disposition is in the
+   records, and missing main-run checkpoints. The historical verifier and group records were later recovered as
+   saved files, without usage; the checker result is unchanged. Each flag and its disposition is in the
    [prepublication audit](reports/prepublication-reconciliation-2026-10-12.md). No saved data was changed to hide
    a flag.
 5. **Resume evidence.** The cost pilot shows interruption and resume (0 to 98 completed IDs, no completed ID sent
-   again). The main run has no saved before and after checkpoints. The demo video uses synthetic data.
+   again). The 16 October paid run stopped on a real SIGINT and resumed: 3 requests settled before, 212 after, and
+   none sent again. The main run has no saved before and after checkpoints. The demo video uses synthetic data.
 6. **Golden set.** Twelve human rows ask for review, eight texts overlap development data, and earlier golden
    influence cannot be ruled out. The scores are diagnostics, not population accuracy.
 7. **Cost estimate.** The full-run cost is an estimate from the pilot's per-stage usage: US$35.11 (base, with
