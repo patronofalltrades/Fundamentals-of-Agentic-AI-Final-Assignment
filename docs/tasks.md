@@ -1,5 +1,19 @@
 # Coordination record
 
+## Bounded measurement completion — 15 October 2026
+
+Owner: Codex, `feat/bounded-measurement-followup`, isolated
+`spotify-rubric-pr33` worktree. Scope: `tools/bounded_gap_followup.py`, its
+synthetic tests, and this record. The display fix was published in PR #36.
+New paid results remain local pending a publication handoff.
+
+Hanif explicitly approved a separate one-time US$0.38 allowance at 23:22:06 UTC,
+independent of the old US$49.99 project ceiling. Source sharing was approved at
+23:08:14 UTC. This covers only five frozen ten-review batches through OpenRouter
+to Crusoe, at most two attempts per batch and ten total. Preserve old costs,
+holds and outputs. Keep the existing provider caps. Stop on uncertain delivery.
+No production database writes, grading release changes or course submission.
+
 ## Measurement status follow-up — 15 October 2026
 
 Owner: Codex, `feat/measurement-status-scope`, existing isolated
