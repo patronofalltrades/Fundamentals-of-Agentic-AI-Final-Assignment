@@ -1,3 +1,4 @@
+Current criterion-based assessment: [Course rubric assessment — 16 October 2026](rubric-assessment-2026-10-16.md).
 # Submission benchmark against the course requirements — 13 October 2026
 
 This report compares the project, as merged on `main` at `cec5be9`, with the written course requirements:
