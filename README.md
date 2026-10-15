@@ -18,7 +18,7 @@ the memo traces back to saved records.
 | Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submission: the public GitHub URL through bCourses (pending). |
 | Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The 16 October [gap-closure run](reports/gap-closure-2026-10-16.md) added US$0.040. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
-| Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (16 October; evidence checked 15 October) |
+| Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (refreshed after merged PR #33; verified 15 October UTC) |
 | Gap closure | [Verification, grouping, attacks and recovery](reports/gap-closure-2026-10-16.md) (16 October): blind verifier, recorded grouping stage, planted errors, prompt injection, real interruption and resume, Jev at ten reviews per request, and the recovered 600-case verifier trail |
 
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
