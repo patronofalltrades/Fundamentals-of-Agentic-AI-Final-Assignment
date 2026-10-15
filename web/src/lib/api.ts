@@ -54,7 +54,8 @@ export type Summary = {
     empty_rows: number
   }
   raw_labels: { topic: Record<string, number>; intent: Record<string, number>; severity: Record<string, number> }
-  quality: { classifier_agreement: number | null; blind_verifier: string; human_evaluation: string }
+  quality: { classifier_agreement: number | null; blind_verifier: string; human_evaluation: string
+    verification?: { status: "sample_measured"; selected: number; observed: number; missing: number; not_human_accuracy: true } | null }
   analysis: { grouping: string; ranking: string; recommendations: string; memo: string; run_id: string | null }
   target: { minimum_source_rows: number; is_demo: boolean }
   /** Row states from an accepted-evidence import; null for older databases. */
@@ -251,7 +252,7 @@ export const fmt = {
     const n = Number(v)
     if (!Number.isFinite(n)) return String(v)
     if (format === "usd") return n < 0.1 ? `$${n.toFixed(4)}` : `$${n.toFixed(2)}`
-    if (format === "seconds") return n < 60 ? `${n.toFixed(1)} s` : `${(n / 60).toFixed(1)} min`
+    if (format === "seconds") return n > 0 && n < 0.1 ? `${(n * 1000).toFixed(2)} ms` : n < 60 ? `${n.toFixed(1)} s` : `${(n / 60).toFixed(1)} min`
     if (format === "hours") return `${n.toFixed(1)} h`
     if (format === "ratio") return `${(n * 100).toFixed(0)}%`
     return n.toLocaleString("en-US")
