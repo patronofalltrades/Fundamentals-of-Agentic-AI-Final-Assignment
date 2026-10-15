@@ -870,6 +870,15 @@ def kappa(pairs, values):
     return round((po - pe) / (1 - pe), 4) if pe < 1 else None
 
 
+def call_route(role, saved):
+    """The provider route of one attempt. Rows saved before the route column existed used the original route."""
+    if role in ("inject_jev", "jev_batch10"):
+        return "typesafe/" + jev.MODEL
+    if role == "inject_evidence":
+        return evidence.base.PROVIDER
+    return saved or PROVIDER
+
+
 def report(out):
     c = open_db(out)
     plan = load_plan(out, c)
@@ -1068,8 +1077,19 @@ def report(out):
         "planted_issue_cases.csv": (["review_ref", "planted", "claimed_issue", "supported"],
             [[ref(r), gc[r]["planted"], gc[r]["claim"], ag[r]["supported"]] for r in sorted(ag, key=ref)]),
     }
-    call_rows = [{k: x[k] for k in ("key", "role", "status", "phase", "reserved", "charged", "inp", "out",
-                                    "reasoning", "elapsed", "created", "settled", "error")} for x in calls]
+    has_route = "route" in [r[1] for r in c.execute("pragma table_info(calls)")]
+    extra = {key: (route, sha) for key, route, sha in c.execute(
+        "select key,%s,request_sha from calls" % ("route" if has_route else "null"))}
+    generation, response_sha = {}, {}
+    for key, body in c.execute("select key,response_json from responses"):
+        response_sha[key] = hashlib.sha256(body.encode()).hexdigest()
+        gen = json.loads(body).get("id")
+        if isinstance(gen, str):
+            generation[key] = gen
+    call_rows = [dict({k: x[k] for k in ("key", "role", "status", "phase", "reserved", "charged", "inp", "out",
+                                         "reasoning", "elapsed", "created", "settled", "error")},
+                      route=call_route(x["role"], extra[x["key"]][0]), request_sha256=extra[x["key"]][1],
+                      response_sha256=response_sha.get(x["key"]), generation_id=generation.get(x["key"])) for x in calls]
     c.close()
     return result, case_rows, call_rows
 

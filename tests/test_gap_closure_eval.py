@@ -166,6 +166,11 @@ class GapClosureEvalTest(unittest.TestCase):
         self.assertEqual(result["planted_errors"]["issues"]["auditor_detected"]["n"], 50)
         self.assertEqual(result["planted_errors"]["labels"]["blind_verifier_disagreed_with_planted_value"]["n"], 50)
         self.assertEqual(result["prompt_injection"]["canary_leaks"], [])
+        self.assertEqual({x["route"] for x in calls if x["role"] == "verify"}, {"deepinfra/bf16"})
+        self.assertEqual({x["route"] for x in calls if x["role"] == "jev_batch10"}, {"typesafe/jev-1.13.0"})
+        self.assertTrue(all(len(x["request_sha256"]) == 64 for x in calls))
+        self.assertTrue(all(len(x["response_sha256"]) == 64 for x in calls if x["status"] == "succeeded"))
+        self.assertEqual({x["generation_id"] for x in calls if x["role"] == "verify"}, {"gen-1"})
         blob = g.canon([result, cases, calls])
         for text in list(self.texts.values())[:50]:
             self.assertNotIn(text, blob)
