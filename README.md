@@ -18,7 +18,7 @@ the memo traces back to saved records.
 | Deadline | 21 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
 | Spend | About US$4.2 measured for the main run (Jev US$2.92, DeepInfra US$1.29). The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
-| Requirement check | [Benchmark against the course requirements](reports/rubric-benchmark-2026-10-13.md) (13 October) |
+| Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (16 October; evidence checked 15 October) |
 
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
 a human accuracy score.
@@ -178,7 +178,7 @@ Read [AGENTS.md](AGENTS.md) first. The release record is the
   - `cost/README.md` lists the pilot execution commands and the scaling decision.
 - **Tests.** Two tests in `tests/test_golden_gap_runner.py` now skip when the private plan in `local/` is absent,
   so a fresh clone passes: 408 tests, OK.
-- **Requirement check.** See the [benchmark](reports/rubric-benchmark-2026-10-13.md).
+- **Rubric assessment.** See the [criterion-based assessment](reports/rubric-assessment-2026-10-16.md).
 
 **Open items:**
 
