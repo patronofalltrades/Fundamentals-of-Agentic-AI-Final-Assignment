@@ -97,7 +97,10 @@ def run_benchmark(p, c):
         "question": "Can the labelling step run cheaply, without errors, and be replayed without new model calls?",
         "sample": "Pilot: %d reviews (prompt v1). Checkpoint: %d reviews (prompt v2)." % (p["source_rows"], c["source_rows"]),
         "truth": "Structural checks only: schema, source identity and exact evidence quotes. Not label accuracy.",
-        "status": "partial",
+        "status": "measured",
+        "gaps": [{"label": "Historical error count unavailable",
+                  "detail": "The checkpoint report did not save schema or identity-error counts. Final valid outputs cannot recover failed attempts; the missing cell stays unknown."}]
+                if "schema_or_identity_errors" not in cl else [],
         "metrics": [
             metric("Checkpoint reviews labelled", c["canonical_completed"], "count", of=c["source_rows"]),
             metric("Duplicate texts reused from cache", cl["exact_text_cache"], "count", of=c["source_rows"]),
@@ -142,7 +145,12 @@ def projection(c, run):
         "question": "What did the required run cost, and how close was the estimate made before it?",
         "sample": "Estimate: the first 100,000 rows, before any model call. Measured: every call of the 110,000-row selection.",
         "truth": "Measured charges are usage-derived from the saved call ledger in the grading release.",
-        "status": "partial",
+        "status": "measured",
+        "gaps": [{"label": "Billing unresolved",
+                  "detail": "%d calls have unknown charges. Known charges are not the final bill; full reservations remain held." %
+                            sum(stage["outcomes"].get("uncertain", 0) for stage in run["stages"].values())},
+                 {"label": "Historical forecast gaps",
+                  "detail": "Evidence-cost and call-count forecasts were not saved before the run. New estimates cannot reconstruct them."}],
         "metrics": [
             metric("Known main-run charge", _usd(run["total_charged_nusd"]), "usd",
                    note="Labels and evidence only; excludes unknown charges and other project work."),
@@ -233,7 +241,11 @@ def extractor(x):
         "sample": "The same %d development reviews selected for each route; DeepInfra attempted %d, Groq attempted %d."
                   % (n, di["reviews_attempted"], gq["reviews_attempted"]),
         "truth": "Exact-quote checks against the source text. Agreement with saved development evidence is in the report.",
-        "status": "partial",
+        "status": "measured",
+        "gaps": [{"label": "Attempt coverage incomplete",
+                  "detail": "%d of %d Groq reviews were attempted; %d remain untouched. Invalid responses are observed failures, not missing attempts." %
+                            (gq["reviews_attempted"], n, n - gq["reviews_attempted"])}]
+                if gq["reviews_attempted"] < n else [],
         "metrics": [
             metric("DeepInfra reviews with accepted evidence", di["reviews_accepted"], "count", of=n),
             metric("Groq reviews with accepted evidence", gq["reviews_accepted"], "count", of=n,
@@ -255,7 +267,7 @@ def extractor(x):
                     "responses. Groq was faster per request.",
         "limits": [x["note"], "The paired comparison against development evidence is in reports/openrouter-extractor-benchmark.md.",
                    "Exact quotation is a structural check. Entity relevance and evidence quality lack human scoring.",
-                   "Untouched reviews and invalid responses remain incomplete; no new calls were made for this audit."],
+                   "Untouched reviews remain missing. Invalid responses remain measured failures; no new calls were made for this audit."],
         "sources": [EXTRACTOR],
     }
 
@@ -277,7 +289,11 @@ def gap_closure(x, measured):
         "sample": "%d accepted reviews from the main run, drawn by a fixed SHA-256 order; golden and pilot IDs excluded"
                   % b["sample"],
         "truth": "None. This is model-to-model agreement. It shows where two labellers differ, not which one is right.",
-        "status": "partial" if measured["verifier"]["missing"] else "measured",
+        "status": "measured",
+        "gaps": [{"label": "Output coverage incomplete",
+                  "detail": "%d of %d valid outputs; %d missing. Agreement uses observed outputs only." %
+                            (measured["verifier"]["observed"], b["sample"], measured["verifier"]["missing"])}]
+                if measured["verifier"]["missing"] else [],
         "metrics": [metric("Valid verifier outputs", measured["verifier"]["observed"], "count", of=b["sample"],
                            note="%d missing; agreement uses observed outputs only." % measured["verifier"]["missing"]),
                     _rate({"label": "Topic agrees", "share": a["topic"]}),
@@ -303,7 +319,11 @@ def gap_closure(x, measured):
         "question": "Does a saved, code-run grouping stage put reviews in the same issue as the historical agent handoff?",
         "sample": "%d complaint and cancellation reviews from the historical issue map, blind to their issue" % gr["sample"],
         "truth": "The historical issue map. It was not validated by people, so disagreement is not proof of error.",
-        "status": "partial" if measured["grouping"]["missing"] else "measured",
+        "status": "measured",
+        "gaps": [{"label": "Output coverage incomplete",
+                  "detail": "%d of %d valid outputs; %d missing. The historical model map is the comparator, not human truth." %
+                            (measured["grouping"]["observed"], gr["sample"], measured["grouping"]["missing"])}]
+                if measured["grouping"]["missing"] else [],
         "metrics": [metric("Valid grouping outputs", measured["grouping"]["observed"], "count", of=gr["sample"],
                            note="%d missing; comparisons use observed outputs only." % measured["grouping"]["missing"]),
                     _rate({"label": "Same issue", "share": gr["exact_issue_agreement"]}),
@@ -327,7 +347,11 @@ def gap_closure(x, measured):
                   % (lab["planted"], iss["planted"], pi["pairs"]),
         "truth": "Code altered saved model claims. These changes are not human-validated errors. Synthetic texts are excluded "
                  "from all business results.",
-        "status": "partial" if lj["missing_outputs"] or ij["missing_outputs"] else "measured",
+        "status": "measured",
+        "gaps": [{"label": "Auditor and paired coverage incomplete",
+                  "detail": "%d changed-label and %d unchanged-label auditor outputs are saved; one ten-row label-auditor batch is missing. Blind comparisons also lack %d label and %d issue outputs." %
+                            (lab["planted"], lab["auditor_flagged_unchanged_jev_labels"]["of"],
+                             lj["missing_outputs"], ij["missing_outputs"])}],
         "metrics": [_rate({"label": "Planted labels the auditor caught", "share": lab["auditor_detected"]}),
                     _rate({"label": "Planted issues the auditor caught", "share": iss["auditor_detected"]}),
                     metric("Paired label or issue changes", injection["paired_label_or_issue_changes"], "count",
@@ -407,7 +431,11 @@ def operational_measurements(pilot, warm, measured):
          "sample": "%d attempts for %d logical requests in the separate verification and robustness experiments." %
                    (cost["attempts"], recovery["logical_requests"]),
          "truth": "Recomputed from public text-free call logs. Unknown charges retain their full reservation.",
-         "status": "partial" if cost["unknown_charge_attempts"] else "measured",
+         "status": "measured",
+         "gaps": [{"label": "Billing unresolved",
+                   "detail": "%d attempts have unknown charges; all reservations remain held. %d of %d logical requests have no settled result." %
+                             (cost["unknown_charge_attempts"], recovery["logical_requests_without_settled_result"], recovery["logical_requests"])}]
+                 if cost["unknown_charge_attempts"] or recovery["logical_requests_without_settled_result"] else [],
          "metrics": [metric("Known charges", _usd(cost["known_charge_nusd"]), "usd"),
                      metric("Unresolved reservations", _usd(cost["held_nusd"]), "usd",
                             note="%d attempts have unknown charges." % cost["unknown_charge_attempts"]),

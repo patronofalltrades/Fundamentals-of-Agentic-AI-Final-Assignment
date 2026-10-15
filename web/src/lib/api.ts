@@ -166,6 +166,7 @@ export type EvalItem = {
   sample: string
   truth: string
   status: "measured" | "partial" | "estimate" | "pending"
+  gaps?: { label: string; detail: string }[]
   metrics: EvalMetric[]
   compare?: { row_header?: string; columns: string[]; rows: { label: string; format: string; values: (number | string | null)[]; note?: string | null }[] }
   decision?: string

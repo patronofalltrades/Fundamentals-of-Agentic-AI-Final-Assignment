@@ -1,0 +1,117 @@
+{
+  "checked_utc": "2026-10-15T23:11:24.380226+00:00",
+  "read_only": true,
+  "paid_calls": 0,
+  "spending_and_egress_approval_received": true,
+  "execution_gate": "blocked_unbounded_unaccounted_project_cost",
+  "new_run_cap_nusd": 380000000,
+  "new_run_cap_scope": "Only this new five-batch run: all new charges plus unresolved reservations, including retries. Existing holds are outside this cap and remain inside cumulative project exposure.",
+  "provider_caps_nusd": {
+    "jev": 5000000000,
+    "openrouter": 5000000000
+  },
+  "shared_ledger": {
+    "legacy_sources": [
+      {
+        "name": "batch_v1",
+        "budget": "openrouter",
+        "exposure_nusd": 226396
+      },
+      {
+        "name": "batch_v2",
+        "budget": "openrouter",
+        "exposure_nusd": 241136
+      },
+      {
+        "name": "benchmark",
+        "budget": "openrouter",
+        "exposure_nusd": 725867396
+      },
+      {
+        "name": "jev_checkpoint",
+        "budget": "jev",
+        "exposure_nusd": 24101700
+      }
+    ],
+    "reservation_groups": [
+      {
+        "budget": "jev",
+        "status": "succeeded",
+        "attempts": 76677,
+        "reserved_nusd": 206107776000,
+        "known_charge_nusd": 3274602408,
+        "exposure_nusd": 3274602408
+      },
+      {
+        "budget": "jev",
+        "status": "uncertain",
+        "attempts": 8,
+        "reserved_nusd": 21504000,
+        "known_charge_nusd": null,
+        "exposure_nusd": 21504000
+      },
+      {
+        "budget": "openrouter",
+        "status": "quarantined_metered",
+        "attempts": 98,
+        "reserved_nusd": 675149036,
+        "known_charge_nusd": 46015428,
+        "exposure_nusd": 46015428
+      },
+      {
+        "budget": "openrouter",
+        "status": "succeeded",
+        "attempts": 3348,
+        "reserved_nusd": 23169556408,
+        "known_charge_nusd": 1457994815,
+        "exposure_nusd": 1457994815
+      },
+      {
+        "budget": "openrouter",
+        "status": "uncertain",
+        "attempts": 164,
+        "reserved_nusd": 658972600,
+        "known_charge_nusd": null,
+        "exposure_nusd": 658972600
+      }
+    ],
+    "exposure_nusd": {
+      "jev": 3320208108,
+      "openrouter": 2889317771
+    },
+    "already_included_request_counts": {
+      "%golden%": 39,
+      "cost100-pilot-v1:%": 112,
+      "gap-closure-v1:%": 337
+    },
+    "do_not_add_included_runs_again": true
+  },
+  "coding_records": {
+    "opencode": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4-flash-vision-exp",
+      "sessions": 1,
+      "assistant_messages": 122,
+      "missing_cost_fields": 0,
+      "recorded_cost_nusd": 185894358,
+      "session_and_message_totals_match": true,
+      "source": "Existing project-scoped OpenCode session and message cost metadata; no prompts or tool content returned."
+    },
+    "claude": {
+      "model": "claude-opus-5-5",
+      "cost_state_records": 1,
+      "recorded_cost_nusd": 1643784000,
+      "has_unknown_model_cost_in_this_record": false,
+      "source": "Existing matching project cost-state record only; not a complete history or provider invoice.",
+      "coverage": "One short session cost state. The historical eight grouping subagents and independent verifier/memo work are not fully accounted by this record."
+    }
+  },
+  "accounted_exposure_before_new_run_nusd": 8039204237,
+  "accounted_exposure_including_full_new_cap_nusd": 8419204237,
+  "project_ceiling_nusd": 49990000000,
+  "remaining_for_all_unaccounted_costs_nusd": 41570795763,
+  "unaccounted_cost_upper_bound_nusd": null,
+  "known_shortfall_nusd": null,
+  "limitation": "Tool-reported coding costs are not provider invoices. Other historical coding/group/verifier/memo charges and any in-scope service costs are not exhaustively bounded. Unknown is not zero.",
+  "required_evidence_or_decision": "Before inference, obtain authentic records or a documented budget-owner bound showing all costs absent from these aggregates total at most USD 41.570795763. Confirm which subscription/hosting/local-compute charges fall within the existing project budget; do not raise the USD49.99 ceiling or discard holds."
+}

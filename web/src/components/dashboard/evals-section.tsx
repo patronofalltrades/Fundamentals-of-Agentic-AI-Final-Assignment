@@ -12,7 +12,7 @@ import { useData } from "./use-data"
 const REPO = "https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/blob/main/"
 
 const STATUS: Record<string, { label: string; className: string; help: string }> = {
-  measured: { label: "Measured", className: "bg-primary/15 text-primary", help: "Read from a saved run report" },
+  measured: { label: "Measured", className: "bg-primary/15 text-primary", help: "Observed results are saved; this does not mean every planned output or charge is known" },
   partial: { label: "Partial", className: "bg-chart-2/15 text-chart-2", help: "Saved results have missing outputs or unresolved measurements" },
   estimate: { label: "Estimate", className: "bg-chart-3/15 text-chart-3", help: "Projected, not measured" },
   pending: { label: "Pending", className: "bg-tile text-muted-foreground", help: "Not run or not saved yet" },
@@ -62,6 +62,15 @@ export function EvalCard({ item }: { item: EvalItem }) {
         </div>
         <StatusChip status={item.status} />
       </header>
+      {item.gaps && item.gaps.length > 0 && (
+        <ul aria-label="Unresolved evidence" className="space-y-2 rounded-2xl border border-chart-2/30 bg-chart-2/10 px-4 py-3 text-[14px]">
+          {item.gaps.map((gap) => (
+            <li key={gap.label}>
+              <span className="font-medium">{gap.label}.</span> {gap.detail}
+            </li>
+          ))}
+        </ul>
+      )}
       <Facts item={item} />
       {item.metrics.length > 0 && (
         <div className={cn("grid gap-3", item.metrics.length === 3 ? "sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-4")}>
@@ -233,7 +242,7 @@ export default function EvalsSection() {
         <div className="max-w-[62ch]">
           <h2 className="text-xl">Evaluations and benchmarks</h2>
           <Reflection className="mt-2">{REFLECTIONS.evals}</Reflection>
-          <p className="mt-3 text-[12px] text-muted-foreground">Every number below is read from a saved, linked report.</p>
+          <p className="mt-3 text-[12px] text-muted-foreground">Measured means observed results are saved. It does not mean the sample, billing, or historical record is complete. Unresolved evidence is shown on each affected card; broader limits remain below it.</p>
         </div>
         <ul className="flex flex-wrap gap-2" aria-label="Status key">
           {Object.entries(STATUS).filter(([key]) => !used || used.has(key)).map(([key, s]) => (

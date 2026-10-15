@@ -43,12 +43,27 @@ class CoverageTests(unittest.TestCase):
 
     def test_registry_preserves_partial_coverage_and_time_scopes(self):
         items = {i["id"]: i for i in registry.build()["items"]}
-        for key in ("extractor-benchmark", "blind-verifier-batch10", "grouping-stage", "projection-100k", "gap-operations", "planted-and-injection"):
-            self.assertEqual(items[key]["status"], "partial")
+        # Observed results are measured; completion gaps must remain separate and visible.
+        for key in ("labelling-runs", "extractor-benchmark", "blind-verifier-batch10", "grouping-stage", "projection-100k", "gap-operations", "planted-and-injection"):
+            self.assertEqual(items[key]["status"], "measured")
+            self.assertTrue(items[key]["gaps"], key)
+            for gap in items[key]["gaps"]:
+                self.assertTrue(gap["label"] and gap["detail"], key)
         metrics = {m["label"]: m for m in items["cost100-cold-full-warm"]["metrics"]}
         self.assertGreater(metrics["Full warm orchestration"]["value"], 0)
         self.assertEqual(metrics["New paid / transport / socket attempts"]["value"], 0)
         self.assertNotIn("all stages", json.dumps(items["projection-100k"]).lower())
+
+    def test_measured_badge_does_not_fill_missing_evidence(self):
+        items = {i["id"]: i for i in registry.build()["items"]}
+        for key, observed, selected in (("blind-verifier-batch10", 980, 1000), ("grouping-stage", 580, 600)):
+            self.assertEqual((items[key]["metrics"][0]["value"], items[key]["metrics"][0]["of"]), (observed, selected))
+            self.assertIn("20 missing", items[key]["gaps"][0]["detail"])
+        errors = next(r for r in items["labelling-runs"]["compare"]["rows"] if r["label"] == "Schema or identity errors")
+        self.assertIsNone(errors["values"][1])
+        self.assertIn("46 calls", items["projection-100k"]["gaps"][0]["detail"])
+        self.assertIn("125 attempts", items["gap-operations"]["gaps"][0]["detail"])
+        self.assertIn("one ten-row label-auditor batch is missing", items["planted-and-injection"]["gaps"][0]["detail"])
 
     def test_warm_card_rejects_wrong_source_or_network_attempt(self):
         measured = audit.build()
