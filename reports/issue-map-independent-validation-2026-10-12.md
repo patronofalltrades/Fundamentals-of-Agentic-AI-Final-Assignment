@@ -1,5 +1,11 @@
 # Independent issue-map validation (offline, 2026-10-12)
 
+**Recovery update, 15 October:** the original canary audit and agent-label files
+have now been located and their published hashes verified. The saved agent-label
+aggregate is distinct from the assistant manual comparison. No answers were read
+or scores rerun. See [the reconciled provenance](grouping-score-provenance-2026-10-15.md).
+The warning below records the earlier integration-checkout inspection.
+
 **Attribution review, 15 October:** the historical production-agent scoring
 claim below is preserved as a claim from this audit, not adopted as the source
 of the dashboard's 40%. The documented assistant manual comparison is

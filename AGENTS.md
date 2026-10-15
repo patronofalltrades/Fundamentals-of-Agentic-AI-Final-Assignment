@@ -4,7 +4,10 @@
 
 Build the Final Assignment — Multi Agent Large Data Processing Pipeline.
 Use historical Spotify reviews to support a product-priority recommendation.
-The deadline is October 21, 2026, at 11:59 pm Pacific Time.
+The supported deadline is October 20, 2026, at 11:59 pm Pacific Time.
+The current assignment document was rechecked October 15 and the course
+announcement corroborates October 20. The earlier user-reported October 21
+date needs a newer instructor notice before it can replace this cutoff.
 
 ## Current accepted-evidence objective (Hanif, October 9 UTC)
 
@@ -61,8 +64,8 @@ completion limits, cost, and recovery before scaling. Do not retrofit these
 requirements onto the serial diagnostic benchmark or launch 100,000 reviews
 without the gates above.
 
-Status (16 October): the main run classified 110,000 selected reviews (100,229
-accepted). The issue ranking, provisional memo, grading release and live
+Status (verified 15 October): the main run selected 110,000 reviews and saved
+100,229 structurally accepted rows. The issue ranking, provisional memo, grading release and live
 dashboard are published; see `README.md`.
 Read `README.md` and `docs/implementation.md` before changing code.
 Read `docs/architecture.md` to distinguish development agents from runtime roles.
