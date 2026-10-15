@@ -2,6 +2,8 @@
 
 Owner: Codex. Branch: `docs/evaluation-attribution-memo-warm`.
 Base: published main `1217b47be344a3a145ab6e5bb9922ba24d58d705` (PR #29).
+Reviewed changes commit: `fdaa77844959cb982c04fa6aa3cff200d2553b00`.
+The follow-up commit records the late-arriving verification result below.
 The rubric assessment is already on main. This branch is local and awaits
 publication approval. Existing worktrees, cost files, private answers, scores,
 membership, ranking, claim values, and release artifacts are preserved.
@@ -109,10 +111,12 @@ No paid call, push, merge, deployment, public upload, or submission occurred.
 ## Checks and exact file list
 
 - `python3 -m unittest discover -s tests -t . -q`: **413 tests, OK, 2 skipped**,
-  in **21.620 seconds**. The two skips require private golden-plan files.
-  The completed run used a byte-matched candidate copy under the same Mac's
-  temporary directory. The initial Documents-folder run stalled reading an
-  unchanged test file; that incomplete attempt is not reported as passing.
+  in **16.488 seconds** in the review worktree. The two skips require private
+  golden-plan files. This run initially stalled reading an unchanged test file,
+  then completed successfully. During the stall, a byte-matched candidate copy
+  under the same Mac's temporary directory also passed **413 tests, 2 skipped**
+  in **21.620 seconds**. Both results were received; no incomplete attempt is
+  counted as a pass.
 - `python3 -m spotify_pipeline --help`: passed.
 - `node --test web/tests/privacy.test.ts`: one test passed.
 - `node --check dashboard/static/app.js`: passed. No frontend dependencies
