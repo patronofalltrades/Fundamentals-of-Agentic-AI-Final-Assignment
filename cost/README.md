@@ -113,10 +113,16 @@ the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median 
   no-reuse case does not, and the deadline did not allow 186 hours or more of modeled run time.
 - **Batching:** one review per Jev request in the main run (76,523 requests), not the 10 per request the instructor
   asked for. Evidence requests sent up to 25 distinct texts each (3,274 requests). The contract allows up to 50.
+  A 16 October test sent Jev 10 reviews per request, with one question set per review: input tokens per review
+  fell from 1,015.7 to 852.7 (16%), so a 10-per-request main run would have cost about US$2.74 for labels instead
+  of US$3.26. At least one label changed in 36 of 100 reviews, so the published labels stay
+  ([test](../reports/gap-closure-2026-10-16.md#2-jev-ten-reviews-per-request)).
 - **Concurrency:** start at one worker, as in the pilot. Raise it only while rate limits and the shared spend
   ledger allow. The estimate uses 4 workers (base) and 2 (conservative).
 - **Fallback:** none. A failed or uncertain call is never sent to a stronger model automatically. Uncertain
-  outcomes are held, not retried.
+  outcomes are held, not retried. In the 16 October gap-closure run, a definite HTTP 429 response was retried
+  under a new attempt key after a backoff, and its hold was kept. The operator moved some calls to a second host of
+  the same model for about 20 minutes, and each call records its route.
 - **Spend controls:** a shared ledger reserves the worst-case cost before each call, and stops admitting work
   when spent plus reserved plus the next reservation would exceed the cap.
 

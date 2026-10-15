@@ -26,6 +26,10 @@
     {
       "path": "reports/extractor-benchmark-aggregate.json",
       "sha256": "067402d0e2a28b24cc2732a29cd89dc82f43aaf18171b8c18b854038e323c300"
+    },
+    {
+      "path": "reports/gap-closure-2026-10-16/aggregate.json",
+      "sha256": "0ed742600413ed8ca57892328b52ecfa44b2b2452bbf7265b8f732f1a3d52689"
     }
   ],
   "items": [
@@ -534,6 +538,232 @@
       ],
       "sources": [
         "reports/extractor-benchmark-aggregate.json"
+      ]
+    },
+    {
+      "id": "blind-verifier-batch10",
+      "kind": "benchmark",
+      "title": "Blind verifier, ten reviews per request",
+      "question": "Does an independent model, shown only the text and the rubric, give the same labels as Jev?",
+      "sample": "1000 accepted reviews from the main run, drawn by a fixed SHA-256 order; golden and pilot IDs excluded",
+      "truth": "None. This is model-to-model agreement. It shows where two labellers differ, not which one is right.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Topic agrees",
+          "value": 793,
+          "format": "count",
+          "of": 980
+        },
+        {
+          "label": "Intent agrees",
+          "value": 901,
+          "format": "count",
+          "of": 980
+        },
+        {
+          "label": "All three agree",
+          "value": 648,
+          "format": "count",
+          "of": 980
+        },
+        {
+          "label": "Verifier charge",
+          "value": "0.017934064",
+          "format": "usd",
+          "note": "100 requests of 10 reviews"
+        }
+      ],
+      "compare": {
+        "row_header": "Field",
+        "columns": [
+          "Agreement",
+          "Cohen's kappa"
+        ],
+        "rows": [
+          {
+            "label": "Topic",
+            "format": "text",
+            "values": [
+              "80.9%",
+              "0.69"
+            ]
+          },
+          {
+            "label": "Intent",
+            "format": "text",
+            "values": [
+              "91.9%",
+              "0.86"
+            ]
+          },
+          {
+            "label": "Severity",
+            "format": "text",
+            "values": [
+              "85.4%",
+              "0.73"
+            ]
+          }
+        ]
+      },
+      "finding": "Intent agrees most and topic least. Severity differs by 0.17 points on average. 98 of 100 requests returned valid results. Code rejected one that repeated a review ID; one response was unusable and stays held.",
+      "limits": [
+        "Agreement is not accuracy: both models can be wrong in the same way.",
+        "The verifier is gpt-oss-120b, the same base model as the evidence extractor, but with a separate prompt and no access to Jev's labels."
+      ],
+      "sources": [
+        "reports/gap-closure-2026-10-16/aggregate.json"
+      ]
+    },
+    {
+      "id": "jev-ten-per-request",
+      "kind": "benchmark",
+      "title": "Jev with ten reviews per request",
+      "question": "Does sending ten reviews in one Jev request change the labels or the cost?",
+      "sample": "100 reviews from the verifier sample, in 10 requests of 10",
+      "truth": "None. Both sides are Jev with the same rubric; the reference is the main run's one-review requests.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Topic unchanged",
+          "value": 79,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Intent unchanged",
+          "value": 81,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "All three unchanged",
+          "value": 64,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Input tokens per review",
+          "value": 852.7,
+          "format": "int",
+          "note": "1015.7 in the main run"
+        }
+      ],
+      "finding": "Jev reads the ten reviews once and answers forty questions, each pointed at one review. Batching saved 16% of input tokens but changed at least one label in 36 of 100 reviews, so the main run's one-review labels stay.",
+      "limits": [
+        "Both sides are Jev jev-1.13.0 with rubric v2. Agreement measures how much batching moves the labels, not accuracy.",
+        "Jev's run-to-run variation on single reviews was not measured here, so part of the change may be ordinary variation."
+      ],
+      "sources": [
+        "reports/gap-closure-2026-10-16/aggregate.json"
+      ]
+    },
+    {
+      "id": "grouping-stage",
+      "kind": "benchmark",
+      "title": "Grouping as a recorded program stage",
+      "question": "Does a saved, code-run grouping stage put reviews in the same issue as the historical agent handoff?",
+      "sample": "600 complaint and cancellation reviews from the historical issue map, blind to their issue",
+      "truth": "The historical issue map. It was not validated by people, so disagreement is not proof of error.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Same issue",
+          "value": 449,
+          "format": "count",
+          "of": 580
+        },
+        {
+          "label": "Same issue family",
+          "value": 503,
+          "format": "count",
+          "of": 580
+        },
+        {
+          "label": "Abstained",
+          "value": 3,
+          "format": "count",
+          "of": 580
+        }
+      ],
+      "finding": "Every request, response, token count and charge is saved. Two requests repeated a review ID and code rejected them. For comparison, the 11 October verifier matched the grouping agents on 511 of 600; its saved trail was recovered on 16 October.",
+      "limits": [
+        "The stage reads Jev's labels and evidence quote as context, as the historical grouping did."
+      ],
+      "sources": [
+        "reports/gap-closure-2026-10-16/aggregate.json"
+      ]
+    },
+    {
+      "id": "planted-and-injection",
+      "kind": "benchmark",
+      "title": "Planted errors and prompt injection",
+      "question": "Do the checks catch labels we made wrong on purpose, and can review text take over a model?",
+      "sample": "43 planted wrong labels, 50 planted wrong issues, and 8 synthetic attack pairs",
+      "truth": "Code chose every planted value, so each planted row is wrong by construction. Synthetic texts are excluded from all business results.",
+      "status": "measured",
+      "metrics": [
+        {
+          "label": "Planted labels the auditor caught",
+          "value": 40,
+          "format": "count",
+          "of": 43
+        },
+        {
+          "label": "Planted issues the auditor caught",
+          "value": 48,
+          "format": "count",
+          "of": 50
+        },
+        {
+          "label": "Attacks that reached their target",
+          "value": 0,
+          "format": "count",
+          "of": 24,
+          "note": "Jev, verifier and grouping"
+        },
+        {
+          "label": "Secret leaks",
+          "value": 0,
+          "format": "count"
+        }
+      ],
+      "compare": {
+        "row_header": "Check",
+        "columns": [
+          "Result"
+        ],
+        "rows": [
+          {
+            "label": "Blind verifier disagreed with a planted label",
+            "format": "text",
+            "values": [
+              "40 of 43"
+            ]
+          },
+          {
+            "label": "Auditor flagged an unchanged Jev label",
+            "format": "text",
+            "values": [
+              "5 of 47"
+            ]
+          },
+          {
+            "label": "Auditor flagged an unchanged historical issue",
+            "format": "text",
+            "values": [
+              "3 of 50"
+            ]
+          }
+        ]
+      },
+      "limits": [
+        "Unchanged labels are Jev's and unchanged issues are historical; a flag on them is a disagreement, not proof of a false alarm.",
+        "Synthetic texts written for this test; excluded from all business results and accuracy figures. A changed label can be legitimate when the added sentence changes the review's meaning."
+      ],
+      "sources": [
+        "reports/gap-closure-2026-10-16/aggregate.json"
       ]
     }
   ]

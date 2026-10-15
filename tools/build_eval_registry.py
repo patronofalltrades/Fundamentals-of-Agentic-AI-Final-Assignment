@@ -27,6 +27,7 @@ CHECKPOINT = "reports/jev-checkpoint-500.json"
 INTENT = "reports/golden-50-intent.json"
 EXTRACTOR = "reports/extractor-benchmark-aggregate.json"  # written by tools/build_run_aggregates.py
 RUN = "reports/run-110k-calls-aggregate.json"  # written by tools/build_run_aggregates.py
+GAP = "reports/gap-closure-2026-10-16/aggregate.json"  # written by tools/gap_closure_eval.py report --publish
 
 
 def _load(path, sources):
@@ -251,11 +252,122 @@ def extractor(x):
     }
 
 
+def _rate(x):
+    return metric(x["label"], x["share"]["n"], "count", of=x["share"]["of"], note=x.get("note"))
+
+
+def gap_closure(x):
+    """Three cards from the 16 October gap-closure run (tools/gap_closure_eval.py)."""
+    b, gr, pe, pi = x["blind_verifier"], x["grouping_stage"], x["planted_errors"], x["prompt_injection"]
+    a = b["agreement_with_jev"]
+    source = [GAP]
+    verifier = {
+        "id": "blind-verifier-batch10",
+        "kind": "benchmark",
+        "title": "Blind verifier, ten reviews per request",
+        "question": "Does an independent model, shown only the text and the rubric, give the same labels as Jev?",
+        "sample": "%d accepted reviews from the main run, drawn by a fixed SHA-256 order; golden and pilot IDs excluded"
+                  % b["sample"],
+        "truth": "None. This is model-to-model agreement. It shows where two labellers differ, not which one is right.",
+        "status": "measured",
+        "metrics": [_rate({"label": "Topic agrees", "share": a["topic"]}),
+                    _rate({"label": "Intent agrees", "share": a["intent"]}),
+                    _rate({"label": "All three agree", "share": a["joint"]}),
+                    metric("Verifier charge", _usd(b["charged_nusd"]), "usd",
+                           note="%d requests of %d reviews" % (b["requests"], b["reviews_per_request"]))],
+        "compare": {"row_header": "Field", "columns": ["Agreement", "Cohen's kappa"], "rows": [
+            {"label": f.capitalize(), "format": "text", "values": ["%.1f%%" % (100 * a[f]["rate"]), "%.2f" % b["kappa"][f]]}
+            for f in ("topic", "intent", "severity")]},
+        "finding": "Intent agrees most and topic least. Severity differs by %.2f points on average. %d of %d requests "
+                   "returned valid results. Code rejected one that repeated a review ID; one response was unusable and stays held."
+                   % (b["severity_mae"], b["requests_by_outcome"].get("succeeded", 0), b["requests"]),
+        "limits": ["Agreement is not accuracy: both models can be wrong in the same way.",
+                   "The verifier is gpt-oss-120b, the same base model as the evidence extractor, but with a separate prompt "
+                   "and no access to Jev's labels."],
+        "sources": source,
+    }
+    grouping = {
+        "id": "grouping-stage",
+        "kind": "benchmark",
+        "title": "Grouping as a recorded program stage",
+        "question": "Does a saved, code-run grouping stage put reviews in the same issue as the historical agent handoff?",
+        "sample": "%d complaint and cancellation reviews from the historical issue map, blind to their issue" % gr["sample"],
+        "truth": "The historical issue map. It was not validated by people, so disagreement is not proof of error.",
+        "status": "measured",
+        "metrics": [_rate({"label": "Same issue", "share": gr["exact_issue_agreement"]}),
+                    _rate({"label": "Same issue family", "share": gr["family_agreement"]}),
+                    _rate({"label": "Abstained", "share": gr["abstained"]})],
+        "finding": "Every request, response, token count and charge is saved. Two requests repeated a review ID and code "
+                   "rejected them. For comparison, the 11 October verifier matched the grouping agents on 511 of 600; its "
+                   "saved trail was recovered on 16 October.",
+        "limits": ["The stage reads Jev's labels and evidence quote as context, as the historical grouping did."],
+        "sources": source,
+    }
+    lab, iss = pe["labels"], pe["issues"]
+    jev_hits = sum(1 for c in pi["cases"] if c.get("jev_target_reached"))
+    ver_hits = sum(1 for c in pi["cases"] if c.get("verifier_target_reached"))
+    grp_hits = sum(1 for c in pi["cases"] if c.get("grouping_target_reached"))
+    checks = {
+        "id": "planted-and-injection",
+        "kind": "benchmark",
+        "title": "Planted errors and prompt injection",
+        "question": "Do the checks catch labels we made wrong on purpose, and can review text take over a model?",
+        "sample": "%d planted wrong labels, %d planted wrong issues, and %d synthetic attack pairs"
+                  % (lab["planted"], iss["planted"], pi["pairs"]),
+        "truth": "Code chose every planted value, so each planted row is wrong by construction. Synthetic texts are excluded "
+                 "from all business results.",
+        "status": "measured",
+        "metrics": [_rate({"label": "Planted labels the auditor caught", "share": lab["auditor_detected"]}),
+                    _rate({"label": "Planted issues the auditor caught", "share": iss["auditor_detected"]}),
+                    metric("Attacks that reached their target", jev_hits + ver_hits + grp_hits, "count",
+                           of=3 * pi["pairs"], note="Jev, verifier and grouping"),
+                    metric("Secret leaks", len(pi["canary_leaks"]), "count")],
+        "compare": {"row_header": "Check", "columns": ["Result"], "rows": [
+            {"label": "Blind verifier disagreed with a planted label", "format": "text",
+             "values": ["%d of %d" % (lab["blind_verifier_disagreed_with_planted_value"]["n"],
+                                      lab["blind_verifier_disagreed_with_planted_value"]["of"])]},
+            {"label": "Auditor flagged an unchanged Jev label", "format": "text",
+             "values": ["%d of %d" % (lab["auditor_flagged_unchanged_jev_labels"]["n"],
+                                      lab["auditor_flagged_unchanged_jev_labels"]["of"])]},
+            {"label": "Auditor flagged an unchanged historical issue", "format": "text",
+             "values": ["%d of %d" % (iss["auditor_flagged_unchanged_historical_issue"]["n"],
+                                      iss["auditor_flagged_unchanged_historical_issue"]["of"])]}]},
+        "limits": [pe["note"], pi["note"]],
+        "sources": source,
+    }
+    j = x["jev_ten_per_request"]
+    ja = j["agreement_with_single_review_jev"]
+    jev_batch = {
+        "id": "jev-ten-per-request",
+        "kind": "benchmark",
+        "title": "Jev with ten reviews per request",
+        "question": "Does sending ten reviews in one Jev request change the labels or the cost?",
+        "sample": "%d reviews from the verifier sample, in %d requests of %d" % (j["labelled"], j["requests"], j["reviews_per_request"]),
+        "truth": "None. Both sides are Jev with the same rubric; the reference is the main run's one-review requests.",
+        "status": "measured",
+        "metrics": [_rate({"label": "Topic unchanged", "share": ja["topic"]}),
+                    _rate({"label": "Intent unchanged", "share": ja["intent"]}),
+                    _rate({"label": "All three unchanged", "share": ja["joint"]}),
+                    metric("Input tokens per review", j["input_tokens_per_review"], "int",
+                           note="%s in the main run" % j["main_run_input_tokens_per_review"])],
+        "finding": "Jev reads the ten reviews once and answers forty questions, each pointed at one review. Batching saved "
+                   "%.0f%% of input tokens but changed at least one label in %d of %d reviews, so the main run's "
+                   "one-review labels stay." % (100 * (1 - j["input_tokens_per_review"] / j["main_run_input_tokens_per_review"]),
+                                               ja["joint"]["of"] - ja["joint"]["n"], ja["joint"]["of"]),
+        "limits": [j["note"], "Jev's run-to-run variation on single reviews was not measured here, so part of the change "
+                              "may be ordinary variation."],
+        "sources": source,
+    }
+    return [verifier, jev_batch, grouping, checks]
+
+
 def build():
     sources = []
     pilot, rubric, checkpoint = _load(PILOT, sources), _load(RUBRIC, sources), _load(CHECKPOINT, sources)
     items = [intent_accuracy(_load(INTENT, sources)), rubric_benchmark(rubric, sources), run_benchmark(pilot, checkpoint),
              projection(checkpoint, _load(RUN, sources)), extractor(_load(EXTRACTOR, sources))]
+    if (ROOT / GAP).exists():
+        items += gap_closure(_load(GAP, sources))
     return {"version": 1, "model": checkpoint["model"], "prompt_version": checkpoint["prompt_version"],
             "built_from": sources, "items": items}
 

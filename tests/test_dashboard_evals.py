@@ -70,7 +70,8 @@ class EvalsRouteTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["golden"], {"status": "pending"})
         self.assertEqual([i["id"] for i in body["items"]],
-                         ["golden-intent", "prompt-v1-v2", "labelling-runs", "projection-100k", "extractor-benchmark"])
+                         ["golden-intent", "prompt-v1-v2", "labelling-runs", "projection-100k", "extractor-benchmark",
+                          "blind-verifier-batch10", "jev-ten-per-request", "grouping-stage", "planted-and-injection"])
         checks = {c["name"]: c["status"] for c in body["checks"]}
         self.assertEqual(checks["Ranking reproduced from saved labels"], "pending")
         self.assertEqual(checks["Memo numbers match saved claims"], "pending")

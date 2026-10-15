@@ -70,17 +70,20 @@ The two past coding passes used OpenCode Go; see `build_provenance.md`.
 Sol is ChatGPT and can help with occasional reasoning. Coding runs through
 OpenCode CLI.
 
-Python will dispatch bounded tasks and save handoffs. The verifier will receive
-original text and the rubric before it sees the classifier's prediction.
-Grouping will produce a saved mapping. Code will calculate the ranking.
-The memo role will receive saved aggregates and a small evidence pack.
-A human will check the final argument.
+What ran differs from this plan in four ways:
+
+- Jev labelled one review per request, and DeepInfra `openai/gpt-oss-120b` extracted evidence for up to 25
+  reviews per request.
+- Grouping ran as a chat handoff: eight Claude Sonnet 5.5 agents and a blind Claude Opus 5.5 verifier on 600
+  cases. Their saved inputs and outputs were recovered on 16 October; their usage was not recorded.
+- On 16 October, `tools/gap_closure_eval.py` added a recorded grouping stage, a blind verifier at ten reviews per
+  request, planted-error and prompt-injection tests, and a real interruption and resume, all with saved calls.
+- Code owns the live controls: the shared ledger with worst-case reservations and holds
+  (`spotify_pipeline/project_budget.py`), the durable queue and checkpoints, ID and exact-quote validation,
+  ranking and claim checks.
 
 Golden answers flow only to code evaluation. They never enter model inputs.
-GLM is not selected. Opus remains a verifier candidate. Runtime access and pilot quality are pending.
-The project ceiling is US$49.99. Paid execution still needs approval.
-Saved state, validation, and budget controls are code responsibilities.
-The live controls and full runtime remain unimplemented.
+The project ceiling is US$49.99. Paid execution needs approval.
 
 This is a GitHub Mermaid diagram. It describes responsibilities and planned
 handoffs. It does not prove execution, automatic coordination, or shared locks.
