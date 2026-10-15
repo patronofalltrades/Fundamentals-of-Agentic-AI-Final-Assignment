@@ -15,7 +15,7 @@ the memo traces back to saved records.
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
-| Deadline | 21 October 2026, 23:59 Pacific Time. Submission: the public GitHub URL through bCourses (pending). |
+| Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submission: the public GitHub URL through bCourses (pending). |
 | Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The 16 October [gap-closure run](reports/gap-closure-2026-10-16.md) added US$0.040. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (16 October; evidence checked 15 October) |
@@ -24,9 +24,12 @@ the memo traces back to saved records.
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
 a human accuracy score.
 
-Also published: the [expanded decision memo](reports/product-decision-memo-2026-10-13.md) and the
-[full warm orchestration audit](reports/cost100-full-warm-audit.md). See the
-[attribution and inclusion handoff](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
+Published on main through PR #30: the [expanded decision memo](reports/product-decision-memo-2026-10-13.md)
+and [full warm orchestration audit](reports/cost100-full-warm-audit.md).
+The live site retains the short provisional memo with corrected attribution.
+See the [final submission checklist](reports/final-submission-checklist-2026-10-15.md),
+[exact cost scopes](reports/cost-scope-reconciliation-2026-10-15.md), and
+[fresh grading check](reports/grading-closeout-2026-10-15.md).
 
 ## Where each deliverable is
 
@@ -121,7 +124,7 @@ make calls.
    not zero. Their saved input batches, outputs and the verifier's 600 blind cases were recovered on 16 October
    ([trail](reports/grouping-trail-recovery-2026-10-16/aggregate.json)). A recorded program stage then regrouped
    600 members with every call saved ([gap-closure report](reports/gap-closure-2026-10-16.md)).
-3. **Issue-map quality.** The 40% result compares an assistant's manual assignments with human answers. It is not production grouping accuracy. Aggregate human family counts were visible before those assignments were frozen, and the sample had five cases per topic. The ranking remains advisory until targeted human review. [Attribution and historical audit limits](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
+3. **Issue-map quality.** The displayed 40% result compares an assistant's manual assignments with human answers. It is not production grouping accuracy. Aggregate human family counts were visible before those assignments were frozen, and the sample had five cases per topic. A recovered older agent-label audit reports the same exact total with a different family total; the two prediction artifacts are distinct. The ranking remains advisory. [Verified attribution and limits](reports/grouping-score-provenance-2026-10-15.md).
 4. **Checker result.** `check_submission.py` returns `review_required`. Besides the scope, it flags 7,980
    nonaccepted statuses, 949 partial or uncertain call outcomes, 79,797 unknown run phases, 94 unavailable usage
    fields, 20,938 rows with split cache or evidence provenance, missing historical verifier, group and memo call
@@ -191,7 +194,7 @@ Read [AGENTS.md](AGENTS.md) first. The release record is the
 
 **Open items:**
 
-1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific on 21 October.
+1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific on **20 October**. This corrects the earlier reported 21 October date using the current course notice.
 2. Optional: a recording of a real resume on saved state, in addition to the synthetic demo.
 3. Keep every disclosure above. Do not change saved data to clear a checker flag.
 

@@ -1,5 +1,12 @@
 # Issue-map blockers: offline triage (2026-10-12)
 
+**Recovery update, 15 October:** the original triage aggregate and agent-label
+file have been located in the preserved canary checkout and match their published
+hashes. The 22/40 family result belongs to that saved agent-label comparison;
+21/40 belongs to the assistant manual comparison. Neither is production accuracy.
+See [the reconciled provenance](grouping-score-provenance-2026-10-15.md). The
+earlier warning below remains a dated record of the narrower search.
+
 **Attribution review, 15 October:** the historical agent-label scores below
 are preserved without rescoring. They claim 22/40 family agreement and must
 not be conflated with the assistant manual comparison's 21/40. The latter's

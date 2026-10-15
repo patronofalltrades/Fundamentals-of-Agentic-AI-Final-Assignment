@@ -1,5 +1,11 @@
 # Evaluation attribution and local inclusion handoff — 15 October 2026
 
+**Subsequent closeout:** PR #30 merged and its automatic production release
+succeeded. A broader search recovered the older agent-label audit aggregates;
+see [verified provenance](grouping-score-provenance-2026-10-15.md) and the
+[current submission checklist](final-submission-checklist-2026-10-15.md).
+The preparation and narrower missing-file findings below remain historical.
+
 Owner: Codex. Branch: `docs/evaluation-attribution-memo-warm`.
 Base: published main `1217b47be344a3a145ab6e5bb9922ba24d58d705` (PR #29).
 Reviewed changes commit: `fdaa77844959cb982c04fa6aa3cff200d2553b00`.
