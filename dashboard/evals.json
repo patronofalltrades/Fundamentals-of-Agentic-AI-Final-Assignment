@@ -60,7 +60,7 @@
     },
     {
       "path": "reports/production-measurement-audit-2026-10-15.json",
-      "sha256": "890a105d508fcb9ba6a16731e17589fe6b5cfcfda7a8c14bab01654ad6f8418c"
+      "sha256": "b2cd64c605573116cb8eec92054fdd18766c170eedf29e4cf9dfa211eb8cf08d"
     },
     {
       "path": "reports/gap-closure-2026-10-16/aggregate.json",
@@ -959,7 +959,7 @@
       "limits": [
         "Provider reconciliation is still needed for every unknown charge; HTTP errors are not assumed free.",
         "Public logs support the phase and request arithmetic. SIGINT and checkpoint details remain saved-report evidence; private snapshots were not rechecked in this audit.",
-        "Public call rows omit provider-route and request/response receipt fields. This run does not prove historical main-run recovery."
+        "Public call rows give every attempt's route and request hash; 324 have a response hash and 186 a provider generation ID. This run does not prove historical main-run recovery."
       ],
       "sources": [
         "reports/gap-closure-2026-10-16/aggregate.json",

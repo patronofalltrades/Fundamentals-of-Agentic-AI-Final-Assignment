@@ -279,13 +279,13 @@ and provisional recommendation labels visible. No new deployment was triggered.
 
 ## Remaining evidence conflicts
 
-1. **Public call provenance is narrower than the prose.** The gap report says
-   `calls.jsonl` includes routes; its 13 exported columns do not. The tool stores
-   route in SQLite but drops it from the published projection. Request/response
-   hashes, provider IDs, the reported provider-cost equality and raw checkpoint
-   contents also cannot be directly audited from this export. The aggregate's
-   970/10 split is consistent with token/rate arithmetic, not a replacement for
-   those receipt fields. No evidence file was edited to hide this difference.
+1. **Public call provenance was narrower than the prose (partly fixed).** The
+   first export of `calls.jsonl` had 13 columns and no route. A follow-up fix
+   added each attempt's route and request hash, a response hash for the 324
+   attempts with a saved body, and a provider generation ID for 186. The audit
+   tool now checks the public routes against the aggregate's route counts. The
+   hashed bodies, the reported provider-cost equality and raw checkpoint
+   contents still cannot be directly audited from this export.
 2. **Planned, scored and joined denominators differ.** Verifier 1,000/980;
    grouping 600/580; planted label audit 50/43. A held ten-review verifier batch
    and a separate metered/quarantined ten-review batch explain its 20 excluded
