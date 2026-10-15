@@ -23,6 +23,10 @@ the memo traces back to saved records.
 "Structurally accepted" means that code checked the review's identity, format and exact-quote support. It is not
 a human accuracy score.
 
+Prepared on the local review branch: the [expanded decision memo](reports/product-decision-memo-2026-10-13.md)
+and [full warm orchestration audit](reports/cost100-full-warm-audit.md).
+Their publication awaits approval. See the [attribution and inclusion handoff](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
+
 ## Where each deliverable is
 
 | Course requirement | Where | Status |
@@ -45,7 +49,7 @@ a human accuracy score.
 | Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, one review per request (76,523 requests in the main run; the instructor asked for 10 per request). Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
 | Issue map | 30,400 complaint and cancellation records, one issue each, across 41 catalog issues. Human decisions replace the model in 91 cases, and 7 label corrections are declared. |
 | Ranking | `priority_score = severity_sum`, descending, then issue ID ascending. Top baseline issue: `USE-ADS`, 5,197 records, severity sum 11,874. The public view leaves out 23 flagged records (5,195 and 11,869). Second: `PLY-FAIL`, 2,474 records. |
-| Quality checks | A blind model verifier agreed on 511 of 600 records (85.2%). A blind human review agreed on 16 of 40 (40.0%), before overrides. |
+| Quality checks | A separate model verifier agreed with the grouping agents on 511 of 600 records (85.2%). Separately, one assistant's manual assignments agreed with human answers on 16 of 40 (40.0%); this did not evaluate the production grouping model. See the [40-case provenance](reports/issue-grouping-independent40-score.md). |
 | Golden 50 | Exact agreement with human labels: topic 26/50, intent 38/50, severity 30/50, all three 14/50. Severity MAE 0.56; zero missing predictions. |
 | Cost pilot (`cost_100.csv`) | 112 metered calls, US$0.007410287, 98 accepted, 2 quarantined. Cold active time 588.4 s; warm replay 0.008 s with zero new calls. |
 
@@ -114,7 +118,7 @@ make calls.
    text; 1,500 records were mapped before this step was added. The agents saw no review IDs, human decisions or
    golden answers. Their per-call token usage was not recorded; it is unknown,
    not zero.
-3. **Issue-map quality.** Blind human agreement was 40%. The ranking is advisory until a targeted human review.
+3. **Issue-map quality.** The 40% result compares an assistant's manual assignments with human answers. It is not production grouping accuracy. Aggregate human family counts were visible before those assignments were frozen, and the sample had five cases per topic. The ranking remains advisory until targeted human review. [Attribution and historical audit limits](reports/evaluation-attribution-and-inclusion-2026-10-15.md).
 4. **Checker result.** `check_submission.py` returns `review_required`. Besides the scope, it flags 7,980
    nonaccepted statuses, 949 partial or uncertain call outcomes, 79,797 unknown run phases, 94 unavailable usage
    fields, 20,938 rows with split cache or evidence provenance, missing historical verifier, group and memo call

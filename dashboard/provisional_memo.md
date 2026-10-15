@@ -16,7 +16,7 @@ Keep the ranking advisory until that review is complete.
 
 ## confidence
 
-- The issue map is model-made. Blind human agreement was 16 of 40 (40.0%), before human overrides.
+- The issue map is model-made. Separately, one assistant's manual assignments agreed with human answers on 16 of 40 (40.0%). This did not evaluate the production grouping model. Aggregate human family counts were visible before those assignments were frozen; the sample had five cases per topic.
 - A separate model verifier agreed on 511 of 600 (85.2%); the reviewed human pilot on 39 of 51 (76.5%).
 - 51 pilot and 40 blind human decisions now override the model, so those cases are no longer holdouts.
 

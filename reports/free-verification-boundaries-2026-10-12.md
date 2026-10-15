@@ -68,7 +68,9 @@ any other previously reviewed cases was not available without reading their
 contents. Obtain that IDs/text-hashes-only manifest first; do not open golden
 answers or call the sample untouched until every exclusion is verified.
 
-The human blind agreement remains 16/40 (40%) before overrides. Numeric claim
+The separate [assistant manual comparison](issue-grouping-independent40-score.md)
+agreed with human answers on 16/40 (40%). It did not evaluate the production
+grouping model. Numeric claim
 checks and this trace do not establish semantic accuracy or a causal or revenue
 effect. Nothing was pushed, merged, deployed, or uploaded.
 

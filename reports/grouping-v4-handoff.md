@@ -47,11 +47,14 @@ remains `USE-ADS`: 5,197 mapped records and severity sum 11,874.
 
 The map is model-derived with 51 pilot and 40 blind human overrides. Before
 those overrides, the grouping agents agreed with a separate model verifier on
-511/600 (85.2%), with the reviewed human pilot on 39/51 (76.5%), and with the
-blind human review on 16/40 (40.0%). Those human cases are no longer untouched
-holdouts for final membership. The 40% human agreement sharply limits any
-claim of semantic accuracy. The memo recommends targeted validation of the
-leading issue before a product decision.
+511/600 (85.2%) and with the reviewed human pilot on 39/51 (76.5%). Separately,
+one assistant's manual assignments agreed with human answers on 16/40 (40.0%);
+that comparison did not evaluate the production grouping model. Aggregate human
+family counts were visible before those assignments were frozen. See the
+[source report](issue-grouping-independent40-score.md) and the
+[historical audit attribution limits](evaluation-attribution-and-inclusion-2026-10-15.md).
+The human override cases are no longer untouched holdouts for final membership.
+The memo recommends targeted validation of the leading issue before a product decision.
 
 The source handoff reports catalog gaps in free-tier limits, blank saved
 collections, playback controls, unwanted autoplay, unexpected playlist
@@ -98,9 +101,11 @@ dashboard database was not changed here.
 
 ## Aggregate-only collaborator handoff
 
-The [provisional memo](provisional-product-priority-memo.md) is byte-identical
-to the private grading memo (SHA-256
+At the original handoff, the [provisional memo](provisional-product-priority-memo.md)
+was byte-identical to the private grading memo (SHA-256
 `e839f30aa39adc9db49b688a205bc7fbd7ae468bf711e6640c27658d09bc68d7`).
+The tracked memo's attribution was corrected on 15 October. The frozen private
+grading memo and release were not rewritten; the numeric claim ledger is unchanged.
 The numeric claim ledger is consistent with the saved ranking, but that check
 does not verify the meaning of individual reviews. A collaborator can use this
 report, the memo, and the frozen catalog without opening private review text or

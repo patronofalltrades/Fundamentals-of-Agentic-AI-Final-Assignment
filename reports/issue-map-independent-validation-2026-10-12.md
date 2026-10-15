@@ -1,5 +1,15 @@
 # Independent issue-map validation (offline, 2026-10-12)
 
+**Attribution review, 15 October:** the historical production-agent scoring
+claim below is preserved as a claim from this audit, not adopted as the source
+of the dashboard's 40%. The documented assistant manual comparison is
+[16/40 exact and 21/40 family agreement](issue-grouping-independent40-score.md).
+The older production-agent triage claims 16/40 exact and 22/40 family agreement.
+They name different prediction artifacts. This review did not read human
+answers or rerun either score. Keep them separate pending a provenance review;
+do not present the assistant's 40% as production grouping accuracy. See the
+[attribution audit](evaluation-attribution-and-inclusion-2026-10-15.md).
+
 The private handoff was read first. The original 30,403-row map was hashed and
 audited before any correction was derived. The original file remains intact.
 `tools/validate_claude_issue_map.py audit` saved the aggregate-only original
@@ -53,12 +63,12 @@ digest, and frozen frame, pilot, and catalog digests.
 
 ## Human agreement and claim limits
 
-The local scorer independently reproduced agent agreement with pilot decisions
+This historical audit reported that its local scorer reproduced agent agreement with pilot decisions
 at **39/51 (76.5%)** and with the blind human set at **16/40 (40.0%)**; five
 blind answers carry uncertainty notes. Claude reports blind model-verifier
 agreement of 511/600 (85.2%); this validation did not rerun that separate
-verifier sample, and it is model-to-model agreement. The 40.0% human result
-blocks claims that individual issue assignments are human-validated, that
+verifier sample, and it is model-to-model agreement. Neither the historical
+40.0% claim nor the separate assistant manual comparison establishes that individual issue assignments are human-validated, that
 confidence labels calibrate human correctness, or that the model-derived
 ranking is an accurate production priority ordering. Structural completeness
 and arithmetic agreement do not establish those claims. The 40-case sample

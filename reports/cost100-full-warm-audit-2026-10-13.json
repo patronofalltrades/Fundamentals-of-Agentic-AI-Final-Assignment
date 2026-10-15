@@ -1,0 +1,84 @@
+{
+  "schema_version": "cost100-full-warm-audit-v1",
+  "status": "passed",
+  "scope": "new full execute() orchestration on a copy of the real unchanged 100-row pilot",
+  "historical_main_run_recovery": false,
+  "new_provider_inference": false,
+  "source_bytes_match_pinned_pilot": true,
+  "source_sha256": "c884ac3b9be5066995d5063f96ad9af6e5e082975788c1684c4f6b6ea661dd0e",
+  "original_database_unchanged": true,
+  "original_database_sha256": "e132ff1360c5337cced0923595d0fda6de34b1db4cc047b176b97efb97a1d7fd",
+  "harness_sha256": "b2b6a8cf631cc3a87bb0bce9f46711cfb9e4b37c9152371a665cd01a1aadd6ce",
+  "audit_code_sha256": "92268e1d7d35d63c26870cfb9265a5a6f923ab750bc9298856cdcee218f4fc4e",
+  "before": {
+    "rows": {
+      "count": 100,
+      "sha256": "181a99dc046c77c35b2e9baaa2b3e80832499c1db81326c933e5399859a77461"
+    },
+    "outputs": {
+      "count": 254,
+      "sha256": "6d3bc18f7c8ae5997bd3f184275b563066d161a69489f53f8664a46c6ddb90bc"
+    },
+    "calls": {
+      "count": 112,
+      "sha256": "23edad228ecc176c5408c04d6497cd11121f237a9ac922ea716afa015db9d967"
+    },
+    "completed": 98,
+    "quarantined": 2
+  },
+  "after": {
+    "rows": {
+      "count": 100,
+      "sha256": "181a99dc046c77c35b2e9baaa2b3e80832499c1db81326c933e5399859a77461"
+    },
+    "outputs": {
+      "count": 254,
+      "sha256": "6d3bc18f7c8ae5997bd3f184275b563066d161a69489f53f8664a46c6ddb90bc"
+    },
+    "calls": {
+      "count": 112,
+      "sha256": "23edad228ecc176c5408c04d6497cd11121f237a9ac922ea716afa015db9d967"
+    },
+    "completed": 98,
+    "quarantined": 2
+  },
+  "attempts": {
+    "paid": 0,
+    "transport": 0,
+    "socket": 0
+  },
+  "orchestration_seconds": 0.02079900000000004,
+  "stages": [
+    {
+      "stage": "label",
+      "elapsed_seconds": 0.0012845830000000058
+    },
+    {
+      "stage": "evidence",
+      "elapsed_seconds": 0.001346834000000019
+    },
+    {
+      "stage": "verify",
+      "elapsed_seconds": 0.00020337500000000563
+    },
+    {
+      "stage": "group",
+      "elapsed_seconds": 0.011441542000000027
+    },
+    {
+      "stage": "rank",
+      "elapsed_seconds": 0.00278504199999996
+    },
+    {
+      "stage": "memo",
+      "elapsed_seconds": 4.354200000000752e-05
+    }
+  ],
+  "whole_audit_seconds": 0.09912279200000002,
+  "notes": [
+    "execute() emits literal cold phase labels; copied events are a new warm experiment, not a new cold benchmark.",
+    "All model stages reuse saved outputs; ranking is recomputed. Validation runs before and after.",
+    "Two original quarantines stay quarantined; no retry or relabel is attempted.",
+    "112 historical calls are retained unchanged; there are zero new calls for any role."
+  ]
+}

@@ -1,5 +1,15 @@
 # Coordination record
 
+## Local attribution and inclusion review — 15 October 2026
+
+Owner: Codex, branch `docs/evaluation-attribution-memo-warm`, isolated worktree
+`spotify-attribution-closeout`, based on published main `1217b47`.
+Scope: public 40% evaluation wording, the existing expanded memo, the existing
+full warm audit tool and aggregate reports, and a text-only review handoff.
+No existing cost files, source data, human answers, scores, or release artifacts
+are changed. Original worktrees remain preserved. Publication awaits Hanif's
+approval. See [the handoff](../reports/evaluation-attribution-and-inclusion-2026-10-15.md).
+
 ## Claude handoff — 13 October 2026
 
 Branch `docs/readme-rubric-benchmark`, from `main` at `cec5be9`. Owner: Claude (cost, dashboard, README).
@@ -51,8 +61,9 @@ The shared canary and Claude's dashboard checkout remain unchanged by this
 integration work. No push, merge, or deployment has been authorized.
 
 The v4 branch ran 315 offline Python tests successfully. The ranking remains
-advisory: pre-override blind human agreement was 16/40 (40.0%), and the 40
-cases were subsequently used as human overrides. The combined branch then
+advisory. The separate assistant manual comparison agreed with human answers
+on 16/40 (40.0%); this did not evaluate the production grouping model. The 40
+human decisions were subsequently used as overrides. The combined branch then
 passed 386 Python tests with localhost access, the web privacy test, Astro
 typecheck, and static build. See
 `reports/grouping-v4-handoff.md` and `reports/submission-status-2026-10-12.md`.
