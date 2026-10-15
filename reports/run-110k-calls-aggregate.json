@@ -1,0 +1,36 @@
+{
+  "source": {
+    "file": "calls.jsonl in release grading-2026-10-13 (grading-110k.zip)",
+    "sha256": "179c8b808324cb733cc2b85fb25d504f1472167638f80856161f82174d252661"
+  },
+  "note": "Charges are usage-derived and include every metered outcome. Uncertain calls carry no known charge. request_seconds is summed request time, not wall time.",
+  "stages": {
+    "evidence": {
+      "calls": 3274,
+      "outcomes": {
+        "partial_succeeded": 811,
+        "quarantined_metered": 92,
+        "succeeded": 2333,
+        "uncertain": 38
+      },
+      "charged_nusd": 1461436182,
+      "input_tokens": 9738535,
+      "output_tokens": 6472991,
+      "request_seconds": 125960.087,
+      "model": "openai/gpt-oss-120b"
+    },
+    "jev": {
+      "calls": 76523,
+      "outcomes": {
+        "succeeded": 76515,
+        "uncertain": 8
+      },
+      "charged_nusd": 3264536184,
+      "input_tokens": 77727052,
+      "output_tokens": 15038078,
+      "request_seconds": 29647.161,
+      "model": "jev-1.13.0"
+    }
+  },
+  "total_charged_nusd": 4725972366
+}

@@ -74,7 +74,7 @@ The dashboard tests use synthetic rows. They cover idempotent import, source mis
 1. Integrate this branch after reviewing its diff and rerunning tests in the destination branch. Keep the updated canonical `AGENTS.md` and `README.md`; this branch did not edit them.
 2. Complete the bounded 10-review batch runtime, durable queue, cache, independent verification, accepted grouping, claim checks, and at least 100,000 source-row run. Retain source-row and distinct-text counts separately. Check the supplied full-corpus grading contract against the instructor's reported 100,000-row minimum.
 3. Add deployment packaging, a persistent database volume, access controls, rate limits and a privacy review for evidence quotes. Select a host and approve any account or cost before deployment. Keep the dashboard API read-only for graders.
-4. Set the live URL in canonical `README.md` after deployment and verify it loads the saved database without paid reruns. The final deadline is October 13, 2026, 11:59 pm Pacific Time.
+4. Set the live URL in canonical `README.md` after deployment and verify it loads the saved database without paid reruns. The final deadline is October 21, 2026, 11:59 pm Pacific Time.
 
 No host, account, deployment, or live URL was created in this branch.
 

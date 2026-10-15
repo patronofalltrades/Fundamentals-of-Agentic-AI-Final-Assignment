@@ -18,6 +18,14 @@
     {
       "path": "reports/golden-50-intent.json",
       "sha256": "b4c7a8a8da31c0f2eae45f84f8fc4faf2c10a0664294c27b6b518232b04d26f9"
+    },
+    {
+      "path": "reports/run-110k-calls-aggregate.json",
+      "sha256": "65309c7026e3ecbf4a419a6eecb659329eca7c986c3d0386338965a3dd49036e"
+    },
+    {
+      "path": "reports/extractor-benchmark-aggregate.json",
+      "sha256": "067402d0e2a28b24cc2732a29cd89dc82f43aaf18171b8c18b854038e323c300"
     }
   ],
   "items": [
@@ -349,37 +357,98 @@
     },
     {
       "id": "projection-100k",
-      "kind": "projection",
-      "title": "Projection: the 100,000-review run",
-      "question": "What will the required 100,000-review run cost and how long will labelling take?",
-      "sample": "The first 100,000 rows of the full review file, counted before any model call",
-      "truth": "Linear estimate from the 500-review checkpoint. Not a measurement.",
-      "status": "estimate",
+      "kind": "run",
+      "title": "The 100,000-review run: estimate against measured",
+      "question": "What did the required run cost, and how close was the estimate made before it?",
+      "sample": "Estimate: the first 100,000 rows, before any model call. Measured: every call of the 110,000-row selection.",
+      "truth": "Measured charges are usage-derived from the saved call ledger in the grading release.",
+      "status": "measured",
       "metrics": [
         {
-          "label": "Distinct review texts",
+          "label": "Measured API cost, all stages",
+          "value": "4.725972366",
+          "format": "usd",
+          "note": "labels and evidence quotes"
+        },
+        {
+          "label": "Measured labelling cost",
+          "value": "3.264536184",
+          "format": "usd",
+          "note": "estimated beforehand: $3.23"
+        },
+        {
+          "label": "Distinct review texts in the estimate",
           "value": 75894,
           "format": "int",
           "note": "of 99,999 non-empty rows; duplicates reuse one label"
-        },
-        {
-          "label": "Estimated labelling cost",
-          "value": "3.227894126",
-          "format": "usd"
-        },
-        {
-          "label": "Estimated labelling time",
-          "value": "7.0531",
-          "format": "hours",
-          "note": "serial; parallel requests reduce it"
         }
       ],
+      "compare": {
+        "columns": [
+          "Estimate",
+          "Measured"
+        ],
+        "rows": [
+          {
+            "label": "Labelling cost (USD)",
+            "format": "usd",
+            "values": [
+              "3.227894126",
+              "3.264536184"
+            ]
+          },
+          {
+            "label": "Evidence cost (USD)",
+            "format": "usd",
+            "values": [
+              null,
+              "1.461436182"
+            ],
+            "note": "Not estimated beforehand."
+          },
+          {
+            "label": "Labelling request time",
+            "format": "hours",
+            "values": [
+              "7.0531",
+              "8.2353"
+            ],
+            "note": "Estimate: serial. Measured: summed request time, not wall time."
+          },
+          {
+            "label": "Labelling calls",
+            "format": "int",
+            "values": [
+              null,
+              76523
+            ]
+          },
+          {
+            "label": "Evidence calls",
+            "format": "int",
+            "values": [
+              null,
+              3274
+            ]
+          },
+          {
+            "label": "Uncertain calls, held without retry",
+            "format": "int",
+            "values": [
+              null,
+              46
+            ]
+          }
+        ]
+      },
       "limits": [
-        "The estimate scales the checkpoint linearly. Retries, rate limits and parallelism change it.",
-        "Evidence extraction is a separate stage with its own cost."
+        "The estimate scaled the 500-review checkpoint linearly and covered labelling only.",
+        "The measured run covers 110,000 selected rows, not the first 100,000 rows of the file.",
+        "Charges are usage-derived and include every metered outcome. Uncertain calls carry no known charge. request_seconds is summed request time, not wall time."
       ],
       "sources": [
-        "reports/jev-checkpoint-500.json"
+        "reports/jev-checkpoint-500.json",
+        "reports/run-110k-calls-aggregate.json"
       ]
     },
     {
@@ -388,13 +457,84 @@
       "title": "Evidence extractor benchmark",
       "question": "Which hosted model extracts exact evidence quotes and product entities most reliably and cheaply?",
       "sample": "The same 100 development reviews, sent to each candidate route",
-      "truth": "Agreement with saved development evidence, plus exact-quote checks against the source text.",
-      "status": "pending",
-      "metrics": [],
-      "limits": [
-        "Results appear here when the benchmark saves its final report."
+      "truth": "Exact-quote checks against the source text. Agreement with saved development evidence is in the report.",
+      "status": "partial",
+      "metrics": [
+        {
+          "label": "DeepInfra reviews with accepted evidence",
+          "value": 91,
+          "format": "count",
+          "of": 100
+        },
+        {
+          "label": "Groq reviews with accepted evidence",
+          "value": 66,
+          "format": "count",
+          "of": 100,
+          "note": "18 reviews never sent"
+        },
+        {
+          "label": "Known charge, both routes",
+          "value": "0.006082951",
+          "format": "usd"
+        }
       ],
-      "sources": []
+      "compare": {
+        "columns": [
+          "DeepInfra",
+          "Groq"
+        ],
+        "rows": [
+          {
+            "label": "Calls",
+            "format": "int",
+            "values": [
+              101,
+              82
+            ]
+          },
+          {
+            "label": "Accepted",
+            "format": "int",
+            "values": [
+              91,
+              66
+            ]
+          },
+          {
+            "label": "Invalid responses",
+            "format": "int",
+            "values": [
+              9,
+              16
+            ]
+          },
+          {
+            "label": "Cost (USD)",
+            "format": "usd",
+            "values": [
+              "0.002174251",
+              "0.003908700"
+            ]
+          },
+          {
+            "label": "Summed request time",
+            "format": "seconds",
+            "values": [
+              219.583,
+              63.925
+            ]
+          }
+        ]
+      },
+      "decision": "DeepInfra became the evidence extractor: it completed more of the set with fewer invalid responses. Groq was faster per request.",
+      "limits": [
+        "The benchmark stopped before Groq finished; its untouched reviews were never sent. request_seconds is summed request time, not wall time.",
+        "The paired comparison against development evidence is in reports/openrouter-extractor-benchmark.md."
+      ],
+      "sources": [
+        "reports/extractor-benchmark-aggregate.json"
+      ]
     }
   ]
 }

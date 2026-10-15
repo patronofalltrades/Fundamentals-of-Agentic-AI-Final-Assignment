@@ -1,0 +1,33 @@
+{
+  "source": {
+    "file": "openrouter_extractor_benchmark.db (private ledger)",
+    "sha256": "1f0a59cad4ab49257615e7ef57a80e44b674c269c31463b0f8e5d033016191be"
+  },
+  "source_reviews": 100,
+  "note": "The benchmark stopped before Groq finished; its untouched reviews were never sent. request_seconds is summed request time, not wall time.",
+  "routes": {
+    "deepinfra": {
+      "calls": 101,
+      "outcomes": {
+        "invalid_response": 9,
+        "reconciled_no_visible_bill": 1,
+        "succeeded": 91
+      },
+      "charged_nusd": 2174251,
+      "request_seconds": 219.583,
+      "reviews_attempted": 100,
+      "reviews_accepted": 91
+    },
+    "groq": {
+      "calls": 82,
+      "outcomes": {
+        "invalid_response": 16,
+        "succeeded": 66
+      },
+      "charged_nusd": 3908700,
+      "request_seconds": 63.925,
+      "reviews_attempted": 82,
+      "reviews_accepted": 66
+    }
+  }
+}

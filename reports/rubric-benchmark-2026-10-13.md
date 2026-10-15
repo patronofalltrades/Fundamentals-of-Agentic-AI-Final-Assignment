@@ -107,14 +107,14 @@ The [provisional memo](provisional-product-priority-memo.md) cites claim IDs for
 recommends a targeted human review of the leading issue (`USE-ADS`) before a product change. It makes no revenue,
 churn or causal claim. Numeric consistency does not prove that the issue map is correct.
 
-### I. Cost calculator (T3) — Partly met
+### I. Cost calculator (T3) — Met
 
 The contract scores T3 as 1 when all three parts are shown, 0.5 for materially incomplete evidence, 0 when absent.
 
 | Part | Evidence | Status |
 | --- | --- | --- |
 | (a) Real 100-review cold/warm pilot, all costs and failures counted | 112 calls, US$0.007410287, 98 accepted, 2 quarantined, warm run 0.008 s with zero calls | Met |
-| (b) Offline calculator with working arithmetic and editable assumptions | `python3 -m tools.cost100_offline_calculator` recomputes the charge; doubled rates double it; the projected count does not change the measured results | Partly met |
+| (b) Offline calculator with working arithmetic and editable assumptions | `python3 -m tools.cost100_offline_calculator` recomputes the charge; doubled rates double it; the projected count does not change the measured results. Full-run estimates added on 13 October (below) | Met |
 | (c) Retry, spending and recovery controls | Reservations, uncertain-call holds, no automatic retry of unknown outcomes, checkpoints | Met |
 
 Added on 13 October, offline with no model call:
@@ -163,11 +163,11 @@ Measured main-run charges were US$2.92 for Jev and US$1.29 for DeepInfra. The to
 ceiling and the instructor's expected US$10 for 100,000 reviews. The grouping agents' token usage is unknown,
 not zero.
 
-## Actions before the deadline (13 October, 23:59 Pacific)
+## Actions before the deadline (21 October, 23:59 Pacific)
 
 | # | Action | Owner | Status |
 | --- | --- | --- | --- |
-| 1 | Publish the grading folder and the video as release assets | Hanif | Approved; Hanif runs the release command |
+| 1 | Publish the grading folder and the video as release assets | Hanif | Done: release `grading-2026-10-13` |
 | 2 | Add full-run estimates, a pilot execution command and a scaling decision to `cost/` | Claude | Done |
-| 3 | Include the 100 pilot review IDs in `cost/` | Hanif approved | Hanif copies the files; Claude commits |
+| 3 | Include the 100 pilot review IDs in `cost/` | Hanif approved | Done: `cost/pilot/` |
 | 4 | Submit the public GitHub URL through bCourses | Hanif | Pending |
