@@ -340,6 +340,61 @@ def issues(conn):
     return result
 
 
+FLOW_TOP_ISSUES = 5
+
+
+def flow(conn, top=FLOW_TOP_ISSUES):
+    """Complaint and cancellation records as intent -> topic -> issue links, from the public ranking's members.
+
+    Every record is counted once in each layer, so both layers sum to the public member count. The leading
+    ``top`` issues by the public ranking keep their own node; the rest are combined into one node.
+    """
+    ranking = issues(conn)
+    run = _run(conn)
+    if not run or not ranking["items"]:
+        return {"status": "pending", "nodes": [], "links": []}
+    exclude = _has_table(conn, "semantic_flag")
+    flag_join = "LEFT JOIN semantic_flag f ON f.row_index=m.row_index" if exclude else ""
+    flag_where = "AND COALESCE(f.blocked, 0)=0" if exclude else ""
+    rows = conn.execute("""SELECT c.intent,c.topic,m.issue_id,COUNT(*) AS records
+       FROM issue_membership m JOIN classifications c ON c.row_index=m.row_index AND c.config_hash=? %s
+       WHERE m.run_id=? AND c.intent IN ('complaint','cancellation') %s
+       GROUP BY c.intent,c.topic,m.issue_id""" % (flag_join, flag_where),
+                        (run["config_hash"], run["run_id"])).fetchall()
+    leading = [i["issue_id"] for i in ranking["items"][:top]]
+    rest = len(ranking["items"]) - len(leading)
+    other = "issue:OTHER"
+    links, totals = {}, {}
+    for row in rows:
+        issue = "issue:" + row["issue_id"] if row["issue_id"] in leading else other
+        for pair in (("intent:" + row["intent"], "topic:" + row["topic"]), ("topic:" + row["topic"], issue)):
+            links[pair] = links.get(pair, 0) + row["records"]
+        for node in ("intent:" + row["intent"], "topic:" + row["topic"], issue):
+            totals[node] = totals.get(node, 0) + row["records"]
+    titles = {i["issue_id"]: i["title"] for i in ranking["items"]}
+
+    def node(key, column):
+        kind, name = key.split(":", 1)
+        combined = "%d other issue%s" % (rest, "" if rest == 1 else "s")
+        label = (combined if key == other else titles[name]) if kind == "issue" else name
+        return {"id": key, "column": column, "label": label, "records": totals[key]}
+
+    columns = [sorted((k for k in totals if k.startswith(p)), key=lambda k: (-totals[k], k))
+               for p in ("intent:", "topic:")]
+    issue_nodes = ["issue:" + i for i in leading if "issue:" + i in totals] + ([other] if other in totals else [])
+    nodes = [node(k, c) for c, keys in enumerate(columns + [issue_nodes]) for k in keys]
+    return {
+        "status": ranking["status"], "run_id": run["run_id"],
+        "unit": "distinct complaint and cancellation review records, one issue each",
+        "records": sum(totals[k] for k in columns[0]),
+        "flagged_members_excluded": ranking.get("flagged_members_excluded"),
+        "leading_issues": len(leading), "combined_issues": rest,
+        "nodes": nodes,
+        "links": [{"source": s, "target": t, "records": n}
+                  for (s, t), n in sorted(links.items(), key=lambda kv: (kv[0][0], -kv[1], kv[0][1]))],
+    }
+
+
 def _has_table(conn, name):
     try:
         conn.execute("SELECT 1 FROM %s LIMIT 1" % name).fetchone()
@@ -480,6 +535,8 @@ def _api(conn, path, query):
         return _json_body(200, memo(conn))
     if path == "/api/evals":
         return _json_body(200, evals(conn))
+    if path == "/api/flow":
+        return _json_body(200, flow(conn))
     match = ISSUE_RE.match(path)
     if match:
         item = next((x for x in issues(conn)["items"] if x["issue_id"] == match.group(1)), None)

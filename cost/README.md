@@ -91,11 +91,11 @@ without reuse, all 660,609 are sent.
 
 **Cross-check against the real 100k run.** Projected to 110,000 rows, the base case with reuse estimates
 US$5.85: labels US$3.50 and evidence US$1.45. The main run measured US$2.92 for Jev and US$1.29 for DeepInfra
-([completion report](../reports/accepted-100k-completion.md)). The estimate is a little high because the pilot
-sent 1 review per Jev call, while the main run sent 10.
+([completion report](../reports/accepted-100k-completion.md)). The estimate is high. Both runs sent one review per
+Jev call, so batching does not explain the gap; the cause has not been analysed.
 
 **Time is modeled.** Elapsed time assumes linear speed-up up to the worker limit. It is pessimistic, because
-the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median was 0.32 s per 10-review request.
+the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median was 0.32 s per one-review request.
 
 ## 4. Scaling decision
 
@@ -104,7 +104,8 @@ the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median 
 - **Scope:** the instructor set a minimum of 100,000 reviews. The project ran 110,000 selected reviews for about
   US$4.2 measured. The full corpus was not run: the base estimate fits the budget, but the conservative
   no-reuse case does not, and the deadline did not allow 186 hours or more of modeled run time.
-- **Batching:** 10 reviews per Jev request in the main run; the contract allows up to 50.
+- **Batching:** one review per Jev request in the main run (76,523 requests), not the 10 per request the instructor
+  asked for. Evidence requests sent up to 25 distinct texts each (3,274 requests). The contract allows up to 50.
 - **Concurrency:** start at one worker, as in the pilot. Raise it only while rate limits and the shared spend
   ledger allow. The estimate uses 4 workers (base) and 2 (conservative).
 - **Fallback:** none. A failed or uncertain call is never sent to a stronger model automatically. Uncertain

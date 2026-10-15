@@ -106,7 +106,7 @@ class AcceptedImportTests(unittest.TestCase):
         _, page, body = self.get(db, "/api/reviews", "limit=50")
         out = [body] + [self.get(db, p, q)[2] for p, q in [
             ("/api/summary", ""), ("/api/reviews", "q=crash"), ("/api/reviews", "topic=playback"),
-            ("/api/issues", ""), ("/api/evals", ""), ("/api/claims", ""), ("/api/memo", "")]]
+            ("/api/issues", ""), ("/api/evals", ""), ("/api/claims", ""), ("/api/memo", ""), ("/api/flow", "")]]
         out += [self.get(db, "/api/reviews/" + item["ref"])[2] for item in page["items"]]
         return out
 

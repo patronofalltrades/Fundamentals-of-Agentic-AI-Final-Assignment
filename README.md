@@ -42,7 +42,7 @@ a human accuracy score.
 | Stage | Result |
 | --- | --- |
 | Source accounting | 110,000 selected original IDs: 100,229 accepted, 1,791 quarantined, 1,457 uncertain or blocked, 6,522 pending, 1 empty text. |
-| Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, 10 reviews per request. Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
+| Labels | Jev `jev-1.13.0` gave each review a topic, intent and severity, one review per request (76,523 requests in the main run; the instructor asked for 10 per request). Rubric frozen as [`jev-rubric-v2`](docs/topic_rubric_v2.md). DeepInfra `openai/gpt-oss-120b` saved an exact quote as evidence, and code checked each quote against the source text. |
 | Issue map | 30,400 complaint and cancellation records, one issue each, across 41 catalog issues. Human decisions replace the model in 91 cases, and 7 label corrections are declared. |
 | Ranking | `priority_score = severity_sum`, descending, then issue ID ascending. Top baseline issue: `USE-ADS`, 5,197 records, severity sum 11,874. The public view leaves out 23 flagged records (5,195 and 11,869). Second: `PLY-FAIL`, 2,474 records. |
 | Quality checks | A blind model verifier agreed on 511 of 600 records (85.2%). A blind human review agreed on 16 of 40 (40.0%), before overrides. |

@@ -61,7 +61,8 @@ The export uses the contract's exact `topic`, `intent` and `severity` labels. Th
 
 ### D. Enrichment batching, caching, saved state — Met, with flags
 
-- 10 reviews per Jev request (the contract allows up to 50). Every returned ID is validated.
+- One review per Jev request (76,523 requests), not the 10 the instructor asked for; evidence requests carried up to
+  25 distinct texts (3,274 requests). The contract allows up to 50. Every returned ID is validated.
 - Results are saved after each batch, with a shared spend ledger and pre-call reservations.
 - 4,569 rows reuse exact-text results through valid direct `cache_source_id` links.
 - **Flag:** 20,938 completed rows have label and evidence origins that are split or indirect. The checker cannot

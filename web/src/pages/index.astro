@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/main.astro"
-import { BarChart3, BookOpenText, FileText, FlaskConical, House, ListOrdered, ArrowRight } from "lucide-react"
+import { BarChart3, BookOpenText, FileText, FlaskConical, House, ListOrdered, ArrowRight, Workflow } from "lucide-react"
 import KpiTiles from "@/components/dashboard/kpi-tiles"
 import ProgressStrip from "@/components/dashboard/progress-strip"
 import IssueTable from "@/components/dashboard/issue-table"
@@ -12,10 +12,13 @@ import HeroStatus from "@/components/dashboard/hero-status"
 import EvalsSection from "@/components/dashboard/evals-section"
 import RowStates from "@/components/dashboard/row-states"
 import ProjectSummary from "@/components/dashboard/project-summary"
+import PipelineDiagram from "@/components/dashboard/pipeline-diagram"
+import ComplaintFlow from "@/components/dashboard/complaint-flow"
 import { NEXT_TIME } from "@/lib/reflections"
 
 const nav = [
   { id: "about", label: "Overview", icon: House },
+  { id: "pipeline", label: "Pipeline", icon: Workflow },
   { id: "issues", label: "Issues", icon: ListOrdered },
   { id: "memo", label: "Memo", icon: FileText },
   { id: "evals", label: "Evals", icon: FlaskConical },
@@ -74,13 +77,19 @@ const nav = [
         </section>
         <RowStates client:only="react" />
 
+        <!-- Pipeline -->
+        <section id="pipeline" aria-label="Pipeline" class="scroll-mt-6 rounded-3xl bg-card p-6"><PipelineDiagram client:visible /></section>
+
         <!-- Issues -->
-        <section id="issues" aria-label="Issues" class="grid scroll-mt-6 gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-          <div class="min-w-0 rounded-3xl bg-card p-6"><IssueTable client:visible /></div>
-          <div class="flex min-w-0 flex-col gap-6">
-            <Gauges client:visible />
-            <Readiness client:visible />
+        <section id="issues" aria-label="Issues" class="scroll-mt-6 space-y-6">
+          <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+            <div class="min-w-0 rounded-3xl bg-card p-6"><IssueTable client:visible /></div>
+            <div class="flex min-w-0 flex-col gap-6">
+              <Gauges client:visible />
+              <Readiness client:visible />
+            </div>
           </div>
+          <div class="min-w-0 rounded-3xl bg-card p-6"><ComplaintFlow client:visible /></div>
         </section>
 
         <!-- Memo -->
