@@ -26,7 +26,7 @@ were run on 13 October 2026 (UTC) without model calls.
 | D. Enrichment batching, caching, saved state | Met, with flags | 20,938 rows with split cache/evidence provenance |
 | E. Interruption and resume | Partly met | No main-run checkpoints; the demo video (in the release) uses synthetic data |
 | F. Grading folder and self-check | Met, with flags | Published as a release asset; checker gives `review_required` |
-| G. Baseline ranking and claims | Met | Ranking is advisory (40% blind human agreement on the issue map) |
+| G. Baseline ranking and claims | Met | Ranking is advisory; the separate 40% comparison used assistant manual assignments against human answers, not production grouping predictions |
 | H. Memo and recommendation | Met (provisional) | Model-derived; numbers checked, meaning not human-validated |
 | I. Cost calculator (T3) | Met | Full-run time is modeled, not measured |
 | J. Human golden evaluation | Met | Diagnostic only; development-text overlap |
@@ -100,7 +100,7 @@ synthetic data.
 - `priority_score = severity_sum`, descending, then issue ID ascending; means to six decimals, half-up.
   Recomputed independently; the checker reports no ranking flag.
 - 164 claim IDs in `claims.csv` all match the saved ranking.
-- **Caveat:** the issue map is model-made. Blind human agreement was 16 of 40 (40%) before human overrides. The
+- **Caveat:** the issue map is model-made. Separately, assistant manual assignments agreed with human answers on 16 of 40 (40%); this did not evaluate the production grouping model. The
   ranking is advisory, and the README and the memo say so.
 
 ### H. Memo and recommendation — Met (provisional)

@@ -1,5 +1,14 @@
 # Course rubric assessment — 16 October 2026
 
+**Local preparation addendum, 15 October:** this assessment is now published on
+main through PR #29 (`1217b47`). Its original evidence snapshot below remains
+dated and unchanged. A separate local review branch prepares the
+[expanded memo](product-decision-memo-2026-10-13.md),
+[full warm audit](cost100-full-warm-audit.md), and
+[40% attribution correction](evaluation-attribution-and-inclusion-2026-10-15.md).
+These additions await publication approval. The original criterion statuses
+are not upgraded by local preparation.
+
 **Evidence checked on 15 October 2026 UTC.** The report date and filename follow
 Hanif's request. This is an evidence assessment, not a predicted grade or point
 total. Status means **Evidenced**, **Partly evidenced**, or **Not evidenced** for

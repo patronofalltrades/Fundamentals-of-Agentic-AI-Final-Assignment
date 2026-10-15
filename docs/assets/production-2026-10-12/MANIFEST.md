@@ -11,7 +11,7 @@ Captured from the live public site in **Google Chrome on macOS** on 12 October 2
 ## Verification and publication notes
 
 - Each saved image was reopened and visually inspected. The relevant numbers are legible; there are no loading or error states in the captured viewports.
-- The issue map is provisional. The page reports 40% agreement with a blind human review and says to treat its ranking as advisory. The human golden evaluation remains pending.
+- The issue map is provisional. At capture, the page ambiguously reported 40% agreement with a blind human review. Attribution correction (15 October): this compares one assistant's manual assignments with human answers, not production grouping predictions. The screenshot is unchanged historical evidence. The golden card was pending at capture; all 50 predictions were later scored. See [evaluation attribution](../../../reports/evaluation-attribution-and-inclusion-2026-10-15.md).
 - These screenshots contain no review quotes, review IDs, account details, browser profile details, credentials, or unrelated private pages. They reproduce the public site's branding and figures; keep the site's independent-course-project/non-affiliation context with any publication.
 - No site, database, repository, or deployment changes were made in this task.
 

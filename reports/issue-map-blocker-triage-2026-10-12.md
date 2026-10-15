@@ -1,5 +1,13 @@
 # Issue-map blockers: offline triage (2026-10-12)
 
+**Attribution review, 15 October:** the historical agent-label scores below
+are preserved without rescoring. They claim 22/40 family agreement and must
+not be conflated with the assistant manual comparison's 21/40. The latter's
+16/40 exact agreement is the source of the corrected public 40% statement.
+This review did not read human answers or verify the older scoring inputs.
+See [the assistant prediction report](issue-grouping-independent40-score.md)
+and [the provenance limitation](evaluation-attribution-and-inclusion-2026-10-15.md).
+
 This is a diagnostic and review queue for the separately preserved
 30,403-row original map and 30,400-row corrected membership. It does not
 approve the v3 catalog, revise saved labels, or issue a corrected ranking.
@@ -11,8 +19,8 @@ SHA-256 `e95fcf6a01e2b7d7608c8cbcc74a64b232d9433019aee490c4808bfe928907c9`.
 
 ## What the blind check says
 
-The 40 cases were selected as five per saved topic. The pre-override agent
-labels agree with the blind human decisions on **16/40 exact issues** and
+The 40 cases were selected as five per saved topic. This historical triage
+reported that pre-override agent labels agreed with human decisions on **16/40 exact issues** and
 **22/40 issue families**. Thus 24 exact issue assignments differ, including
 18 that cross issue families. Five human answers include uncertainty notes.
 

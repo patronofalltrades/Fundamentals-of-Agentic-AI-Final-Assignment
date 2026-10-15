@@ -224,7 +224,8 @@ export default function MemoPanel({ variant = "summary" }: { variant?: "summary"
           ))}
           {provisional && (
             <p className="mt-2 text-sm text-muted-foreground">
-              The issue map is model-derived. Pre-override blind human agreement was 16/40 (40%).
+              The issue map is model-derived. Separately, one assistant's manual assignments agreed with human answers
+              on 16/40 (40%); this did not evaluate the production grouping model.
               The ranking is advisory until targeted human review; these counts do not establish a product effect or revenue impact.
             </p>
           )}

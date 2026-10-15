@@ -1,12 +1,19 @@
 # Independent 40-case grouping check — October 12, 2026
 
+**Attribution clarified on 15 October:** the predictions in this report are
+one assistant's manual issue assignments. The 16/40 (40%) exact agreement is
+with the human answers; it is not an evaluation of the production grouping
+model. Scores and frozen files are unchanged. See the
+[attribution audit](evaluation-attribution-and-inclusion-2026-10-15.md) for
+the separate claims in older production-agent audit reports.
+
 The completed human sheet has 40 source-matched, nonempty issue decisions and
 40 rationales. All issue IDs occur in the frozen 41-issue v3 catalog. Five
 answers include uncertainty notes. The sheet changed from its original blank
 hash, as expected. The frozen manifest and catalog still match their recorded
 SHA-256 hashes.
 
-I assigned one issue to each of the 40 manifest cases from the source text and
+The assistant assigned one issue to each of the 40 manifest cases from the source text and
 v3 definitions, then saved and hashed the prediction file before running the
 aggregate-only scorer. The scorer did not print individual answers, case
 differences, source IDs, or review text.
