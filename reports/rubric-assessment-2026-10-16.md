@@ -1,25 +1,26 @@
 # Course rubric assessment — 16 October 2026
 
-**Local preparation addendum, 15 October:** this assessment is now published on
-main through PR #29 (`1217b47`). Its original evidence snapshot below remains
-dated and unchanged. A separate local review branch prepares the
-[expanded memo](product-decision-memo-2026-10-13.md),
-[full warm audit](cost100-full-warm-audit.md), and
-[40% attribution correction](evaluation-attribution-and-inclusion-2026-10-15.md).
-These additions await publication approval. The original criterion statuses
-are not upgraded by local preparation.
+**Current verification: 15 October 2026 UTC, after PRs #30 and #31.** Main is
+`2a725dcc3aca6f5882142c106141629274065cd9`; both merges and their automatic
+Production deployments were verified. The [expanded memo](product-decision-memo-2026-10-13.md),
+[full warm audit](cost100-full-warm-audit.md), and attribution correction are
+published through #30. PR #31 corrected cost scopes and historical architecture
+wording. This local update refreshes D1, D4, T3, publication state, and remaining
+actions. It does not treat publication as proof that every criterion is complete.
 
 **Evidence checked on 15 October 2026 UTC.** The report date and filename follow
 Hanif's request. This is an evidence assessment, not a predicted grade or point
 total. Status means **Evidenced**, **Partly evidenced**, or **Not evidenced** for
 the stated criterion. A working component does not establish every related claim.
 
-**Scope and owner.** Codex prepared this report on
+**Original audit provenance.** Codex prepared this report on
 `docs/rubric-assessment-2026-10-16`, from main
-`bc63e0d6b9b7744ba40834e30ef8401cea86570b`. The edit scope is this report and
-the two assessment pointers. The existing `feat/decision-memo-diagrams` work
-stays in its separate checkout. No paid inference, new extraction, human label
-collection, or golden scoring was performed. Human answer columns were not read.
+`bc63e0d6b9b7744ba40834e30ef8401cea86570b`. The original edit scope was this report and
+the two assessment pointers. That original audit date and its checks below are
+retained. This closeout uses `docs/submission-closeout-current-2026-10-15` from
+main `2a725dc`; original worktrees and Claude's merged cost edits are preserved.
+No paid inference, new extraction, human label collection, or golden scoring
+was performed. Human answer columns were not read.
 
 ## Rubric and deadline
 
@@ -30,22 +31,32 @@ result criteria. They do not substitute the older benchmark's A–M requirements
 The Doc says that evidence quality matters and that low label agreement alone
 does not prevent a sound evaluation.
 
-**Planning deadline:** 21 October 2026 at 23:59 Pacific, as Hanif instructed and
-current [AGENTS.md](../AGENTS.md) records. The Google Doc currently says
-**20 October at 23:59 Pacific**. Confirm the extension with the instructor.
-Prepare a submission-ready package by the earlier date while this is unresolved.
+**Supported cutoff: 20 October 2026 at 23:59 Pacific.** The assignment document
+was re-read on 15 October. The coordinating task also verified the
+[11 October announcement](https://bcourses.berkeley.edu/courses/1555592/announcements/7376947).
+Both support 20 October. The earlier user-reported 21 October date lacks newer
+supporting evidence and is superseded for planning. Only a newer instructor
+notice should extend this cutoff. The separate 100k/full-corpus grading-scope
+ambiguity remains unresolved.
 
 ## What is published and verified
 
 - [PR #27](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/pull/27)
   and [PR #28](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/pull/28)
-  are merged. Current main is `bc63e0d`.
+  were already merged at the original audit's `bc63e0d` base. PR #29 published
+  this assessment. [PR #30](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/pull/30)
+  and [PR #31](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/pull/31)
+  are now merged; current verified main is `2a725dc`.
 - The public [dashboard](https://hanif-spotify-insights.vercel.app/) and
   [memo](https://hanif-spotify-insights.vercel.app/memo/) load. The memo filter
   changes 41 issues to one issue and four claims for `USE-ADS`. Its saved values
   are 5,197 complaints and severity sum 11,874. Verify is implemented as a
   **sample-only** state, with the 600-case limitation. Chrome confirmed the
-  rendered label and explanation; see [readiness.tsx](../web/src/components/dashboard/readiness.tsx).
+  rendered label and explanation during the original audit; see [readiness.tsx](../web/src/components/dashboard/readiness.tsx).
+  The new read-only API check confirms 100,229 accepted rows and the corrected
+  assistant-manual attribution in the live memo, with all 164 claim lines.
+  The expanded decision memo is a published GitHub report; it has not replaced
+  the shorter dashboard memo.
 - The live Pipeline section shows extraction, code/model boundaries, the
   historical grouping/verifier handoff, database, backend, dashboard, and isolated
   evaluation. Both published [extraction](../docs/pipeline-extraction.mmd) and
@@ -77,9 +88,14 @@ grading release, setup, tests, and offline calculator. The release ZIP was
 downloaded and checked. The [cost directory](../cost/README.md) contains dated
 rates, pilot records/calls, reports, and checkpoints.
 
-**Gap:** Some historical architecture/implementation prose still describes an
-unrun foundation. Local additions listed below are not delivered artifacts.
-Resolve those entry-point inconsistencies before submission.
+**Closed since the original audit:** PR #30 published the expanded memo and
+warm audit. PR #31 marks the architecture diagram as the original design and
+links what actually ran; it also corrects stale runtime/database status text.
+The blanket “local-only” and architecture-wording gaps are withdrawn. A local
+historical banner for the remaining foundation implementation notes and the
+new closeout links still await publication. Full warm reproduction requires
+the private pilot database, as disclosed under T3; this is not a missing public
+method or report.
 
 ### D2 — Clear architecture, shared schema, and provenance
 
@@ -114,14 +130,17 @@ without claiming human-validated issue membership.
 
 ### D4 — Coherent recommendation, alternatives, and limitations
 
-**Partly evidenced.** The published provisional memo puts the ads finding first,
-compares it with more severe playback complaints, and recommends targeted human
-review before product change. It states the historical, self-selected data
-limits and avoids revenue, observed churn, and causal claims.
+**Evidenced.** PR #30 published the [expanded decision memo](product-decision-memo-2026-10-13.md).
+It prioritizes ads discovery, retains playback reliability as the competing
+option, separates investigation from delivery, and states effort/value
+hypotheses, a proposed outcome, guardrails, and stop conditions. Its top-five
+public figures and totals were checked against the release. It preserves
+historical, self-selected-data and semantic-accuracy limits and makes no
+observed revenue/churn or causal claim.
 
-**Gap:** The published memo has little discussion of competing actions, effort,
-tradeoffs, success measures, and stop conditions. The fuller decision memo is
-still local. Decide whether to include it after reviewing its claims and limits.
+The inclusion and alternative-analysis gap is closed. The recommendation
+remains provisional; this criterion assesses the argument's coherence, not
+whether the issue mapping has been validated. D2/D3/T1/T2 limits still apply.
 
 ## Testing and evaluation
 
@@ -154,8 +173,11 @@ Synthetic mock checks do not establish that a model detected planted semantic
 errors or resisted review-text instructions. Also, the reported 16/40 comparison
 was an assistant's manual assignment against human answers, with aggregate
 family counts seen before freezing; it was not a fresh production-model accuracy
-test. See [its attribution](issue-grouping-independent40-score.md). Recover
-authentic records first. Any new behavioral run needs a frozen protocol and
+test. See [its attribution](issue-grouping-independent40-score.md). A broader
+search now recovered the older agent-label audit and prediction-file hashes:
+its separate 16/40 exact, 22/40 family aggregate is distinct from the assistant's
+16/40 exact, 21/40 family result. [Provenance is reconciled](grouping-score-provenance-2026-10-15.md)
+at artifact level; blind provider execution is not reconstructed. Any new behavioral run needs a frozen protocol and
 separate execution approval if paid.
 
 ### T3 — Real cold/warm pilot, offline calculator, and operational controls
@@ -167,12 +189,18 @@ interruptions is 1,581.1901 seconds. The offline calculator runs from saved
 usage with editable rates and full-run scenarios. Shared reservations, unknown
 outcome holds, and pilot checkpoints are implemented and tested.
 
-**Gap:** The published 0.008029-second warm result is a cache-validation path in
-`warm()`. The newer local audit exercises full `execute()` orchestration with
-zero paid/transport/socket attempts, but has not been included publicly. Do not
-count it as delivered. Main-run recovery records remain absent. Full-run cost
-and elapsed time are modeled, not measurements of the full corpus. Unknown
-usage and grouping costs remain unknown.
+**Closed warm-evidence gap:** PR #30 published the [full warm tool and reports](cost100-full-warm-audit.md).
+It exercises all six `execute()` stages on a copy of the real pilot, with zero
+paid/transport/socket attempts and unchanged 98 completed / 2 quarantined,
+254 outputs, and 112 historical calls. The original and repeat timings are
+separate from the published 0.008029-second cache-validation path in `warm()`.
+
+**Remaining limits; status stays partly evidenced:** a full repeat requires the
+private `pilot.db`, which a public clone does not include. Operational recovery
+evidence is limited to the pilot and synthetic tests; historical main-run
+checkpoints/phases remain absent. Full-corpus cost/time are modeled, and unknown
+usage/grouping costs remain unknown. Published warm evidence closes its specific
+gap without proving all spending/recovery claims for the main run.
 
 ## Working result
 
@@ -226,30 +254,35 @@ The unchanged saved full-reference checker still reports 7,980 nonaccepted
 statuses, 949 nonbinary call outcomes, 79,797 unknown phases, and 94 unavailable
 usage fields. The release audit found **47 calls** missing input/output usage;
 that is consistent with **94 fields**, not 94 separate calls. Missing role
-records, split origins, and absent main checkpoints remain unresolved. This
-audit inspected the saved checker report; it did not rerun the full-source
-checker or alter the export.
+records, split origins, and absent main checkpoints remain unresolved. The
+original audit inspected the saved checker report. The current closeout reran
+the unchanged full-source checker with no golden input: coverage and all flags
+match, and all 11 manifest-pinned files remain unchanged. See the
+[fresh result and exact reproduction](grading-closeout-2026-10-15.md).
 
 The published [call aggregate](run-110k-calls-aggregate.json) matches the release
 log hash and sums to **US$4.725972366**: Jev US$3.264536184 and evidence
-US$1.461436182. The README's roughly US$4.2 and its US$2.92 / US$1.29 split use
-a different earlier scope. Reconcile and name the scopes before submission.
+US$1.461436182. PR #31 corrected the README's scope. Read-only ledger joins now
+prove that the older **US$4.213915344** is scale-only; earlier checkpoints add
+exactly **US$0.512057022**. The [cost reconciliation](cost-scope-reconciliation-2026-10-15.md)
+closes that discrepancy without changing any cost file or saved charge.
 Neither figure proves the complete project bill: unresolved reservations and
 unrecorded grouping usage are not zero. Summed request durations are not wall time.
 
-## Local work: inclusion decisions, not delivered evidence
+## Prepared work: current publication and decision states
 
-These files were found in the preserved local worktree and are absent from
-current main and the grading ZIP. Human answer sheets were not opened.
+The original audit found these in a local worktree. Their states now differ:
+the expanded memo and full warm audit are published on main through PR #30;
+the unchanged grading ZIP does not contain them. Human answer sheets were not opened.
 
-| Prepared local item | Verified state | Publication or inclusion decision |
+| Item | Verified state | Publication or inclusion decision |
 | --- | --- | --- |
-| `reports/product-decision-memo-2026-10-13.md` | Expanded decision memo exists locally. Published memo remains the short provisional version. | Hanif/reviewer chooses whether to include the expanded alternative/measurement discussion after claim review. Helps D4. |
+| `reports/product-decision-memo-2026-10-13.md` | Published on main through PR #30; dashboard keeps its short memo. | Inclusion complete. Maintain checked public/baseline scopes and provisional recommendations. D4 gap closed. |
 | Human20 packet | Private preparation directory and source/human-sheet workflow exist. Answer completion and correctness were not inspected. | Keep answers private. Decide whether to complete a new holdout and include only approved method and aggregate results. Helps T1; not a replacement for the original 50. |
-| Full warm audit | Local tool hash matches its saved aggregate report. Report records all six stages, unchanged 112 calls/254 outputs, and zero new paid/transport/socket attempts. | Review and include a text-only method/report if approved. This is a separate new replay, not historical main-run recovery. Helps T3/W2. |
+| Full warm audit | Tool, method, original aggregate, and repeat aggregate published through PR #30. Six stages, unchanged 112 calls/254 outputs, zero paid/transport/socket attempts. | Inclusion complete. Repeat requires private pilot database; new warm replay does not establish historical main-run recovery. T3 remains partly evidenced for the separate limits above. |
 | `reports/remediation-plan-2026-10-13.md` and transport | Local plan and mock-tested adapter exist. They are not published execution evidence. | Decide which free checks to include. Paid work requires fresh approval and billing checks. Do not treat prepared requests as completed tests. Helps T1/T2/T3. |
 
-## Checks run for this assessment
+## Checks run for the original assessment (15 October, before PR #30)
 
 - `python3 -m unittest discover -s tests -t . -q`: **413 tests, OK, 2 skipped**,
   in **5.407 seconds**. This was the completed run with local filesystem and
@@ -273,7 +306,18 @@ current main and the grading ZIP. Human answer sheets were not opened.
   change only the two rubric pointers. Twelve recorded public files in the
   original worktree retain their pre-audit hashes.
 
-## Prioritized actions through 21 October
+## Current closeout checks — after PRs #30 and #31
+
+The current branch reran the full suite: **413 tests in 7.557 seconds, OK,
+2 skipped**. CLI help, the public-page privacy test, and dashboard JavaScript
+syntax checks passed. Offline rate doubling produced 14,820,574 nanodollars
+from 7,410,287; saved cost and timings stayed unchanged. A 100,000-record
+projection left measured pilot results unchanged. The official checker rerun
+and its retained flags are described above. No model call or answer scoring
+was involved. See the [local handoff](submission-closeout-handoff-2026-10-15.md)
+for the exact changed-file list and final verification scope.
+
+## Prioritized actions through 20 October — updated after PR #31
 
 Proposed owners below are assignments to confirm, not messages already sent.
 Zero-cost work comes first. No action here authorizes spending, publication,
@@ -281,13 +325,18 @@ new labels, deployment, or submission.
 
 | Order / target | Action and criterion helped | Owner | Acceptance check | Paid calls? | New human labels? |
 | --- | --- | --- | --- | --- | --- |
-| 1 · 15–16 Oct | Confirm deadline and 100k/full-corpus scope. W1, D1. | Hanif + instructor | Written clarification linked; unchanged checker limits retained. | No | No |
-| 2 · 16 Oct | Reconcile cost scopes, one-review batching, old architecture prose, and local/published wording. D1, D2, T3, W2. | Claude/cost owner + coordinating reviewer | Every reported total names its source and scope; no claim that Jev used ten reviews. Published diagrams stay described as published. | No | No |
-| 3 · 16–17 Oct | Review the expanded memo and full warm audit for inclusion. D4, T3. | Hanif + reviewer | Approved public text has checked numbers, alternatives, limits, and warm replay scope; no private answers or source text. | No | No |
+| 1 · 15–16 Oct | Deadline evidence closed at 20 October; clarify 100k/full-corpus grading scope. W1, D1. | Hanif + instructor | Current course sources linked; unchanged checker limits retained. | No | No |
+| 2 · 16 Oct | Cost scope and architecture wording corrected in #31; review/publish this local verification and remaining historical-note banner. D1, D2, T3, W2. | Hanif + coordinating reviewer | Exact ledger totals linked; one-review Jev and historical evidence maximum 50 clearly separated from scale maximum 25. | No | No |
+| 3 · Complete | Expanded memo and full warm evidence published in #30. D4, T3. | Hanif + reviewer | Keep publication status accurate; private-input and historical-recovery limits remain. | No | No |
 | 4 · 16–18 Oct | Recover genuine verifier inputs/predictions, call receipts, and checkpoint backups. D2, T2, W2. | Original grouping/verifier owner | IDs/hashes/configuration and creation order link authentic records; absent fields remain unknown. | No | No |
-| 5 · 17–18 Oct | Re-run deterministic grading/ranking, calculator sensitivity checks, links, and fresh-checkout tests after approved integration. D1, D3, T3, W3. | Codex/reviewer | Stable ranking and claims; rate edits affect spend only; test results and remaining checker flags saved. | No | No |
+| 5 · 17–18 Oct | Fresh official checker completed with unchanged flags; retain full tests, calculator sensitivity and link checks for final reviewed commit. D1, D3, T3, W3. | Codex/reviewer | Stable ranking/claims; no saved-data edits to remove flags; final checks recorded. | No | No |
 | 6 · 18–19 Oct | Inventory existing T1 diagnostics; report missing quote/entity/review-flag measures. T1. | Evaluation reviewer | Aggregate-only inventory distinguishes measured, unscored, ambiguous, and answer-influenced cases. | No | No |
 | 7 · By 20 Oct | Prepare the final evidence map and public URL package; recheck live read-only routes. D1, W3. | Hanif + reviewer | Accessible artifacts, checksum match, current disclosures, and submission-ready README by the earlier documented deadline. | No | No |
 | 8 · 18–20 Oct, only if chosen | Complete the separate human20 holdout and needed semantic annotations. T1. | Hanif / independent human reviewer | Human answers stay private; frozen predictions precede scoring; original 50 retained; overlap and uncertainty disclosed. | No for labeling; model predictions may need separate approval | Yes, if not already completed |
 | 9 · 19–20 Oct, only if approved | Obtain real independent/planted/injection outcomes under the frozen bounded plan. T2. | Execution owner + reviewer | Blind inputs exclude first/human answers; outputs and usage saved; actual failures and planted detections reported. | Yes for the prepared API route; explicit approval required | Only if human-reference scoring is included |
-| 10 · By 21 Oct, if extension confirmed | Submit the approved public repository URL through the course portal. D1. | Hanif | Submission receipt saved before 23:59 Pacific; use 20 Oct if the extension is not confirmed. | No | No |
+| 10 · By 20 Oct, 23:59 Pacific | Submit the approved public repository URL through the course portal. D1. | Hanif | Save submission receipt. Only a newer instructor notice may change the cutoff. | No | No |
+
+The [final checklist](final-submission-checklist-2026-10-15.md) separates closed
+items, disclosed limits, and approval-dependent actions. It also gives the
+optional human20 next action without inspecting answers. No new model or human
+evaluation is implied by these documentation updates.

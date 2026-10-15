@@ -1,0 +1,168 @@
+{
+  "cost": {
+    "calls_sha256": "179c8b808324cb733cc2b85fb25d504f1472167638f80856161f82174d252661",
+    "earlier_checkpoint_charge_nusd": 512057022,
+    "export_charge_nusd": 4725972366,
+    "scale_charge_nusd": 4213915344,
+    "source_tables": [
+      {
+        "calls": 85,
+        "charged_nusd": 65068805,
+        "known_charge_calls": 84,
+        "missing_usage_fields": 4,
+        "review_count_histogram": {
+          "14": 1,
+          "20": 1,
+          "25": 1,
+          "40": 1,
+          "50": 81
+        },
+        "source_ledger": "checkpoint_requests",
+        "stage": "evidence"
+      },
+      {
+        "calls": 4099,
+        "charged_nusd": 174531378,
+        "known_charge_calls": 4099,
+        "missing_usage_fields": 0,
+        "review_count_histogram": {
+          "1": 4099
+        },
+        "source_ledger": "checkpoint_requests",
+        "stage": "jev"
+      },
+      {
+        "calls": 418,
+        "charged_nusd": 102163555,
+        "known_charge_calls": 416,
+        "missing_usage_fields": 4,
+        "review_count_histogram": {
+          "10": 416,
+          "4": 1,
+          "6": 1
+        },
+        "source_ledger": "next5000_requests",
+        "stage": "evidence"
+      },
+      {
+        "calls": 3999,
+        "charged_nusd": 170293284,
+        "known_charge_calls": 3999,
+        "missing_usage_fields": 0,
+        "review_count_histogram": {
+          "1": 3999
+        },
+        "source_ledger": "next5000_requests",
+        "stage": "jev"
+      },
+      {
+        "calls": 2771,
+        "charged_nusd": 1294203822,
+        "known_charge_calls": 2736,
+        "missing_usage_fields": 70,
+        "review_count_histogram": {
+          "1": 1,
+          "11": 1,
+          "13": 1,
+          "15": 1,
+          "22": 1,
+          "23": 2,
+          "24": 1,
+          "25": 2762,
+          "5": 1
+        },
+        "source_ledger": "scale_requests",
+        "stage": "evidence"
+      },
+      {
+        "calls": 68425,
+        "charged_nusd": 2919711522,
+        "known_charge_calls": 68417,
+        "missing_usage_fields": 16,
+        "review_count_histogram": {
+          "1": 68425
+        },
+        "source_ledger": "scale_requests",
+        "stage": "jev"
+      }
+    ],
+    "unknown_charges_are_not_zero": true
+  },
+  "live": {
+    "accepted": 100229,
+    "assistant_manual_attribution_present": true,
+    "claim_lines": 164,
+    "memo_sha256": "8d2e1e905d2fbe9c2fbe96faf34cac66daf43e4b83f1ae90814776b4b1c20a56",
+    "memo_status": "claims_checked_provisional",
+    "production_accuracy_disclaimer_present": true,
+    "selected": 110000
+  },
+  "official_checker": {
+    "candidate_manifest_files_unchanged": 11,
+    "coverage": {
+      "duplicate_ids": 0,
+      "expected": 660622,
+      "invalid_or_unresolved": 7980,
+      "missing": 550622,
+      "quarantined": 1791,
+      "received_lines": 110000,
+      "unique_expected_ids": 110000,
+      "valid_cache_reuses": 4569,
+      "valid_completed": 100229
+    },
+    "golden_input_supplied": false,
+    "issue_counts": {
+      "invalid_call_outcome": 949,
+      "invalid_run_phase": 79797,
+      "invalid_status": 7980,
+      "invalid_usage": 94,
+      "missing_model_roles": 1,
+      "missing_records": 1,
+      "resume_call_evidence": 1,
+      "resume_snapshot_mismatch": 1,
+      "run_manifest_mismatch": 1,
+      "unfinished_classification": 1,
+      "unlogged_completed_records": 1,
+      "unreadable_file": 2
+    },
+    "reference_canonical_sha256": "bb31d47db9b9a85cd97b3ba6e880915aff41a6127c3accee719c139ab34b7e97",
+    "reference_file_sha256": "541cbd0630360e132a90a6fff8a47920f051f464e859cc338d67cec646d80422",
+    "same_coverage_and_issue_counts_as_saved": true,
+    "script_sha256": "d60bd66d84922d934c65b3d42b2c7d36cc738e8c75e2d6f2b2f58bca3141c26d",
+    "status": "review_required"
+  },
+  "offline_checks": {
+    "calculator": {
+      "base_api_nusd": 7410287,
+      "doubled_api_nusd": 14820574,
+      "local_compute_cost": null,
+      "measured_pilot_unchanged": true,
+      "rate_doubling_passed": true,
+      "recorded_cost_and_timings_unchanged": true,
+      "scenario_projected_records": 100000,
+      "volume_sensitivity_passed": true
+    },
+    "cli_help": "passed",
+    "dashboard_javascript_syntax": "passed",
+    "python_unittest": {
+      "elapsed_seconds": 7.557,
+      "skipped": 2,
+      "status": "OK",
+      "tests": 413
+    },
+    "web_privacy_test": {
+      "passed": 1,
+      "tests": 1
+    }
+  },
+  "published_main": "2a725dcc3aca6f5882142c106141629274065cd9",
+  "release": {
+    "asset": "grading-110k.zip",
+    "member_files_equal_to_candidate": 12,
+    "sha256": "a596dae7c47c61b864e03e374e6165b443222fc736e0c741c6e03d5db68d9198",
+    "tag": "grading-2026-10-13"
+  },
+  "schema_version": "spotify-submission-closeout-aggregate-v1",
+  "scope": "Aggregate verification only. No source IDs, source text, answers, new inference, or rewritten saved results.",
+  "verified_utc_date": "2026-10-15"
+}

@@ -1,5 +1,13 @@
 # Offline implementation notes
 
+**Historical foundation notes.** The implementation status below records the
+original offline foundation, before the completed main run. For current run
+status and execution tools, use [README](../README.md), the published
+[extraction](pipeline-extraction.mmd) and [analysis](pipeline-analysis.mmd)
+diagrams, and [cost harness instructions](../cost/README.md). The CLI commands
+below remain offline. Historical “not implemented” statements are not current
+claims about the separate tools and deployed dashboard.
+
 This package is an offline, Python 3.9+ standard-library-only foundation. It
 runs with `python3 -m spotify_pipeline` from the repository root. No
 installation, network, model call or provider adapter is required. This is a

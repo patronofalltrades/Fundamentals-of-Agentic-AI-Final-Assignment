@@ -1,5 +1,16 @@
 # Coordination record
 
+## Submission closeout — verified 15 October 2026
+
+Owner: Codex, `docs/submission-closeout-current-2026-10-15`, isolated
+`spotify-submission-closeout` worktree. Base: merged PR #31 main `2a725dc`.
+PR #30's memo/warm/attribution artifacts and PR #31's cost/architecture edits
+are preserved. Scope: aggregate provenance and cost reports, unchanged-checker
+verification, current assessment, deadline, entry-point notes, and final
+submission checklist. Existing `cost/` files and private saved results stay
+unchanged. No new inference, answer inspection, publication, or manual deployment.
+See [the checklist](../reports/final-submission-checklist-2026-10-15.md).
+
 ## Local attribution and inclusion review — 15 October 2026
 
 Owner: Codex, branch `docs/evaluation-attribution-memo-warm`, isolated worktree
