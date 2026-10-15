@@ -61,8 +61,9 @@ completion limits, cost, and recovery before scaling. Do not retrofit these
 requirements onto the serial diagnostic benchmark or launch 100,000 reviews
 without the gates above.
 
-This checkout contains an offline Python foundation under review.
-The runtime pipeline has not classified reviews or produced a decision memo.
+Status (16 October): the main run classified 110,000 selected reviews (100,229
+accepted). The issue ranking, provisional memo, grading release and live
+dashboard are published; see `README.md`.
 Read `README.md` and `docs/implementation.md` before changing code.
 Read `docs/architecture.md` to distinguish development agents from runtime roles.
 Read `docs/tasks.md` for current ownership and handoffs.
@@ -135,7 +136,8 @@ python3 -m spotify_pipeline --help
 
 The CLI exposes offline ingestion, status, checkpoints, and cost replay.
 Use its help and `docs/implementation.md` for arguments.
-There is no model-execution command yet.
+The CLI has no model-execution command. Paid runs use scripts in `tools/`,
+such as `tools/cost100_harness.py --execute`, and need explicit approval.
 Do not invent commands for unfinished stages.
 
 ## Source and evaluation boundaries
@@ -193,5 +195,5 @@ Class 7 is October 13, 2026; its time is not supplied.
 Require all 50 human labels before final evaluation. Never generate expected
 golden answers. The human working copy is outside this repository. Do not read
 its expected label columns with a coding or runtime model. The source golden
-CSV is immutable. No evaluation command exists yet; this gate must also be
-enforced in code when evaluation is implemented.
+CSV is immutable. The isolated evaluator (`tools/evaluate_human_labels.py`)
+enforces this gate in code; keep it enforced in any new evaluation path.

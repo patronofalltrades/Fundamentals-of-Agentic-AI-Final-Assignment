@@ -90,9 +90,16 @@ without reuse, all 660,609 are sent.
 | Memo calls | 1 | 3 |
 
 **Cross-check against the real 100k run.** Projected to 110,000 rows, the base case with reuse estimates
-US$5.85: labels US$3.50 and evidence US$1.45. The main run measured US$2.92 for Jev and US$1.29 for DeepInfra
-([completion report](../reports/accepted-100k-completion.md)). The estimate is high. Both runs sent one review per
-Jev call, so batching does not explain the gap; the cause has not been analysed.
+US$5.85. Of that, labels are US$3.50 and evidence US$1.45, together US$4.95. All 79,797 calls of the 110,000-review
+run measured US$3.26 for Jev labels and US$1.46 for DeepInfra evidence, together US$4.73
+([call aggregate](../reports/run-110k-calls-aggregate.json)). Labels are estimated about 7% high; evidence is within
+1%. The other US$0.90 of the estimate is the verifier, grouping and memo. The main run did these as agent handoffs
+with no metered usage, so they have no measured counterpart.
+
+Two measured totals exist; each names its scope. The full run (all calls in the grading release) is US$4.73. The
+scale queue alone, which accepted 90,663 of the 100,229 reviews, is US$4.21: Jev US$2.92 and DeepInfra US$1.29
+([completion report](../reports/accepted-100k-completion.md)). The other US$0.51 is the two earlier checkpoint
+ledgers (`checkpoint_requests` and `next5000_requests`), which accepted the remaining 9,566 reviews.
 
 **Time is modeled.** Elapsed time assumes linear speed-up up to the worker limit. It is pessimistic, because
 the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median was 0.32 s per one-review request.
@@ -101,8 +108,8 @@ the pilot's Jev calls took 2.5 s for 1 review each, while the main run's median 
 
 - **Budget:** strictly below US$50 for the whole project. The ceiling is US$49.99. The main run also had
   separate caps of US$5 for Jev and US$5 for OpenRouter.
-- **Scope:** the instructor set a minimum of 100,000 reviews. The project ran 110,000 selected reviews for about
-  US$4.2 measured. The full corpus was not run: the base estimate fits the budget, but the conservative
+- **Scope:** the instructor set a minimum of 100,000 reviews. The project ran 110,000 selected reviews for
+  US$4.73 in metered charges. The full corpus was not run: the base estimate fits the budget, but the conservative
   no-reuse case does not, and the deadline did not allow 186 hours or more of modeled run time.
 - **Batching:** one review per Jev request in the main run (76,523 requests), not the 10 per request the instructor
   asked for. Evidence requests sent up to 25 distinct texts each (3,274 requests). The contract allows up to 50.
