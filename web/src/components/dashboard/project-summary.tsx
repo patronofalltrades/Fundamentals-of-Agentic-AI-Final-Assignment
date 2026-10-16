@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, fmt } from "@/lib/api"
+import { CodeButton } from "./code-snippet"
 import { useData } from "./use-data"
 
 /** Plain-language summary of the project, shown first. Numbers come from the saved results. */
@@ -34,6 +35,7 @@ export default function ProjectSummary() {
           <p className="mt-1 text-[14px] leading-6 text-muted-foreground">
             One model labelled each review's topic, intent and severity. A second model saved an exact quote as evidence.
             Code checked every quote against the review text: {fmt.int(accepted)} of {fmt.int(selected)} reviews passed.
+            {" "}<CodeButton id="evidence-check" />
           </p>
         </div>
         <div className="rounded-2xl bg-tile p-4">
@@ -42,6 +44,7 @@ export default function ProjectSummary() {
             {candidates ? `${fmt.int(candidates)} complaints and cancellations` : "Complaints and cancellations"} were grouped
             into {s.import?.issue_import?.issues ?? ranked.length} issues by AI agents, checked by a blind second model and by
             human decisions. Issues rank by the sum of their severities, so both volume and harm count.
+            {" "}<CodeButton id="rank" />
           </p>
         </div>
         <div className="rounded-2xl bg-tile p-4">

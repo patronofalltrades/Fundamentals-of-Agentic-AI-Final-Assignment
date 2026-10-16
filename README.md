@@ -10,12 +10,28 @@ the memo traces back to saved records.
 - **Answer (provisional):** ad interruptions (`USE-ADS`) lead the ranking. The memo recommends a targeted human
   review of that issue before a product change, because the issue map is model-made.
 
+**Built by Hanif Ramadhan**, an MBA candidate and former startup founder, for the Fundamentals of Agentic AI course
+(MBA 290T, Fall 2026). Hanif set the product question, the budget and every go/no-go decision. AI coding agents
+(Claude Code and Codex) wrote most of the code under that direction. Each agent worked in its own Git worktree with
+written handoffs, and every pull request merged only with Hanif's approval.
+
+| What it took | Result |
+| --- | --- |
+| Scale | 110,000 reviews selected, 100,229 accepted with labels and grounded evidence, 79,797 model calls |
+| Cost | US$4.73 metered for the full run, under a hard project cap below US$50 |
+| Quality checks | 50 human golden labels, a blind verifier on 980 reviews, planted errors, prompt-injection attacks |
+| Decision output | A ranked issue list and a memo in which code checks all 164 numeric claims |
+| Product | A live dashboard, a read-only API, Postgres, and 468 offline tests |
+
+Jump to: [techniques used](#techniques-used) · [live dashboard](https://hanif-spotify-insights.vercel.app) ·
+[decision memo](https://hanif-spotify-insights.vercel.app/memo/) · [honest limits](#disclosures)
+
 | Item | Value |
 | --- | --- |
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
-| Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submission: the public GitHub URL through bCourses (pending). |
+| Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submitted through bCourses on 15 October: the live dashboard URL, with this repository's URL in the comment. |
 | Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The 16 October [gap-closure run](reports/gap-closure-2026-10-16.md) added US$0.040. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (refreshed after merged PR #33; verified 15 October UTC) |
@@ -30,6 +46,64 @@ The live site retains the short provisional memo with corrected attribution.
 See the [final submission checklist](reports/final-submission-checklist-2026-10-15.md),
 [exact cost scopes](reports/cost-scope-reconciliation-2026-10-15.md), and
 [fresh grading check](reports/grading-closeout-2026-10-15.md).
+
+## Techniques used
+
+Each item links to the code or report that shows it. On the live site, **View code** opens the same excerpts.
+
+**Agent design**
+
+- **Narrow runtime roles.** A classifier (Jev), an evidence extractor (`gpt-oss-120b`), a blind verifier, grouping
+  agents and a memo writer each answer one bounded question. Code owns IDs, hashes, state, budgets, ranking and
+  checks. See the [architecture](docs/architecture.md).
+- **Structured outputs, validated by code.** Responses follow strict JSON schemas. Code rejects unknown or repeated
+  IDs and wrong fields, and it quarantines a bad row with its reason
+  ([`inspect`](tools/scale100k_batch25.py), [`parse_response`](spotify_pipeline/jev.py)).
+- **Measured batching.** The evidence extractor takes up to 25 distinct texts per request. Batch effects were
+  measured, not assumed: sending Jev ten reviews per request changed at least one label in 36 of 100, so the
+  one-review labels stayed ([test](reports/gap-closure-2026-10-16.md#2-jev-ten-reviews-per-request)).
+
+**Grounding and safety**
+
+- **Exact-quote grounding.** Each evidence quote must be an exact substring of its review, and each entity a
+  whole-word span ([`validate_evidence`](spotify_pipeline/codex_evidence.py)).
+- **Prompt-injection tests.** Eight attack types, including ID tampering and a confidential canary string, ran
+  against three stages. No attack reached its target (0 of 24), and the canary never leaked
+  ([results](reports/gap-closure-2026-10-16.md#5-prompt-injection)).
+- **Data boundary.** Human answers never enter a prompt. Public reports hold aggregates and SHA-256 case
+  references, with no review text or original IDs ([data boundary](#data-boundary)).
+
+**Cost and reliability**
+
+- **Atomic cost ledger.** Before every call, a SQLite transaction reserves the worst-case cost against a
+  per-provider cap. The measured charge settles it afterwards. A call with an unknown outcome stays held and is
+  never retried automatically ([`ProjectBudget`](spotify_pipeline/project_budget.py)).
+- **Configuration-safe cache.** A saved label or quote is reused only for byte-identical text under the same model,
+  prompt and schema hash ([`materialize_caches`](tools/scale100k_queue.py)).
+- **Interruption and resume.** A durable queue, bounded workers and a graceful SIGINT stop. On a paid run, the
+  resume sent zero already-settled requests ([results](reports/gap-closure-2026-10-16.md#6-interruption-and-resume)).
+- **Cost model before scale.** A 100-review cold and warm pilot fed a full-run estimate before the large run
+  ([calculator](cost/README.md)).
+
+**Evaluation**
+
+- **Several independent checks.** These are 50 human golden labels, a blind verifier on 980 reviews with Cohen's
+  kappa, planted wrong labels and issues (auditors caught 40 of 43 and 48 of 50), a prompt-rubric A/B test and an
+  extractor route benchmark. Disagreements are reported, not tuned away
+  ([live evals](https://hanif-spotify-insights.vercel.app/#evals), [gap-closure report](reports/gap-closure-2026-10-16.md)).
+- **Claim-checked memo.** Each number in the memo cites a claim ID, and code checks it against the saved ranking
+  ([`_claim_check`](tools/export_grouping_v4.py)).
+
+**Product and delivery**
+
+- **Deterministic ranking.** `priority_score = severity_sum`, then issue ID. The public view leaves out flagged
+  records ([`rank`](tools/issue_grouping_v4_rank.py)).
+- **Full-stack dashboard.** Astro, React and shadcn/ui on the front end; a stdlib Python WSGI backend on Vercel
+  Functions; Neon Postgres; a strict Content Security Policy and a read-only API ([guide](docs/dashboard.md)).
+- **Agentic software development.** Several coding agents worked in parallel worktrees with written handoffs.
+  Paid runs, pushes and merges each needed Hanif's explicit approval ([coordination record](docs/tasks.md)).
+- **Tested and reproducible.** 468 offline tests. Generated files (the eval registry, the measurement audit and
+  the code excerpts) have `--check` modes that fail on drift.
 
 ## Where each deliverable is
 
@@ -92,14 +166,18 @@ This is the 100-review prompt comparison, not the golden-50 evaluation.
 Code owns parsing, ID validation, hashing, caching, saved state, budget checks, ranking and claim checks. A shared
 ledger reserves the worst-case cost before each call. No unknown outcome is retried automatically.
 
+On the live site, each code step has a **View code** button. It opens the real excerpt, with its file, line numbers
+and a GitHub link. `tools/build_code_snippets.py` cuts the 12 excerpts from the source, and a test fails if one drifts.
+
 ## Run and verify offline
 
 Use Python 3.9 or newer. No installation, API key or model call is needed. Run from the repository root.
 
 ```sh
-python3 -m unittest discover -s tests -t . -q        # 408 tests; 2 skip without private local files
+python3 -m unittest discover -s tests -t . -q        # 468 tests; 2 skip without private local files
 python3 -m spotify_pipeline --help                   # ingest, status, checkpoint, cost
 python3 -m tools.cost100_offline_calculator --scenario cost/scenario_full.json   # pilot and full-run estimate
+python3 -m tools.build_code_snippets --check         # dashboard code excerpts match the source
 ```
 
 Run the dashboard on your computer with a saved database:
@@ -194,7 +272,7 @@ Read [AGENTS.md](AGENTS.md) first. The release record is the
 
 **Open items:**
 
-1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific on **20 October**. This corrects the earlier reported 21 October date using the current course notice.
+1. Done: Hanif submitted through bCourses on 15 October (the live dashboard URL, with this repository in the comment). The deadline is 23:59 Pacific on **20 October**; a new attempt is possible until then.
 2. Optional: a recording of a real resume on saved state, in addition to the synthetic demo.
 3. Keep every disclosure above. Do not change saved data to clear a checker flag.
 
