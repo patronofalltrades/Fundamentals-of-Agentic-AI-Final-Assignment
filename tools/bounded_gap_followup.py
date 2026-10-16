@@ -7,6 +7,8 @@ requests, responses and outputs are saved only in the requested run directory.
 import argparse
 from collections import Counter
 from decimal import Decimal
+from dataclasses import asdict, dataclass
+from email.utils import parsedate_to_datetime
 import fcntl
 import hashlib
 import json
@@ -30,6 +32,9 @@ RESERVE = 36_044_600  # Full endpoint bounds: 131072 input + 117964 output.
 MAX_ATTEMPTS = 10
 PER_BATCH = 2
 ROLE_COUNTS = {"verify": 2, "group": 2, "audit_label": 1}
+FALLBACK_BACKOFF_SECONDS = 45
+MIN_REQUEST_INTERVAL_SECONDS = 45
+MAX_IN_PROCESS_BACKOFF_SECONDS = 300
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS calls(
@@ -39,8 +44,23 @@ CREATE TABLE IF NOT EXISTS calls(
  settled_utc TEXT,elapsed_seconds REAL,input_tokens INTEGER,output_tokens INTEGER,
  reasoning_tokens INTEGER,usage_charge_nusd INTEGER,derived_charge_nusd INTEGER,
  http_status INTEGER,response_body BLOB,error_class TEXT,output_json TEXT,
+ response_headers_json TEXT,retry_not_before_epoch REAL,
  UNIQUE(logical,attempt));
 """
+
+
+@dataclass(frozen=True)
+class RunPolicy:
+    namespace: str
+    cap: int
+    reserve: int
+    max_attempts: int
+    per_batch: int
+    role_counts: tuple
+
+
+def original_policy():
+    return RunPolicy(NAMESPACE, CAP, RESERVE, MAX_ATTEMPTS, PER_BATCH, tuple(ROLE_COUNTS.items()))
 
 
 def private_json(path, value):
@@ -93,12 +113,14 @@ def read_source(source, allowlist):
     return plan, text, old, calls, identity
 
 
-def validate_scope(calls):
-    if len(calls) != 5 or dict(Counter(x[1] for x in calls)) != ROLE_COUNTS:
-        raise ValueError("exact five-batch scope required")
+def validate_scope(calls, role_counts=None):
+    role_counts = ROLE_COUNTS if role_counts is None else role_counts
+    batches = sum(role_counts.values())
+    if len(calls) != batches or dict(Counter(x[1] for x in calls)) != role_counts:
+        raise ValueError("exact frozen batch scope required")
     ids = [r for x in calls for r in x[2]]
-    if len(ids) != 50 or len(set(ids)) != 50 or len({x[0] for x in calls}) != 5:
-        raise ValueError("exact 50 distinct IDs required")
+    if len(ids) != 10 * batches or len(set(ids)) != 10 * batches or len({x[0] for x in calls}) != batches:
+        raise ValueError("exact distinct source identity scope required")
     for _, role, ids, request in calls:
         if len(ids) != 10 or request.get("model") != g.MODEL or request.get("max_tokens") != 4096:
             raise ValueError("request bounds changed")
@@ -134,15 +156,57 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def rate_headers(headers):
+    """Keep only response rate hints. Never copy cookies or request credentials."""
+    return {k.lower(): v for k, v in headers.items()
+            if k.lower() in ("retry-after", "date") or k.lower().startswith(("ratelimit", "x-ratelimit"))}
+
+
+def retry_delay(headers, now):
+    """Honor Retry-After seconds or HTTP date; never guess other reset formats."""
+    value = headers.get("retry-after", "")
+    delay = 0.0
+    try:
+        if value.isdigit():
+            delay = float(value)
+        elif value:
+            date = parsedate_to_datetime(value)
+            if date.tzinfo is not None:
+                delay = max(0.0, date.timestamp() - now)
+    except (ValueError, TypeError, OverflowError):
+        pass
+    return max(FALLBACK_BACKOFF_SECONDS, delay)
+
+
+def bind_response_id_enum(request, ids):
+    """Offline candidate for a FUTURE approved manifest, never the frozen run.
+
+    This constrains copying to the ten original IDs. Exact membership validation
+    still rejects duplicates. Changing this schema changes the request hash and
+    therefore requires a new approved allowlist; read_source never applies it.
+    """
+    if len(ids) != 10 or len(set(ids)) != 10 or any(not isinstance(r, str) for r in ids):
+        raise ValueError("ten distinct IDs required")
+    candidate = json.loads(g.canon(request))
+    items = json.loads(candidate["messages"][-1]["content"].rsplit("\n", 1)[-1])
+    if [item["review_id"] for item in items] != list(ids):
+        raise ValueError("response enum must match the exact input IDs")
+    prop = candidate["response_format"]["json_schema"]["schema"]["properties"]["results"]["items"]["properties"]["review_id"]
+    prop["enum"] = list(ids)
+    if len(g.canon(candidate).encode()) + candidate["max_tokens"] > g.CONTEXT:
+        raise ValueError("candidate exceeds conservative context bound")
+    return candidate
+
+
 def transport(request, key):
     req = urllib.request.Request(g.URL, data=g.canon(request).encode(), headers={
         "Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer " + key})
     opener = urllib.request.build_opener(NoRedirect())
     try:
         with opener.open(req, timeout=45) as response:
-            return response.status, response.read()
+            return response.status, response.read(), rate_headers(response.headers)
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read()
+        return exc.code, exc.read(), rate_headers(exc.headers)
 
 
 def strict_output(role, response, ids, request):
@@ -154,13 +218,28 @@ def strict_output(role, response, ids, request):
     return value
 
 
+def require_current_schema(dbpath):
+    """Reject historical databases before any metadata write or route preflight."""
+    dbpath = Path(dbpath)
+    if dbpath.exists():
+        with sqlite3.connect("file:" + str(dbpath.resolve()) + "?mode=ro", uri=True) as existing:
+            columns = {r[1] for r in existing.execute("PRAGMA table_info(calls)")}
+            if not {"response_headers_json", "retry_not_before_epoch"} <= columns:
+                raise ValueError("old run schema is immutable; no migration or new call")
+
+
 class BoundedRunner:
     """Use ProjectBudget callbacks for atomic shared/run admission and settlement."""
-    def __init__(self, budget, out, calls, identity, send, check_route):
+    def __init__(self, budget, out, calls, identity, send, check_route, clock=time.time, sleep=time.sleep, policy=None):
+        self.policy = policy or original_policy()
         self.budget, self.out, self.calls = budget, Path(out), calls
         self.send, self.check_route = send, check_route
-        validate_scope(calls)
+        self.clock, self.sleep = clock, sleep
+        validate_scope(calls, dict(self.policy.role_counts))
+        self.request_hashes = {logical: g.digest(request) for logical, _, _, request in calls}
+        identity = {"binding": identity, "policy": asdict(self.policy), "request_hashes": self.request_hashes}
         dbpath = self.out / "followup.db"
+        require_current_schema(dbpath)
         c = sqlite3.connect(dbpath); c.executescript(SCHEMA)
         saved = c.execute("SELECT value FROM meta WHERE key='identity'").fetchone()
         if saved and saved[0] != g.canon(identity):
@@ -177,9 +256,11 @@ class BoundedRunner:
             "FROM followup.calls").fetchone()[0]
 
     def next_attempt(self, logical):
-        rows = self.db.execute("SELECT status FROM followup.calls WHERE logical=? ORDER BY attempt", (logical,)).fetchall()
-        if any(r[0] == "succeeded" for r in rows) or len(rows) >= PER_BATCH:
+        rows = self.db.execute("SELECT status,http_status FROM followup.calls WHERE logical=? ORDER BY attempt", (logical,)).fetchall()
+        if any(r[0] == "succeeded" for r in rows) or len(rows) >= self.policy.per_batch:
             return None
+        if any(r[0] == "rejected_http" and r[1] != 429 and not 500 <= (r[1] or 0) < 600 for r in rows):
+            raise ValueError("configuration rejection forbids retry")
         if any(r[0] not in ("quarantined_metered", "rejected_http") for r in rows):
             raise ValueError("unsettled delivery forbids retry")
         return len(rows) + 1
@@ -187,26 +268,40 @@ class BoundedRunner:
     def run(self):
         if self.db.execute("SELECT 1 FROM followup.calls WHERE status IN ('reserved','uncertain') LIMIT 1").fetchone():
             return "stopped_uncertain"
+        if self.db.execute("SELECT 1 FROM followup.calls WHERE status='rejected_http' AND http_status != 429 AND (http_status < 500 OR http_status >= 600) LIMIT 1").fetchone():
+            return "stopped_configuration"
         for logical, role, ids, request in self.calls:
             while self.next_attempt(logical) is not None:
                 attempt = self.next_attempt(logical)
+                due = self.db.execute("SELECT MAX(retry_not_before_epoch) FROM followup.calls").fetchone()[0] or 0
+                if due - self.clock() > MAX_IN_PROCESS_BACKOFF_SECONDS:
+                    return "stopped_rate_limit_wait"
+                # One global cooldown covers retries AND the next logical batch.
+                # It is durable, so process restart cannot skip the provider hint.
+                while self.clock() < due:
+                    self.sleep(min(1.0, due - self.clock()))
+                if g.digest(request) != self.request_hashes[logical]:
+                    raise ValueError("frozen request changed before admission")
                 self.check_route()
-                key = NAMESPACE + ":" + logical + "#" + str(attempt)
+                key = self.policy.namespace + ":" + logical + "#" + str(attempt)
                 def record(db):
-                    if db.execute("SELECT COUNT(*) FROM followup.calls").fetchone()[0] >= MAX_ATTEMPTS:
-                        raise ValueError("ten-attempt limit reached")
-                    if self.exposure() + RESERVE > CAP:
+                    if db.execute("SELECT COUNT(*) FROM followup.calls").fetchone()[0] >= self.policy.max_attempts:
+                        raise ValueError("total attempt limit reached")
+                    if self.exposure() + self.policy.reserve > self.policy.cap:
                         raise ValueError("new-run cap would be exceeded")
                     if db.execute("SELECT COUNT(*) FROM reservations WHERE status='reserved'").fetchone()[0] != 1:
                         raise ValueError("another paid request is active")
                     db.execute("INSERT INTO followup.calls(key,logical,role,attempt,status,reserved_nusd,request_sha,request_json,created_utc) "
-                        "VALUES(?,?,?,?,'reserved',?,?,?,?)", (key, logical, role, attempt, RESERVE, g.digest(request), g.canon(request), g.utc()))
-                self.budget.reserve(key, "openrouter", RESERVE, record=record)
+                        "VALUES(?,?,?,?,'reserved',?,?,?,?)", (key, logical, role, attempt, self.policy.reserve, g.digest(request), g.canon(request), g.utc()))
+                self.budget.reserve(key, "openrouter", self.policy.reserve, record=record)
                 started = time.monotonic()
                 body, http, value, charge, inp, out, reasoning, reported, derived = None, None, None, None, None, None, None, None, None
                 error, status = None, "uncertain"
+                headers, retry_at = {}, None
                 try:
-                    http, body = self.send(request)
+                    http, body, headers = self.send(request)
+                    headers = rate_headers(headers)
+                    retry_at = self.clock() + MIN_REQUEST_INTERVAL_SECONDS
                     # Save raw receipt before any parsing or settlement. No response is printed.
                     receipt = self.out / ("receipt-%s-%d.bin" % (logical.replace(":", "-"), attempt))
                     fd = os.open(receipt, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -214,6 +309,8 @@ class BoundedRunner:
                         f.write(body); f.flush(); os.fsync(f.fileno())
                     if not 200 <= http < 300:
                         status, error = "rejected_http", "HTTP%d" % http
+                        if http == 429 or 500 <= http < 600:
+                            retry_at = self.clock() + max(MIN_REQUEST_INTERVAL_SECONDS, retry_delay(headers, self.clock()))
                     else:
                         response = json.loads(body)
                         inp, out, reasoning, derived = g.usage_of(role, response, ROUTE)
@@ -224,7 +321,7 @@ class BoundedRunner:
                                 raise ValueError("invalid reported charge")
                             reported = router.money_nusd(number)
                         charge = max(derived, reported or 0)
-                        if charge > RESERVE:
+                        if charge > self.policy.reserve:
                             raise ValueError("charge exceeds reservation")
                         try:
                             value = strict_output(role, response, ids, request)
@@ -236,15 +333,15 @@ class BoundedRunner:
                 elapsed = time.monotonic() - started
                 def finish(db):
                     db.execute("UPDATE followup.calls SET status=?,charged_nusd=?,settled_utc=?,elapsed_seconds=?,input_tokens=?,"
-                        "output_tokens=?,reasoning_tokens=?,usage_charge_nusd=?,derived_charge_nusd=?,http_status=?,response_body=?,error_class=?,output_json=? WHERE key=?",
+                        "output_tokens=?,reasoning_tokens=?,usage_charge_nusd=?,derived_charge_nusd=?,http_status=?,response_body=?,error_class=?,output_json=?,response_headers_json=?,retry_not_before_epoch=? WHERE key=?",
                         (status, charge, g.utc(), elapsed, inp, out, reasoning, reported, derived, http, body, error,
-                         g.canon(value) if value is not None else None, key))
+                         g.canon(value) if value is not None else None, g.canon(headers), retry_at, key))
                 if status in ("succeeded", "quarantined_metered"):
                     self.budget.settle(key, status, charge, record=finish)
                 else:
                     self.budget.uncertain(key, record=finish)
                 print(g.canon({"role": role, "attempt": attempt, "status": status, "new_exposure_nusd": self.exposure()}), flush=True)
-                if status == "uncertain" or (http is not None and (http < 400 or http in (401, 403)) and status == "rejected_http"):
+                if status == "uncertain" or (http is not None and (http != 429 and not 500 <= http < 600) and status == "rejected_http"):
                     return "stopped_uncertain" if status == "uncertain" else "stopped_configuration"
                 if status == "succeeded":
                     break
@@ -335,6 +432,7 @@ def main():
     p.add_argument("--shared-budget-root", type=Path, required=True)
     p.add_argument("--execute", action="store_true")
     args = p.parse_args()
+    require_current_schema(args.out / "followup.db")
     os.umask(0o077); args.out.mkdir(parents=True, exist_ok=True); args.out.chmod(0o700)
     lease = open(args.out / "run.lock", "a+b")
     fcntl.flock(lease.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)

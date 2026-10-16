@@ -51,7 +51,7 @@ def good(request):
     response = fake_openrouter(request)
     response["provider"] = "Crusoe"
     response["usage"]["cost"] = 0.0001
-    return 200, json.dumps(response).encode()
+    return 200, json.dumps(response).encode(), {}
 
 
 class BoundedFollowupTest(unittest.TestCase):
@@ -61,12 +61,16 @@ class BoundedFollowupTest(unittest.TestCase):
         self.budget = AtomicBudget(self.out / "shared.db"); self.addCleanup(self.budget.db.close)
         self.calls = synthetic_calls()
         self.sent = 0
+        self.now, self.waited = 1000.0, 0.0
 
     def runner(self, send=good):
         def count(request):
             self.sent += 1
             return send(request)
-        return b.BoundedRunner(self.budget, self.out, self.calls, {"synthetic": True}, count, lambda: None)
+        def sleep(seconds):
+            self.now += seconds; self.waited += seconds
+        return b.BoundedRunner(self.budget, self.out, self.calls, {"synthetic": True}, count, lambda: None,
+                               clock=lambda: self.now, sleep=sleep)
 
     def test_success_is_not_resent_and_receipts_are_private(self):
         r = self.runner()
@@ -75,6 +79,7 @@ class BoundedFollowupTest(unittest.TestCase):
         self.assertEqual(r.run(), "finished")
         self.assertEqual(self.sent, 5)
         self.assertEqual(r.exposure(), 500000)
+        self.assertEqual(self.waited, 4 * b.MIN_REQUEST_INTERVAL_SECONDS)
         self.assertEqual(len(list(self.out.glob('receipt-*.bin'))), 5)
         self.assertEqual((self.out / 'followup.db').stat().st_mode & 0o777, 0o600)
         self.assertTrue(all(p.stat().st_mode & 0o777 == 0o600 for p in self.out.glob('receipt-*.bin')))
@@ -89,21 +94,22 @@ class BoundedFollowupTest(unittest.TestCase):
         self.assertEqual(self.budget.db.execute('SELECT status FROM reservations').fetchone()[0], 'uncertain')
 
     def test_http_rejection_has_one_retry_and_keeps_every_hold(self):
-        r = self.runner(lambda _: (429, b'{"error":"synthetic rejection"}'))
+        r = self.runner(lambda _: (429, b'{"error":"synthetic rejection"}', {}))
         self.assertEqual(r.run(), "finished")
         self.assertEqual(self.sent, 10)
         self.assertEqual(r.exposure(), 10 * b.RESERVE)
+        self.assertEqual(self.waited, 9 * b.FALLBACK_BACKOFF_SECONDS)
         self.assertLessEqual(r.exposure(), b.CAP)
         self.assertTrue(all(x[0] == 2 for x in r.db.execute('SELECT COUNT(*) FROM followup.calls GROUP BY logical')))
         r.run(); self.assertEqual(self.sent, 10)
 
     def test_metered_invalid_output_retries_once(self):
         def invalid(request):
-            status, raw = good(request); response = json.loads(raw)
+            status, raw, headers = good(request); response = json.loads(raw)
             rows = json.loads(response['choices'][0]['message']['content'])
             rows['results'][0]['unexpected'] = True
             response['choices'][0]['message']['content'] = json.dumps(rows)
-            return status, json.dumps(response).encode()
+            return status, json.dumps(response).encode(), headers
         r = self.runner(invalid); r.run()
         self.assertEqual(self.sent, 10)
         self.assertEqual(r.db.execute("SELECT COUNT(*) FROM followup.calls WHERE status='quarantined_metered'").fetchone()[0], 10)
@@ -111,14 +117,14 @@ class BoundedFollowupTest(unittest.TestCase):
 
     def test_wrong_provider_is_uncertain_without_retry(self):
         def wrong(request):
-            _, raw = good(request); response = json.loads(raw); response['provider'] = 'Other'
-            return 200, json.dumps(response).encode()
+            _, raw, headers = good(request); response = json.loads(raw); response['provider'] = 'Other'
+            return 200, json.dumps(response).encode(), headers
         r = self.runner(wrong)
         self.assertEqual(r.run(), 'stopped_uncertain'); self.assertEqual(self.sent, 1)
 
     def test_run_cap_rolls_back_both_admissions_before_transport(self):
-        r = self.runner(lambda _: (429, b'{}'))
         with patch.object(b, 'CAP', b.RESERVE - 1):
+            r = self.runner(lambda _: (429, b'{}', {}))
             with self.assertRaisesRegex(ValueError, 'cap'):
                 r.run()
         self.assertEqual(self.sent, 0)
@@ -158,6 +164,60 @@ class BoundedFollowupTest(unittest.TestCase):
         self.assertEqual(sum(report["paired_issue_table"].values()), 20)
         saved = json.loads((self.out / "merged-machine-outputs.json").read_text())
         self.assertEqual(saved["audit_group"], old["audit_group"])
+
+    def test_retry_after_seconds_and_http_date_override_fallback(self):
+        self.assertEqual(b.retry_delay({"retry-after": "120"}, 1000), 120)
+        self.assertEqual(b.retry_delay({"retry-after": "Thu, 01 Jan 1970 00:20:00 GMT"}, 1000), 200)
+        self.assertEqual(b.retry_delay({"retry-after": "nonsense"}, 1000), 45)
+
+    def test_provider_headers_saved_and_global_cooldown_survives_resume(self):
+        r = self.runner(lambda _: (429, b'{}', {"Retry-After": "600", "Set-Cookie": "secret", "X-RateLimit-Remaining": "0"}))
+        self.assertEqual(r.run(), "stopped_rate_limit_wait")
+        self.assertEqual(self.sent, 1)
+        self.assertEqual(r.run(), "stopped_rate_limit_wait")
+        self.assertEqual(self.sent, 1)
+        headers = json.loads(r.db.execute('SELECT response_headers_json FROM followup.calls').fetchone()[0])
+        self.assertEqual(headers, {"retry-after": "600", "x-ratelimit-remaining": "0"})
+        self.now += 600
+        r.send = good
+        self.assertEqual(r.run(), "finished")
+        self.assertEqual(r.exposure(), b.RESERVE + 500000)
+
+    def test_candidate_id_enum_changes_hash_without_mutating_frozen_request(self):
+        _, role, ids, request = self.calls[0]
+        original = g.digest(request)
+        candidate = b.bind_response_id_enum(request, ids)
+        self.assertNotEqual(g.digest(candidate), original)
+        self.assertEqual(g.digest(request), original)
+        enum = candidate['response_format']['json_schema']['schema']['properties']['results']['items']['properties']['review_id']['enum']
+        self.assertEqual(enum, ids)
+        _, raw, _ = good(request); response = json.loads(raw)
+        value = json.loads(response['choices'][0]['message']['content'])
+        value['results'][1]['review_id'] = value['results'][0]['review_id']
+        response['choices'][0]['message']['content'] = json.dumps(value)
+        with self.assertRaises(ValueError): b.strict_output(role, response, ids, candidate)
+
+    def test_old_run_is_rejected_without_migration_or_byte_changes(self):
+        path = self.out / 'followup.db'
+        with sqlite3.connect(path) as c:
+            c.execute('CREATE TABLE calls(status TEXT)')
+        before = path.read_bytes()
+        with self.assertRaisesRegex(ValueError, 'immutable'):
+            self.runner()
+        self.assertEqual(path.read_bytes(), before)
+        with patch('sys.argv', ['followup', '--source', str(self.out), '--allowlist', str(self.out / 'unused'),
+                                '--out', str(self.out), '--shared-budget-root', str(self.out), '--execute']), \
+                patch.object(b, 'preflight') as preflight, patch.object(b, 'read_source') as read_source:
+            with self.assertRaisesRegex(ValueError, 'immutable'): b.main()
+            preflight.assert_not_called()
+            read_source.assert_not_called()
+        self.assertEqual(path.read_bytes(), before)
+        self.assertFalse((self.out / 'approval-and-identity.json').exists())
+
+    def test_id_enum_rejects_different_input_identity(self):
+        _, _, ids, request = self.calls[0]
+        with self.assertRaisesRegex(ValueError, 'exact input IDs'):
+            b.bind_response_id_enum(request, list(reversed(ids)))
 
 
 if __name__ == '__main__': unittest.main()

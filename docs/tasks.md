@@ -1,5 +1,39 @@
 # Coordination record
 
+## Approved completion execution — 16 October 2026
+
+Owner: Codex in `feat/bounded-measurement-followup`. Hanif approved the specified
+source/machine data sharing and a new separate one-time US$0.33 allowance at
+00:18:20 UTC. Scope: the exact three-batch manifest ending `655a9e3`, 20 verifier
+rows and ten grouping members, OpenRouter/Crusoe, at most nine attempts. The
+new executor binds the complete digest, policy, pending IDs and request hashes.
+Header capture, durable cooldown and whole-batch validation apply. Existing
+holds and source artifacts stay unchanged. No publication is authorized.
+
+## Follow-up diagnosis and publication preparation — 15 October 2026
+
+Owner: Codex, same isolated `feat/bounded-measurement-followup` worktree.
+Scope: saved-response diagnosis, future retry/header and identity safeguards,
+synthetic tests, aggregate-only report builder, evaluation registry, pipeline caption, and this
+record. All original run files, receipts, outputs and cost holds stay unchanged.
+No new paid calls, saved database writes, push or deployment. Publication is
+prepared locally for review. Future inference needs separate approval.
+
+16 October: the local aggregate now records verifier 980/1,000, grouping
+590/600 and label auditor 100/100. Header presence, Retry-After compliance and
+the exact upstream rate remain unknown. The old runner had no backoff. The
+future safeguards capture rate headers, persist a 45-second minimum interval
+and Retry-After cooldown, and reject old run schemas without migration. New
+output-ID enums are proposal-only and preserve strict whole-batch validation.
+
+Hanif requested full verifier and grouping coverage. A read-only proposal now
+freezes the remaining 20 verifier reviews and ten grouping members as three
+ten-review batches. Proposed maximum: nine attempts, two retries per batch,
+US$0.324401400 worst-case exposure under a new separate US$0.33 allowance.
+All prior holds remain. The proposal has no execute path and awaits specific
+approval, a bound completion executor and a fresh preflight. See
+`reports/measurement-completion-proposal-2026-10-16.md`.
+
 ## Bounded measurement completion — 15 October 2026
 
 Owner: Codex, `feat/bounded-measurement-followup`, isolated
