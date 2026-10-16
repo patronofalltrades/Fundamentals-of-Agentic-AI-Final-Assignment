@@ -25,6 +25,17 @@ class CoverageTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 audit.index_cases(rows)
 
+    def test_route_mismatch_and_bad_request_hash_rejected(self):
+        gap = json.loads((audit.ROOT / audit.GAP / "aggregate.json").read_text())
+        row = {"key": "verify:000", "role": "verify", "charged": 1, "reserved": 1, "route": "deepinfra/bf16",
+               "request_sha256": "a" * 64, "response_sha256": None, "generation_id": None}
+        for change in ({"route": "other/route"}, {"request_sha256": "synthetic"}):
+            with self.assertRaisesRegex(ValueError, "route|request hash"):
+                audit.derive({n: [] for n in audit.FIELDS}, [{**row, **change}],
+                             {**gap, "blind_verifier": {**gap["blind_verifier"], "agreement_with_jev":
+                              {f: {"n": 0, "of": 0} for f in ("topic", "intent", "severity", "joint")}},
+                              "routes": {"calls_by_route": {"deepinfra/bf16": 1}}}, {})
+
     def test_saved_aggregate_and_coverage_arithmetic(self):
         result = audit.build()
         self.assertEqual(result, json.loads((audit.ROOT / audit.OUT).read_text()))
@@ -37,6 +48,8 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(result["recovery"]["settled_logical_requests"], 212)
         self.assertEqual(result["recovery"]["logical_requests_without_settled_result"], 1)
         self.assertEqual(result["recovery"]["resumed_attempts_for_initial_settled_requests"], 0)
+        self.assertTrue(result["cost"]["public_route_fields_complete"])
+        self.assertEqual((result["cost"]["response_hashes"], result["cost"]["generation_ids"]), (324, 186))
         encoded = json.dumps(result)
         for forbidden in ('review_ref', 'review_id', 'claimed_topic', 'verifier_topic', 'review_text'):
             self.assertNotIn(forbidden, encoded)

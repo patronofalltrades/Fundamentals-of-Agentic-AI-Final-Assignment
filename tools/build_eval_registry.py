@@ -448,7 +448,9 @@ def operational_measurements(pilot, warm, measured):
                     (recovery["settled_logical_requests"], recovery["logical_requests"], recovery["logical_requests_without_settled_result"]),
          "limits": ["Provider reconciliation is still needed for every unknown charge; HTTP errors are not assumed free.",
                     "Public logs support the phase and request arithmetic. SIGINT and checkpoint details remain saved-report evidence; private snapshots were not rechecked in this audit.",
-                    "Public call rows omit provider-route and request/response receipt fields. This run does not prove historical main-run recovery."],
+                    "Public call rows give every attempt's route and request hash; %d have a response hash and %d a provider "
+                    "generation ID. This run does not prove historical main-run recovery." %
+                    (cost["response_hashes"], cost["generation_ids"])],
          "sources": [GAP, MEASUREMENT]},
     ]
 

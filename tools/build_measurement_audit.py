@@ -22,7 +22,10 @@ FIELDS = {
     "planted_issue_cases.csv": ("review_ref", "planted", "claimed_issue", "supported"),
 }
 CALL_FIELDS = {"charged", "created", "elapsed", "error", "inp", "key", "out", "phase",
-               "reasoning", "reserved", "role", "settled", "status"}
+               "reasoning", "reserved", "role", "settled", "status",
+               "route", "request_sha256", "response_sha256", "generation_id"}
+NON_ROLE_CALLS = {"inject_jev", "jev_batch10", "inject_evidence"}  # excluded from the aggregate's role-route counts
+HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
 def index_cases(rows):
@@ -72,6 +75,13 @@ def derive(cases, calls, gap, extractor):
                 continue
             if type(value) is not int or value < 0:
                 raise ValueError("Expected nonnegative integer cost or an unknown charge")
+        if (not isinstance(c["route"], str) or not HEX64.fullmatch(c["request_sha256"] or "")
+                or not (c["response_sha256"] is None or HEX64.fullmatch(c["response_sha256"]))
+                or not (c["generation_id"] is None or isinstance(c["generation_id"], str))):
+            raise ValueError("Expected a route, a request hash and optional response receipts")
+    role_routes = Counter(c["route"] for c in calls if c["role"] not in NON_ROLE_CALLS)
+    if dict(role_routes) != gap["routes"]["calls_by_route"]:
+        raise ValueError("Route aggregate and public call routes differ")
     charged = sum(c["charged"] for c in calls if c["charged"] is not None)
     held = [c for c in calls if c["charged"] is None]
     reserved = sum(c["reserved"] for c in held)
@@ -121,10 +131,14 @@ def derive(cases, calls, gap, extractor):
                  "known_plus_held_nusd": charged + reserved, "unknown_charge_attempts": len(held),
                  "held_by_error": by_error, "status_counts": dict(sorted(Counter(c["status"] for c in calls).items())),
                  "phase_counts": dict(sorted(Counter(c["phase"] for c in calls).items())),
-                 "public_route_fields_complete": all("route" in c for c in calls)},
+                 "public_route_fields_complete": all(c["route"] for c in calls),
+                 "calls_by_route": dict(sorted(Counter(c["route"] for c in calls).items())),
+                 "response_hashes": sum(c["response_sha256"] is not None for c in calls),
+                 "generation_ids": sum(c["generation_id"] is not None for c in calls)},
         "limits": ["Missing outputs are excluded from paired agreement and counted separately.",
                    "Model agreement and changed model claims are not human accuracy.",
-                   "Route labels come from the saved aggregate; public call rows omit provider route fields.",
+                   "Public call rows give each attempt's route and request hash. Response hashes and provider "
+                   "generation IDs exist only where a body or ID was saved; the hashed bodies are not published.",
                    "Charges and holds describe this separate experiment, not the complete project bill."],
     }
 
