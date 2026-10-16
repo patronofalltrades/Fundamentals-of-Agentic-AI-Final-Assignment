@@ -1,0 +1,467 @@
+{
+  "after": {
+    "coverage": {
+      "audit_group": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "audit_label": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "group": {
+        "n": 600,
+        "of": 600,
+        "rate": 1.0
+      },
+      "verify": {
+        "n": 1000,
+        "of": 1000,
+        "rate": 1.0
+      }
+    },
+    "grouping": {
+      "abstained": {
+        "n": 3,
+        "of": 600,
+        "rate": 0.005
+      },
+      "exact": {
+        "n": 462,
+        "of": 600,
+        "rate": 0.77
+      },
+      "family": {
+        "n": 522,
+        "of": 600,
+        "rate": 0.87
+      }
+    },
+    "issue_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged": {
+        "n": 3,
+        "of": 50,
+        "rate": 0.06
+      }
+    },
+    "label_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 46,
+        "of": 50,
+        "rate": 0.92
+      },
+      "changed_detected_by_field": {
+        "severity": {
+          "n": 22,
+          "of": 25,
+          "rate": 0.88
+        },
+        "topic": {
+          "n": 24,
+          "of": 25,
+          "rate": 0.96
+        }
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged_any": {
+        "n": 7,
+        "of": 50,
+        "rate": 0.14
+      },
+      "unchanged_flagged_by_field": {
+        "intent": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        },
+        "severity": {
+          "n": 4,
+          "of": 50,
+          "rate": 0.08
+        },
+        "topic": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        }
+      }
+    },
+    "paired_issues": {
+      "blind_disagreed": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "missing": 0,
+      "table": {
+        "auditor_only": 0,
+        "blind_only": 2,
+        "both_flagged": 48,
+        "neither_flagged": 0
+      }
+    },
+    "paired_labels": {
+      "blind_disagreed": {
+        "n": 47,
+        "of": 50,
+        "rate": 0.94
+      },
+      "coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "missing": 0,
+      "table": {
+        "auditor_only": 1,
+        "blind_only": 2,
+        "both_flagged": 45,
+        "neither_flagged": 2
+      }
+    },
+    "verifier_agreement": {
+      "intent": {
+        "n": 917,
+        "of": 1000,
+        "rate": 0.917
+      },
+      "joint": {
+        "n": 660,
+        "of": 1000,
+        "rate": 0.66
+      },
+      "severity": {
+        "n": 853,
+        "of": 1000,
+        "rate": 0.853
+      },
+      "topic": {
+        "n": 808,
+        "of": 1000,
+        "rate": 0.808
+      }
+    }
+  },
+  "approval_utc": "2026-10-16T00:18:20Z",
+  "before": {
+    "coverage": {
+      "audit_group": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "audit_label": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "group": {
+        "n": 590,
+        "of": 600,
+        "rate": 0.9833
+      },
+      "verify": {
+        "n": 980,
+        "of": 1000,
+        "rate": 0.98
+      }
+    },
+    "grouping": {
+      "abstained": {
+        "n": 3,
+        "of": 590,
+        "rate": 0.0051
+      },
+      "exact": {
+        "n": 454,
+        "of": 590,
+        "rate": 0.7695
+      },
+      "family": {
+        "n": 512,
+        "of": 590,
+        "rate": 0.8678
+      }
+    },
+    "issue_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged": {
+        "n": 3,
+        "of": 50,
+        "rate": 0.06
+      }
+    },
+    "label_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 46,
+        "of": 50,
+        "rate": 0.92
+      },
+      "changed_detected_by_field": {
+        "severity": {
+          "n": 22,
+          "of": 25,
+          "rate": 0.88
+        },
+        "topic": {
+          "n": 24,
+          "of": 25,
+          "rate": 0.96
+        }
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged_any": {
+        "n": 7,
+        "of": 50,
+        "rate": 0.14
+      },
+      "unchanged_flagged_by_field": {
+        "intent": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        },
+        "severity": {
+          "n": 4,
+          "of": 50,
+          "rate": 0.08
+        },
+        "topic": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        }
+      }
+    },
+    "paired_issues": {
+      "blind_disagreed": {
+        "n": 47,
+        "of": 47,
+        "rate": 1.0
+      },
+      "coverage": {
+        "n": 47,
+        "of": 50,
+        "rate": 0.94
+      },
+      "missing": 3,
+      "table": {
+        "auditor_only": 0,
+        "blind_only": 2,
+        "both_flagged": 45,
+        "neither_flagged": 0
+      }
+    },
+    "paired_labels": {
+      "blind_disagreed": {
+        "n": 45,
+        "of": 48,
+        "rate": 0.9375
+      },
+      "coverage": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "missing": 2,
+      "table": {
+        "auditor_only": 1,
+        "blind_only": 2,
+        "both_flagged": 43,
+        "neither_flagged": 2
+      }
+    },
+    "verifier_agreement": {
+      "intent": {
+        "n": 901,
+        "of": 980,
+        "rate": 0.9194
+      },
+      "joint": {
+        "n": 648,
+        "of": 980,
+        "rate": 0.6612
+      },
+      "severity": {
+        "n": 837,
+        "of": 980,
+        "rate": 0.8541
+      },
+      "topic": {
+        "n": 793,
+        "of": 980,
+        "rate": 0.8092
+      }
+    }
+  },
+  "completion_database_sha256": "9ea1c01ad8174553dc7cd5932c9104d06c591af0ea971c64e17a3d92f7ac89a1",
+  "cost": {
+    "attempts": 3,
+    "cap_nusd": 330000000,
+    "exposure_nusd": 809700,
+    "known_charges_nusd": 809700,
+    "maximum_attempts": 9,
+    "status_counts": {
+      "succeeded": 3
+    },
+    "unresolved_reservations_nusd": 0
+  },
+  "execution_commit": "bc7a91a61420b435d265cd70a476e33637928c53",
+  "invalid_batches": [],
+  "label_config": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+  "limits": [
+    "Saved sample coverage is not population coverage or human accuracy.",
+    "Old invalid outputs and unresolved reservations remain unchanged.",
+    "Agreement denominators include only valid observed outputs; all selected IDs remain in coverage.",
+    "No new golden scoring, auditor calls, synthetic attacks or production database writes."
+  ],
+  "manifest_sha256": "186397d8243b8dbe278949e503049ed1ef8c844f9adeb792c58a31e37655a9e3",
+  "namespace": "measurement-completion-20261016-v1",
+  "new_valid_outputs": {
+    "group": 10,
+    "verify": 20
+  },
+  "original_artifacts_and_historical_holds_preserved": true,
+  "previous_followup_database_sha256": "c83a71c379a8e9c3cfd2e98f1fa581e2d94c97325e51c8435030896d274e5a15",
+  "receipts": [
+    {
+      "attempt": 1,
+      "charged_nusd": 243150,
+      "created_utc": "2026-10-16T00:23:14.211009+00:00",
+      "derived_charge_nusd": 243150,
+      "elapsed_seconds": 3.9048358750000003,
+      "http_status": 200,
+      "input_tokens": 1013,
+      "next_admission_respected_cooldown": true,
+      "output_tokens": 770,
+      "reasoning_tokens": 393,
+      "request_sha": "27835e717750dcbe487208357c5378c0c82528869b7203661772b418be2fdd39",
+      "reserved_nusd": 36044600,
+      "response_headers_saved": true,
+      "response_sha256": "d13c5b1c79da11741aee53688731f2908b2e4655930a7edd416bcb14b845a82a",
+      "retry_after_present": false,
+      "role": "verify",
+      "settled_utc": "2026-10-16T00:23:18.165309+00:00",
+      "status": "succeeded",
+      "usage_charge_nusd": 243150
+    },
+    {
+      "attempt": 1,
+      "charged_nusd": 229350,
+      "created_utc": "2026-10-16T00:24:03.813915+00:00",
+      "derived_charge_nusd": 229350,
+      "elapsed_seconds": 3.3117153749999986,
+      "http_status": 200,
+      "input_tokens": 877,
+      "next_admission_respected_cooldown": true,
+      "output_tokens": 742,
+      "reasoning_tokens": 326,
+      "request_sha": "f8583a521d457efadf0cd326d61d59981b10ffc7b75817d28d1c3864743681d5",
+      "reserved_nusd": 36044600,
+      "response_headers_saved": true,
+      "response_sha256": "5cddebc4fdf75e971f3310a5a523bd3404ad85a9d14447b0ca9837ebbe45158c",
+      "retry_after_present": false,
+      "role": "verify",
+      "settled_utc": "2026-10-16T00:24:07.128784+00:00",
+      "status": "succeeded",
+      "usage_charge_nusd": 229350
+    },
+    {
+      "attempt": 1,
+      "charged_nusd": 337200,
+      "created_utc": "2026-10-16T00:24:52.796937+00:00",
+      "derived_charge_nusd": 337200,
+      "elapsed_seconds": 4.503531624999994,
+      "http_status": 200,
+      "input_tokens": 2649,
+      "next_admission_respected_cooldown": null,
+      "output_tokens": 819,
+      "reasoning_tokens": 433,
+      "request_sha": "c60fb6c0e0e7ef7d80f0684dfb474d30efba01ecf2a5860e2092c2b81c8dd02a",
+      "reserved_nusd": 36044600,
+      "response_headers_saved": true,
+      "response_sha256": "632a6f3186cce14a290332e79a552a3e7afe1b6b89c279dab9a8a84435b3cb64",
+      "retry_after_present": false,
+      "role": "group",
+      "settled_utc": "2026-10-16T00:24:57.304752+00:00",
+      "status": "succeeded",
+      "usage_charge_nusd": 337200
+    }
+  ],
+  "recorded_through_utc": "2026-10-16T00:24:57.304752+00:00",
+  "route": {
+    "data_collection": "deny",
+    "fallback": false,
+    "max_tokens": 4096,
+    "model": "openai/gpt-oss-120b",
+    "provider": "Crusoe",
+    "reasoning": "low",
+    "service": "OpenRouter",
+    "tag": "crusoe/bf16",
+    "zdr": true
+  },
+  "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6",
+  "verifier_statistics": {
+    "kappa": {
+      "intent": 0.8585,
+      "severity": 0.7301,
+      "topic": 0.6918
+    },
+    "severity_mae": 0.176
+  },
+  "version": 1
+}

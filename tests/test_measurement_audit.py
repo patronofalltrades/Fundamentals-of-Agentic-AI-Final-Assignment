@@ -46,7 +46,8 @@ class CoverageTests(unittest.TestCase):
         # Observed results are measured; completion gaps must remain separate and visible.
         for key in ("labelling-runs", "extractor-benchmark", "blind-verifier-batch10", "grouping-stage", "projection-100k", "gap-operations", "planted-and-injection"):
             self.assertEqual(items[key]["status"], "measured")
-            self.assertTrue(items[key]["gaps"], key)
+            if key not in ("blind-verifier-batch10", "grouping-stage", "planted-and-injection"):
+                self.assertTrue(items[key]["gaps"], key)
             for gap in items[key]["gaps"]:
                 self.assertTrue(gap["label"] and gap["detail"], key)
         metrics = {m["label"]: m for m in items["cost100-cold-full-warm"]["metrics"]}
@@ -56,14 +57,16 @@ class CoverageTests(unittest.TestCase):
 
     def test_measured_badge_does_not_fill_missing_evidence(self):
         items = {i["id"]: i for i in registry.build()["items"]}
-        for key, observed, selected in (("blind-verifier-batch10", 980, 1000), ("grouping-stage", 590, 600)):
+        for key, observed, selected in (("blind-verifier-batch10", 1000, 1000), ("grouping-stage", 600, 600)):
             self.assertEqual((items[key]["metrics"][0]["value"], items[key]["metrics"][0]["of"]), (observed, selected))
-            self.assertIn("%d missing" % (selected - observed), items[key]["gaps"][0]["detail"])
+            self.assertEqual(items[key]["gaps"], [])
+            self.assertIn("0 missing", items[key]["metrics"][0]["note"])
         errors = next(r for r in items["labelling-runs"]["compare"]["rows"] if r["label"] == "Schema or identity errors")
         self.assertIsNone(errors["values"][1])
         self.assertIn("46 calls", items["projection-100k"]["gaps"][0]["detail"])
         self.assertIn("125 attempts", items["gap-operations"]["gaps"][0]["detail"])
-        self.assertIn("All 100 label-auditor outputs are saved", items["planted-and-injection"]["gaps"][0]["detail"])
+        self.assertEqual(items["planted-and-injection"]["gaps"], [])
+        self.assertIn("100 of 100 label-auditor", items["planted-and-injection"]["sample"])
 
     def test_warm_card_rejects_wrong_source_or_network_attempt(self):
         measured = audit.build()
@@ -96,7 +99,7 @@ class VerificationScopeTests(unittest.TestCase):
         self.assertIsNone(server._saved_verification("source", "config"))
 
     def test_invalid_counts_or_truth_claim_fail_closed(self):
-        for changes in ({"missing": 0}, {"observed": True}, {"not_human_accuracy": False},
+        for changes in ({"missing": 1}, {"observed": True}, {"not_human_accuracy": False},
                         {"agreement_counts": {"topic": 1, "intent": 1, "severity": 1, "joint": 2}}):
             self.write({**self.saved, **changes})
             self.assertIsNone(server._saved_verification(self.saved["source_sha256"], self.saved["config_hash"]))
@@ -111,7 +114,7 @@ class VerificationScopeTests(unittest.TestCase):
             self.write({**self.saved, "source_sha256": source, "config_hash": config})
             quality = server.summary(conn)["quality"]
             self.assertEqual(quality["blind_verifier"], "sample_measured")
-            self.assertEqual(quality["verification"]["missing"], 20)
+            self.assertEqual(quality["verification"]["missing"], 0)
             self.assertIsNone(quality["classifier_agreement"])
             self.assertEqual(quality["human_evaluation"], "pending")
 

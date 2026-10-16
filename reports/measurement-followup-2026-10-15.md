@@ -3,6 +3,10 @@
 Prepared 16 October 2026. This is a local publication candidate. The aggregate
 registry is updated locally; publication requires approval.
 
+This report preserves the first follow-up's result. The later
+[completion run](measurement-completion-2026-10-16.md) reached verifier
+1,000/1,000 and grouping 600/600. Its results and charges are separate.
+
 ## Saved results
 
 The separately approved US$0.38 run used all ten attempts on 15 October UTC.

@@ -10,6 +10,18 @@ new executor binds the complete digest, policy, pending IDs and request hashes.
 Header capture, durable cooldown and whole-batch validation apply. Existing
 holds and source artifacts stay unchanged. No publication is authorized.
 
+Completed: all three batches passed their first attempt. Verifier coverage is
+1,000/1,000; grouping is 600/600. Known charge and exposure: US$0.000809700;
+new unresolved holds: zero. Original artifacts and historical ledger rows/caps
+were verified unchanged. The earlier six US$0.216267600 holds remain. Joint
+verifier agreement is 660/1,000; exact grouping agreement is 462/600. Both paired
+claim comparisons now cover all 50 cases. See
+`reports/measurement-completion-2026-10-16.md`. The publication package is local.
+Final checks: 463 Python tests (461 passed, two expected skips), generated-report
+checks and CLI help; frontend build, clean 36-file typecheck and four Node tests;
+local browser coverage/hold checks with zero console errors. Independent ledger
+and privacy scans passed. No push, merge, deployment or production write.
+
 ## Follow-up diagnosis and publication preparation — 15 October 2026
 
 Owner: Codex, same isolated `feat/bounded-measurement-followup` worktree.
