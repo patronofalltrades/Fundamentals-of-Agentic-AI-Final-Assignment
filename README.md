@@ -15,7 +15,7 @@ the memo traces back to saved records.
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
 | Repository | [patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment) |
 | Scope | 110,000 selected source reviews. 100,229 have structurally accepted labels and evidence. The instructor set a minimum of 100,000. |
-| Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submission: the public GitHub URL through bCourses (pending). |
+| Deadline | **20 October 2026, 23:59 Pacific Time**, per the [current assignment document](https://docs.google.com/document/d/1PUFw56OGxqbUxiFm0vKtsWX8ac8633BgOlCSGa3TgLA/edit). Submitted through bCourses on 15 October: the live dashboard URL, with this repository's URL in the comment. |
 | Spend | US$4.73 in metered charges for all 79,797 calls of the 110,000-review run (Jev US$3.26, DeepInfra US$1.46; [call aggregate](reports/run-110k-calls-aggregate.json)). The scale queue alone, which accepted 90,663 of the reviews, cost US$4.21. Grouping-agent usage is unknown, not zero. The 16 October [gap-closure run](reports/gap-closure-2026-10-16.md) added US$0.040. The cap is strictly below US$50. |
 | **Grading folder** | [Release `grading-2026-10-13`](https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/releases/tag/grading-2026-10-13): `grading-110k.zip` and the interruption-and-resume video |
 | Rubric assessment | [Criterion-based course rubric assessment](reports/rubric-assessment-2026-10-16.md) (refreshed after merged PR #33; verified 15 October UTC) |
@@ -92,14 +92,18 @@ This is the 100-review prompt comparison, not the golden-50 evaluation.
 Code owns parsing, ID validation, hashing, caching, saved state, budget checks, ranking and claim checks. A shared
 ledger reserves the worst-case cost before each call. No unknown outcome is retried automatically.
 
+On the live site, each code step has a **View code** button. It opens the real excerpt, with its file, line numbers
+and a GitHub link. `tools/build_code_snippets.py` cuts the 12 excerpts from the source, and a test fails if one drifts.
+
 ## Run and verify offline
 
 Use Python 3.9 or newer. No installation, API key or model call is needed. Run from the repository root.
 
 ```sh
-python3 -m unittest discover -s tests -t . -q        # 408 tests; 2 skip without private local files
+python3 -m unittest discover -s tests -t . -q        # 468 tests; 2 skip without private local files
 python3 -m spotify_pipeline --help                   # ingest, status, checkpoint, cost
 python3 -m tools.cost100_offline_calculator --scenario cost/scenario_full.json   # pilot and full-run estimate
+python3 -m tools.build_code_snippets --check         # dashboard code excerpts match the source
 ```
 
 Run the dashboard on your computer with a saved database:
@@ -194,7 +198,7 @@ Read [AGENTS.md](AGENTS.md) first. The release record is the
 
 **Open items:**
 
-1. Hanif submits the public GitHub URL through bCourses before 23:59 Pacific on **20 October**. This corrects the earlier reported 21 October date using the current course notice.
+1. Done: Hanif submitted through bCourses on 15 October (the live dashboard URL, with this repository in the comment). The deadline is 23:59 Pacific on **20 October**; a new attempt is possible until then.
 2. Optional: a recording of a real resume on saved state, in addition to the synthetic demo.
 3. Keep every disclosure above. Do not change saved data to clear a checker flag.
 

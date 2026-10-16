@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { api, fmt, type Claim } from "@/lib/api"
 import { ledgerRows, parseMemo, sentenceCase, SUMMARY_SECTIONS, type LedgerRow, type MemoBlock } from "@/lib/memo"
 import { LoadError, PendingNote, Reflection } from "./bits"
+import { CodeButton } from "./code-snippet"
 import { REFLECTIONS } from "@/lib/reflections"
 import { useData } from "./use-data"
 
@@ -180,10 +181,13 @@ export default function MemoPanel({ variant = "summary" }: { variant?: "summary"
       <div className="flex flex-wrap items-center justify-between gap-3">
         {full ? <h1 className="text-2xl">{parsed?.title ? sentenceCase(parsed.title) : "Decision memo"}</h1> : <h2 className="text-xl">Decision memo</h2>}
         {memo.data.text && (
-          <Badge variant="secondary" className={checked ? "gap-1.5 rounded-full text-positive" : "gap-1.5 rounded-full text-negative"}>
-            {checked ? <ShieldCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
-            {checked ? "Ranking claims match saved values" : fmt.label(memo.data.status)}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className={checked ? "gap-1.5 rounded-full text-positive" : "gap-1.5 rounded-full text-negative"}>
+              {checked ? <ShieldCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
+              {checked ? "Ranking claims match saved values" : fmt.label(memo.data.status)}
+            </Badge>
+            <CodeButton id="claim-check" label="How claims are checked" />
+          </div>
         )}
       </div>
       {!full && <Reflection className="mt-2">{REFLECTIONS.memo}</Reflection>}

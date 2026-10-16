@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { api, fmt, type Summary } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { Reflection } from "./bits"
+import { CodeButton, type SnippetId } from "./code-snippet"
 import { useData } from "./use-data"
 
 // The two flowcharts in docs/pipeline-extraction.mmd and docs/pipeline-analysis.mmd, drawn in the dashboard's
@@ -12,7 +13,7 @@ import { useData } from "./use-data"
 
 type Kind = "data" | "code" | "model" | "store" | "handoff" | "result"
 type Branch = { label: string; to: string; tone?: "warn" | "gap" | "skip" }
-type Step = { kind: Kind; title: string; detail?: ReactNode; branches?: Branch[] }
+type Step = { kind: Kind; title: string; detail?: ReactNode; branches?: Branch[]; code?: SnippetId }
 
 const KIND: Record<Kind, { name: string; box: string; chip: string }> = {
   data: { name: "Data", box: "bg-tile", chip: "bg-canvas text-muted-foreground" },
@@ -41,6 +42,7 @@ function Flow({ steps }: { steps: Step[] }) {
               <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px]", KIND[step.kind].chip)}>{KIND[step.kind].name}</span>
             </div>
             {step.detail && <p className="mt-0.5 text-[13px] text-muted-foreground">{step.detail}</p>}
+            {step.code && <CodeButton id={step.code} className="mt-2" />}
             {step.branches && (
               <ul className="mt-2 space-y-1 border-t border-dashed border-track/60 pt-2 text-[13px]">
                 {step.branches.map((b) => (
@@ -58,7 +60,7 @@ function Flow({ steps }: { steps: Step[] }) {
   )
 }
 
-function Controls({ items }: { items: { title: string; detail: string; acts: string }[] }) {
+function Controls({ items }: { items: { title: string; detail: string; acts: string; code: SnippetId }[] }) {
   return (
     <ul className="mt-4 grid gap-3 sm:grid-cols-2">
       {items.map((c) => (
@@ -66,6 +68,7 @@ function Controls({ items }: { items: { title: string; detail: string; acts: str
           <p className="text-[14px] text-foreground">{c.title}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">{c.detail}</p>
           <p className="mt-1 text-[12px] text-muted-foreground">Acts on: <span className="text-foreground">{c.acts}</span></p>
+          <CodeButton id={c.code} className="mt-2" />
         </li>
       ))}
     </ul>
@@ -77,15 +80,15 @@ function extraction(s: Summary): Step[] {
   const accepted = s.import?.accepted_rows ?? s.coverage.completed_rows
   return [
     { kind: "data", title: "Immutable source CSV", detail: "660,622 original review IDs" },
-    { kind: "code", title: "Parse and hash the exact fields", detail: <>Freeze {fmt.int(selected)} selected IDs</> },
-    { kind: "store", title: "Durable SQLite queue", detail: "Configuration-safe exact-text cache",
+    { kind: "code", title: "Parse and hash the exact fields", detail: <>Freeze {fmt.int(selected)} selected IDs</>, code: "parse-hash" },
+    { kind: "store", title: "Durable SQLite queue", detail: "Configuration-safe exact-text cache", code: "exact-cache",
       branches: [{ label: "Valid label or evidence in the cache", to: "skips the model call", tone: "skip" }] },
     { kind: "model", title: "Jev classifier", detail: "Topic, intent and severity · one review per request",
       branches: [{ label: "Unknown delivery", to: "uncertain request; full reservation kept until reconciled", tone: "warn" }] },
-    { kind: "code", title: "Validate and save the labels" },
+    { kind: "code", title: "Validate and save the labels", code: "label-validate" },
     { kind: "model", title: "DeepInfra evidence extractor", detail: "An exact quote per review · up to 25 distinct texts per request",
       branches: [{ label: "Unknown delivery", to: "uncertain request; full reservation kept until reconciled", tone: "warn" }] },
-    { kind: "code", title: "Check IDs, schema and source spans", detail: "Save per-ID evidence and its provenance",
+    { kind: "code", title: "Check IDs, schema and source spans", detail: "Save per-ID evidence and its provenance", code: "evidence-check",
       branches: [{ label: "Invalid evidence", to: "quarantined with a reason", tone: "warn" }] },
     { kind: "result", title: `${fmt.int(accepted)} accepted source IDs`, detail: "Semantic flags stay separate" },
   ]
@@ -98,27 +101,27 @@ function analysis(s: Summary): Step[] {
   return [
     { kind: "data", title: "Accepted labels and evidence" },
     { kind: "code", title: "Build the complaint and cancellation frame",
-      detail: corrections ? `With ${corrections} declared human label corrections` : undefined },
+      detail: corrections ? `With ${corrections} declared human label corrections` : undefined, code: "complaint-frame" },
     { kind: "handoff", title: "Grouping-agent handoff", detail: <>Historical: saved assignments to a {issues ?? 41}-issue catalog. Not a program stage.</>,
       branches: [
         { label: "Blind verifier handoff", to: "511 of 600 assignments agreed (85.2%); its saved trail was recovered on 16 October", tone: "warn" },
         { label: "Recorded grouping sample and follow-ups", to: "600 selected, 600 valid outputs, none missing; 462 of 600 matched the historical map", tone: "warn" },
         { label: "Gap", to: "the handoff's token usage was not recorded", tone: "gap" },
       ] },
-    { kind: "code", title: "Validate membership", detail: "Apply reviewed corrections and overrides" },
+    { kind: "code", title: "Validate membership", detail: "Apply reviewed corrections and overrides", code: "membership" },
     { kind: "result", title: `${fmt.int(cand?.contract_baseline ?? 30400)} baseline members`, detail: "One issue per review",
       branches: [{ label: `Exclude ${fmt.int(cand?.flagged_excluded ?? 23)} flagged members`, to: `${fmt.int(cand?.public_projection ?? 30377)} public members` }] },
-    { kind: "code", title: "Rank by severity sum", detail: "Descending, then issue ID ascending" },
-    { kind: "code", title: "Saved memo and recommendations", detail: "Code checks every numeric claim" },
+    { kind: "code", title: "Rank by severity sum", detail: "Descending, then issue ID ascending", code: "rank" },
+    { kind: "code", title: "Saved memo and recommendations", detail: "Code checks every numeric claim", code: "claim-check" },
     { kind: "store", title: "Sanitized release database", detail: "Local SQLite · deployed Neon Postgres" },
-    { kind: "code", title: "Read-only Python backend", detail: "Serves stored results; makes no model call" },
+    { kind: "code", title: "Read-only Python backend", detail: "Serves stored results; makes no model call", code: "read-only-backend" },
     { kind: "result", title: "This dashboard and the memo page", detail: "Astro on Vercel" },
   ]
 }
 
 const EVALUATION: Step[] = [
   { kind: "data", title: "Human-only answers + accepted labels" },
-  { kind: "code", title: "Isolated offline evaluator", detail: "50 source-only predictions, frozen before scoring" },
+  { kind: "code", title: "Isolated offline evaluator", detail: "50 source-only predictions, frozen before scoring", code: "evaluator" },
   { kind: "result", title: "Aggregate diagnostic scores", detail: "Answers never enter a model prompt" },
 ]
 
@@ -131,15 +134,16 @@ export default function PipelineDiagram() {
       <Reflection className="mt-2">
         Code owns every ID, hash, count and check; the models only answer bounded questions. Dashed boxes mark what is not
         a program stage: the issue grouping and the blind verifier were agent handoffs, saved and audited after the fact.
-        A recorded grouping stage was added later to measure them.
+        A recorded grouping stage was added later to measure them. Select <span className="text-primary">View code</span> on
+        a step to read the code that runs it.
       </Reflection>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0">
           <h3 className="mb-3 text-[13px] tracking-[0.14em] text-muted-foreground uppercase">1 · Extraction and controls</h3>
           <Flow steps={extraction(s)} />
           <Controls items={[
-            { title: "Atomic shared ledger", detail: "Reserves the worst-case cost before dispatch, then settles the real usage", acts: "both model stages" },
-            { title: "Bounded workers and graceful stop", detail: "Saved queue state; a reviewed resume never resends a settled ID", acts: "the queue" },
+            { title: "Atomic shared ledger", detail: "Reserves the worst-case cost before dispatch, then settles the real usage", acts: "both model stages", code: "ledger" },
+            { title: "Bounded workers and graceful stop", detail: "Saved queue state; a reviewed resume never resends a settled ID", acts: "the queue", code: "graceful-stop" },
           ]} />
         </div>
         <div className="min-w-0">

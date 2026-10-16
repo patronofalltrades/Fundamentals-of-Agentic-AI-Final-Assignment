@@ -269,6 +269,9 @@ compared against, its status (measured, partial, estimate or pending) and its li
 - `tools/build_eval_registry.py` reads the saved reports in `reports/` and writes `dashboard/evals.json`.
   It copies values only; it records the SHA-256 of each report it read. Run it after a report changes.
   `--check` fails when `dashboard/evals.json` is out of date; a test runs this check.
+- `tools/build_code_snippets.py` cuts the **View code** excerpts from the real source files into
+  `web/src/lib/code-snippets.json`. Each excerpt is found by function name and anchor text, not by line number.
+  Run it after a listed function changes. `--check` and `tests/test_code_snippets.py` fail when an excerpt drifts.
 - The human golden evaluation is not in the registry. The API reads it live from the database after
   `import-evaluation`. The page prefers the `original` human set, because the adjudicated set was
   revised after its author saw model output.

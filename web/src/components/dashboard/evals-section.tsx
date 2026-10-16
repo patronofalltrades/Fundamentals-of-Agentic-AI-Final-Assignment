@@ -7,6 +7,7 @@ import { api, fmt, type EvalCheck, type EvalItem, type EvalMetric, type Evaluati
 import { REFLECTIONS } from "@/lib/reflections"
 import { cn } from "@/lib/utils"
 import { LoadError, Reflection } from "./bits"
+import { CodeButton } from "./code-snippet"
 import { useData } from "./use-data"
 
 const REPO = "https://github.com/patronofalltrades/Fundamentals-of-Agentic-AI-Final-Assignment/blob/main/"
@@ -164,7 +165,7 @@ function GoldenCard({ golden }: { golden: Evals["golden"] }) {
         <div>
           <dt className="text-[12px] tracking-[0.12em] text-muted-foreground uppercase">Scorer</dt>
           <dd className="mt-1">{set?.benchmark_version === "golden-50-human-v1-source-only"
-            ? <>Isolated offline evaluator (<code className="text-[13px]">evaluate_human_labels.py</code>).</>
+            ? <>Isolated offline evaluator (<code className="text-[13px]">evaluate_human_labels.py</code>). <CodeButton id="evaluator" /></>
             : <>Course checker (<code className="text-[13px]">check_submission.py score_gold</code>) for an official saved score.</>}</dd>
         </div>
       </dl>
