@@ -10,6 +10,22 @@ the memo traces back to saved records.
 - **Answer (provisional):** ad interruptions (`USE-ADS`) lead the ranking. The memo recommends a targeted human
   review of that issue before a product change, because the issue map is model-made.
 
+**Built by Hanif Ramadhan**, an MBA candidate and former startup founder, for the Fundamentals of Agentic AI course
+(MBA 290T, Fall 2026). Hanif set the product question, the budget and every go/no-go decision. AI coding agents
+(Claude Code and Codex) wrote most of the code under that direction. Each agent worked in its own Git worktree with
+written handoffs, and every pull request merged only with Hanif's approval.
+
+| What it took | Result |
+| --- | --- |
+| Scale | 110,000 reviews selected, 100,229 accepted with labels and grounded evidence, 79,797 model calls |
+| Cost | US$4.73 metered for the full run, under a hard project cap below US$50 |
+| Quality checks | 50 human golden labels, a blind verifier on 980 reviews, planted errors, prompt-injection attacks |
+| Decision output | A ranked issue list and a memo in which code checks all 164 numeric claims |
+| Product | A live dashboard, a read-only API, Postgres, and 468 offline tests |
+
+Jump to: [techniques used](#techniques-used) · [live dashboard](https://hanif-spotify-insights.vercel.app) ·
+[decision memo](https://hanif-spotify-insights.vercel.app/memo/) · [honest limits](#disclosures)
+
 | Item | Value |
 | --- | --- |
 | **Live dashboard** | **https://hanif-spotify-insights.vercel.app**: public and read-only, with no login. The full memo is at [`/memo/`](https://hanif-spotify-insights.vercel.app/memo/). |
@@ -30,6 +46,64 @@ The live site retains the short provisional memo with corrected attribution.
 See the [final submission checklist](reports/final-submission-checklist-2026-10-15.md),
 [exact cost scopes](reports/cost-scope-reconciliation-2026-10-15.md), and
 [fresh grading check](reports/grading-closeout-2026-10-15.md).
+
+## Techniques used
+
+Each item links to the code or report that shows it. On the live site, **View code** opens the same excerpts.
+
+**Agent design**
+
+- **Narrow runtime roles.** A classifier (Jev), an evidence extractor (`gpt-oss-120b`), a blind verifier, grouping
+  agents and a memo writer each answer one bounded question. Code owns IDs, hashes, state, budgets, ranking and
+  checks. See the [architecture](docs/architecture.md).
+- **Structured outputs, validated by code.** Responses follow strict JSON schemas. Code rejects unknown or repeated
+  IDs and wrong fields, and it quarantines a bad row with its reason
+  ([`inspect`](tools/scale100k_batch25.py), [`parse_response`](spotify_pipeline/jev.py)).
+- **Measured batching.** The evidence extractor takes up to 25 distinct texts per request. Batch effects were
+  measured, not assumed: sending Jev ten reviews per request changed at least one label in 36 of 100, so the
+  one-review labels stayed ([test](reports/gap-closure-2026-10-16.md#2-jev-ten-reviews-per-request)).
+
+**Grounding and safety**
+
+- **Exact-quote grounding.** Each evidence quote must be an exact substring of its review, and each entity a
+  whole-word span ([`validate_evidence`](spotify_pipeline/codex_evidence.py)).
+- **Prompt-injection tests.** Eight attack types, including ID tampering and a confidential canary string, ran
+  against three stages. No attack reached its target (0 of 24), and the canary never leaked
+  ([results](reports/gap-closure-2026-10-16.md#5-prompt-injection)).
+- **Data boundary.** Human answers never enter a prompt. Public reports hold aggregates and SHA-256 case
+  references, with no review text or original IDs ([data boundary](#data-boundary)).
+
+**Cost and reliability**
+
+- **Atomic cost ledger.** Before every call, a SQLite transaction reserves the worst-case cost against a
+  per-provider cap. The measured charge settles it afterwards. A call with an unknown outcome stays held and is
+  never retried automatically ([`ProjectBudget`](spotify_pipeline/project_budget.py)).
+- **Configuration-safe cache.** A saved label or quote is reused only for byte-identical text under the same model,
+  prompt and schema hash ([`materialize_caches`](tools/scale100k_queue.py)).
+- **Interruption and resume.** A durable queue, bounded workers and a graceful SIGINT stop. On a paid run, the
+  resume sent zero already-settled requests ([results](reports/gap-closure-2026-10-16.md#6-interruption-and-resume)).
+- **Cost model before scale.** A 100-review cold and warm pilot fed a full-run estimate before the large run
+  ([calculator](cost/README.md)).
+
+**Evaluation**
+
+- **Several independent checks.** These are 50 human golden labels, a blind verifier on 980 reviews with Cohen's
+  kappa, planted wrong labels and issues (auditors caught 40 of 43 and 48 of 50), a prompt-rubric A/B test and an
+  extractor route benchmark. Disagreements are reported, not tuned away
+  ([live evals](https://hanif-spotify-insights.vercel.app/#evals), [gap-closure report](reports/gap-closure-2026-10-16.md)).
+- **Claim-checked memo.** Each number in the memo cites a claim ID, and code checks it against the saved ranking
+  ([`_claim_check`](tools/export_grouping_v4.py)).
+
+**Product and delivery**
+
+- **Deterministic ranking.** `priority_score = severity_sum`, then issue ID. The public view leaves out flagged
+  records ([`rank`](tools/issue_grouping_v4_rank.py)).
+- **Full-stack dashboard.** Astro, React and shadcn/ui on the front end; a stdlib Python WSGI backend on Vercel
+  Functions; Neon Postgres; a strict Content Security Policy and a read-only API ([guide](docs/dashboard.md)).
+- **Agentic software development.** Several coding agents worked in parallel worktrees with written handoffs.
+  Paid runs, pushes and merges each needed Hanif's explicit approval ([coordination record](docs/tasks.md)).
+- **Tested and reproducible.** 468 offline tests. Generated files (the eval registry, the measurement audit and
+  the code excerpts) have `--check` modes that fail on drift.
 
 ## Where each deliverable is
 
