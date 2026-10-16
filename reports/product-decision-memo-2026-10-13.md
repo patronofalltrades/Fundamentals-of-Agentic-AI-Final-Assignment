@@ -2,9 +2,8 @@
 
 **13 October 2026 · provisional recommendation · historical Google Play reviews**
 
-Updated locally on 16 October with the saved verifier, grouping and auditor
+Updated on 16 October 2026 UTC with the saved verifier, grouping and auditor
 completion results. The recommendation and ranking claims are unchanged.
-Publication of this update awaits approval.
 
 ## Decision and customer problem
 

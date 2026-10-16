@@ -1,7 +1,7 @@
 # Bounded follow-up: saved results and offline diagnosis
 
-Prepared 16 October 2026. This is a local publication candidate. The aggregate
-registry is updated locally; publication requires approval.
+Prepared 16 October 2026 UTC. The aggregate registry includes these saved
+results. Hanif has authorized publication, merge and production deployment.
 
 This report preserves the first follow-up's result. The later
 [completion run](measurement-completion-2026-10-16.md) reached verifier

@@ -81,17 +81,19 @@ unchanged; the dashboard registry adds each run as a separate source.
 
 ## Publication scope and remaining limits
 
-The local package updates the evaluation cards, source-scoped verification
+This publication package updates the evaluation cards, source-scoped verification
 summary and the pipeline's grouping caption. It keeps original, first-follow-up
 and completion charges separate. Completed coverage gaps are removed; old
 billing gaps and model-comparison limits remain visible.
 
 These are selected samples of the existing main run. Full sample coverage is
 not full-corpus verification or population accuracy. The 100,229 accepted rows,
-golden-50 diagnostic scores, attribution, issue ranking and product memo are
-unchanged. The full-course checker remains `review_required` for its unchanged
-660,622-row contract and historical evidence gaps. No database import, release,
-push, merge, deployment or course submission occurred.
+golden-50 diagnostic scores, attribution and issue ranking are unchanged. The
+product memo adds these measurements while preserving its recommendation and
+limits. The full-course checker remains `review_required` for its unchanged
+660,622-row contract and historical evidence gaps. During the model runs, no
+database import, release, push, merge, deployment or course submission occurred.
+Hanif later authorized publication, merge and production deployment.
 
 ## Validation
 
