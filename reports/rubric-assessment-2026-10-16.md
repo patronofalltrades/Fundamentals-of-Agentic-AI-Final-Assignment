@@ -122,10 +122,9 @@ sets. This closes “no supplied 600-case trail.” It does not independently pr
 all unseen chat context or produce absent API usage receipts. The original
 private input files were not reopened in this pass.
 
-The new run records 337 attempts with roles, phases, usage and holds. However,
-its public `calls.jsonl` omits `route`, request/response hashes and generation
-IDs, despite prose saying routes are included. Those routes exist in the
-private database and aggregate. The historical main export still has 20,938
+The new run records 337 attempts with roles, phases, usage and holds. A follow-up
+fix added each attempt's `route` and request hash to the public `calls.jsonl`,
+plus a response hash for the 324 with a saved body and a generation ID for 186. The historical main export still has 20,938
 split/indirect-origin records, absent role receipts and no checkpoint pair.
 Keep authentic separate origins; do not turn new-run evidence into old receipts.
 
@@ -192,7 +191,7 @@ but this is not independence from every pipeline model or a human reference.
 The aggregate splits 970 verifier labels on `deepinfra/bf16` and **10 on
 `crusoe/bf16`** (joint agreement 643/970 and 5/10). Token/charge arithmetic
 supports 97 and one successful ten-row calls at those respective prices;
-the public log cannot itself attest host identity because it omits route fields.
+the public log now records each call's route, and its generation IDs can be checked with the provider.
 
 Perturbed values are known changes to model outputs, not newly human-validated
 truth. Flags on unchanged values are disagreements, not calibrated false
@@ -280,13 +279,13 @@ and provisional recommendation labels visible. No new deployment was triggered.
 
 ## Remaining evidence conflicts
 
-1. **Public call provenance is narrower than the prose.** The gap report says
-   `calls.jsonl` includes routes; its 13 exported columns do not. The tool stores
-   route in SQLite but drops it from the published projection. Request/response
-   hashes, provider IDs, the reported provider-cost equality and raw checkpoint
-   contents also cannot be directly audited from this export. The aggregate's
-   970/10 split is consistent with token/rate arithmetic, not a replacement for
-   those receipt fields. No evidence file was edited to hide this difference.
+1. **Public call provenance was narrower than the prose (partly fixed).** The
+   first export of `calls.jsonl` had 13 columns and no route. A follow-up fix
+   added each attempt's route and request hash, a response hash for the 324
+   attempts with a saved body, and a provider generation ID for 186. The audit
+   tool now checks the public routes against the aggregate's route counts. The
+   hashed bodies, the reported provider-cost equality and raw checkpoint
+   contents still cannot be directly audited from this export.
 2. **Planned, scored and joined denominators differ.** Verifier 1,000/980;
    grouping 600/580; planted label audit 50/43. A held ten-review verifier batch
    and a separate metered/quarantined ten-review batch explain its 20 excluded

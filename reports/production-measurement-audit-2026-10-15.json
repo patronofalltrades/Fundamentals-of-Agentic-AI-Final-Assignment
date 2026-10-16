@@ -26,11 +26,17 @@
     },
     {
       "path": "reports/gap-closure-2026-10-16/calls.jsonl",
-      "sha256": "7abf562862a9cf8bc5c69d5ee383e0b98bf292d42467952bb886745ed263a456"
+      "sha256": "7e4d17d9550c89077522cfff7a033462307938a377e5905f53667830a40e42d5"
     }
   ],
   "cost": {
     "attempts": 337,
+    "calls_by_route": {
+      "crusoe/bf16": 18,
+      "deepinfra/bf16": 293,
+      "typesafe/jev-1.13.0": 26
+    },
+    "generation_ids": 186,
     "held_by_error": {
       "HTTP429": {
         "attempts": 112,
@@ -52,7 +58,8 @@
       "initial": 15,
       "resumed": 322
     },
-    "public_route_fields_complete": false,
+    "public_route_fields_complete": true,
+    "response_hashes": 324,
     "status_counts": {
       "quarantined_metered": 4,
       "rejected_http": 112,
@@ -92,7 +99,7 @@
   "limits": [
     "Missing outputs are excluded from paired agreement and counted separately.",
     "Model agreement and changed model claims are not human accuracy.",
-    "Route labels come from the saved aggregate; public call rows omit provider route fields.",
+    "Public call rows give each attempt's route and request hash. Response hashes and provider generation IDs exist only where a body or ID was saved; the hashed bodies are not published.",
     "Charges and holds describe this separate experiment, not the complete project bill."
   ],
   "planted_issues": {
