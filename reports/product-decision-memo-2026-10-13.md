@@ -2,9 +2,9 @@
 
 **13 October 2026 · provisional recommendation · historical Google Play reviews**
 
-Prepared for inclusion on 15 October from the preserved local draft. Aggregate
-claims were checked against the existing release; attribution and links were
-clarified. Publication and replacement of the deployed memo await approval.
+Updated locally on 16 October with the saved verifier, grouping and auditor
+completion results. The recommendation and ranking claims are unchanged.
+Publication of this update awaits approval.
 
 ## Decision and customer problem
 
@@ -86,10 +86,54 @@ The large issue map came from a separate historical Claude Code agent handoff. T
 
 The measured pilot and [offline cost calculator](../cost/README.md) inform cost planning. This memo does not infer model superiority from low cost or structural acceptance. No new inference or spending was used to write it.
 
+## Measurement update — 16 October 2026
+
+The selected verification and grouping samples are complete. This closes the
+missing-output gaps and improves the evidence trail. It does not validate every
+production label or establish which competing model is correct. The discovery
+recommendation remains provisional.
+
+| Measured sample | Valid outputs | Model comparison |
+| --- | ---: | --- |
+| Blind verifier | **1,000/1,000** | Topic 808/1,000; intent 917/1,000; severity 853/1,000; joint 660/1,000 against Jev |
+| Recorded grouping | **600/600** | Exact issue 462/600; issue family 522/600; 3/600 abstain against the historical map |
+| Label auditor | **100/100** | 46/50 changed machine claims flagged; 7/50 unchanged claims flagged |
+
+The verifier's mean absolute severity difference is 0.176. Both paired
+comparisons now have 50/50 cases: the blind verifier disagrees with 47/50
+changed-label claims, and blind grouping with 50/50 changed-issue claims. The
+issue auditor remains 100/100, flagging 48/50 changed and 3/50 unchanged claims.
+Flags on unchanged claims are model disagreements, not proven false positives.
+The synthetic injection experiments are unchanged.
+
+The two follow-ups used OpenRouter to Crusoe, GPT-OSS-120B, with separate role
+instructions. The verifier received source text and the rubric without Jev's
+prediction. Grouping received source text, machine labels and evidence, but no
+historical issue assignment. The verifier and grouping checks share a base
+model with the evidence extractor, so their independence is limited.
+
+| Recorded work | Known charges (US$) | Unresolved holds (US$) |
+| --- | ---: | ---: |
+| Original verification and robustness run | 0.040251779 | 0.373186624 |
+| First bounded follow-up | 0.001146700 | 0.216267600 |
+| Completion run, three successful requests | 0.000809700 | 0.000000000 |
+
+These are separate measured scopes. They exclude the main extraction run,
+coding and historical grouping costs; they are not a complete project bill.
+Unknown charges remain held and are not assumed free. Failed outputs remain
+saved. Exact source IDs and selected denominators were preserved. No inferred
+mapping or partial-batch salvage was used.
+
+Sources: [completion measurements](measurement-completion-2026-10-16.json),
+[first follow-up](measurement-followup-2026-10-15.json), and
+[original measurement audit](production-measurement-audit-2026-10-15.json).
+The cost and coverage figures above are saved evaluation aggregates; the
+original checked claim ledger covers issue-ranking numbers.
+
 ## Confidence and limitations
 
 - **Label evaluation:** all 50 frozen source-only predictions exist. Topic agreement is 26/50, intent 38/50, severity 30/50, and joint agreement 14/50. Severity MAE is 0.56 and sentiment MAE 0.21. Twelve human rows ask for review; eight source texts overlap development data. Earlier golden influence is unknown. These are diagnostic results, not population accuracy.
-- **Grouping evaluation:** the [16/40 comparison](issue-grouping-independent40-score.md) measures agreement between one assistant's manual assignments and human answers. It did not evaluate the production grouping model. Aggregate human family counts were visible before those predictions were frozen. The sample has five cases per broad topic, not population proportions. The historical handoff also reports 511/600 model-verifier agreement; inspected case-level verifier evidence is missing. Neither figure is an unbiased estimate of production mapping accuracy. Older reports claim a separate agent-label score with the same exact total but a different family total; the [attribution audit](evaluation-attribution-and-inclusion-2026-10-15.md) preserves that unresolved provenance separately.
+- **Grouping evaluation:** the [16/40 comparison](issue-grouping-independent40-score.md) measures agreement between one assistant's manual assignments and human answers. It did not evaluate the production grouping model. Aggregate human family counts were visible before those predictions were frozen. The sample has five cases per broad topic, not population proportions. The historical handoff also reports 511/600 model-verifier agreement. Its [recovered case-level trail](gap-closure-2026-10-16.md#recovered-historical-verifier-trail) reproduces that figure and the saved input/output hashes; API usage and charges remain unrecorded. Neither figure is an unbiased estimate of production mapping accuracy. Older reports claim a separate agent-label score with the same exact total but a different family total; the [attribution audit](evaluation-attribution-and-inclusion-2026-10-15.md) preserves that unresolved provenance separately.
 - **Human overrides:** 51 pilot cases and 40 comparison cases were incorporated into final membership. They are no longer untouched grouping holdouts.
 - **Known flags:** 47 accepted records are blocked from representative examples; 23 of them are ranking candidates excluded from this public flow. Removing known flags does not prove the remaining records correct.
 - **Taxonomy:** catalog boundaries remain unresolved for several reported experiences, including premium-ad claims, free-tier limits, and app installation. The project has no adjudicated prevalence estimate for those gaps.

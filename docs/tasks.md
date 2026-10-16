@@ -1,5 +1,29 @@
 # Coordination record
 
+## Completion memo integration — 16 October 2026
+
+Owner: Codex, same `feat/bounded-measurement-followup` worktree. Scope: both
+tracked provisional memo copies, the expanded decision memo, memo claim-check
+scope labels and final validation. Add completed verifier 1,000/1,000, grouping
+600/600 and label auditor 100/100 coverage, measured agreement and separate
+charges/holds. Preserve the issue-ranking claim ledger, recommendation,
+attribution, golden limits and full-course checker status. The historical
+511/600 trail is now recovered; its usage and charges remain unknown.
+All relevant evaluation cards are already Measured from saved evidence.
+No new paid call or production database write is authorized. Hanif later
+explicitly confirmed pushing, merging and deploying this scoped package.
+
+Validation: 463 Python tests ran (461 passed; two expected private-fixture
+skips). Frontend build, typecheck and all four frontend tests passed. All 47
+tracked frontend files matched the cached build source. Chrome passed 27 local
+aggregate-only memo/evaluation checks with no console errors. The two memo
+copies match; all 164 original ranking claims are unchanged and pass the
+existing public-text and saved-claim gates. Evaluation registry, measurement
+audit and completion aggregates reproduce offline. A text-free scan of the 26
+completion/memo package files found no saved source IDs or full source texts
+of at least 24 characters. Private run files remain ignored and mode 0600.
+The full-course checker remains `review_required`.
+
 ## Approved completion execution — 16 October 2026
 
 Owner: Codex in `feat/bounded-measurement-followup`. Hanif approved the specified

@@ -2,6 +2,7 @@
 
 Conclusion: ad interruptions (USE-ADS) are the largest product problem in the reviews.
 Next, confirm the issue map with a targeted human review, then decide whether the ad experience needs a change.
+The saved samples now cover 1,000 verifier reviews, 600 grouping members and 100 label-auditor cases. This does not validate all production rows.
 
 ## provisional finding
 
@@ -20,11 +21,24 @@ Keep the ranking advisory until that review is complete.
 - A separate model verifier agreed on 511 of 600 (85.2%); the reviewed human pilot on 39 of 51 (76.5%).
 - 51 pilot and 40 blind human decisions now override the model, so those cases are no longer holdouts.
 
+## measured sample coverage — 16 October 2026
+
+- Blind verifier: 1,000/1,000 valid outputs. Agreement with Jev is topic 808/1,000, intent 917/1,000, severity 853/1,000 and all three 660/1,000. Mean absolute severity difference is 0.176 on the 1–5 scale.
+- Recorded grouping: 600/600 valid outputs. Exact issue agreement with the historical map is 462/600; family agreement is 522/600; 3/600 abstain. The historical 511/600 verifier comparison above is a separate experiment.
+- Label auditor: 100/100 valid outputs, covering 50 changed and 50 unchanged machine claims. It flags 46/50 changed claims and 7/50 unchanged claims. Flags on unchanged claims are disagreements, not proven false positives. The issue auditor remains 100/100, with 48/50 changed and 3/50 unchanged claims flagged.
+- Both paired auditor/blind comparisons now cover 50/50 cases. The blind verifier disagrees with 47/50 changed-label claims; blind grouping disagrees with 50/50 changed-issue claims. Synthetic injection results are unchanged.
+- The first bounded follow-up cost US$0.001147 and retains US$0.216268 in unresolved holds. The completion run used three successful requests, cost US$0.000810 and added no unresolved holds. Earlier verification-run charges of US$0.040252 and holds of US$0.373187 remain separate. Amounts are rounded to six decimal places. These figures exclude the main extraction run and other project work; they are not a complete project bill.
+- Saved sample coverage is complete. Model agreement does not establish population accuracy or validate every production assignment. Old failed outputs and cost holds remain; no inferred ID mapping or changed denominator was used.
+
+Sources: Measurement completion (16 October 2026), Measurement follow-up (15 October 2026) and Production measurement audit (15 October 2026), linked in Evaluations. Exact charges and these evaluation totals come from the saved aggregates. The checked claim ledger below covers issue-ranking numbers.
+
 ## limits
 
 - The counts follow saved model-derived membership, not human-validated assignments.
 - The public ranking leaves out 23 known flagged candidates; the baseline above includes them.
 - Reviews state experiences and intent; they show no revenue, churn or causal effect.
+- Golden-50 results remain diagnostic: topic 26/50, intent 38/50, severity 30/50 and joint 14/50. The sample and earlier golden-influence limits remain. These scores do not estimate population accuracy.
+- The unchanged full-course checker remains review_required because its full-corpus contract and historical provenance gaps remain unresolved. Completing these samples does not resolve those gaps.
 
 ## catalog gaps
 
