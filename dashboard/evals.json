@@ -3,32 +3,22 @@
   "verification": {
     "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6",
     "config_hash": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
-    "agreement_counts": {
-      "intent": 901,
-      "joint": 648,
-      "severity": 837,
-      "topic": 793
-    },
-    "missing": 20,
-    "not_human_accuracy": true,
-    "observed": 980,
-    "route_split_from_report": {
-      "crusoe/bf16": {
-        "n": 5,
-        "of": 10,
-        "rate": 0.5
-      },
-      "deepinfra/bf16": {
-        "n": 643,
-        "of": 970,
-        "rate": 0.6629
-      }
-    },
     "selected": 1000,
+    "observed": 1000,
+    "missing": 0,
+    "agreement_counts": {
+      "intent": 917,
+      "joint": 660,
+      "severity": 853,
+      "topic": 808
+    },
+    "not_human_accuracy": true,
     "status": "sample_measured",
     "sources": [
       "reports/gap-closure-2026-10-16/aggregate.json",
-      "reports/production-measurement-audit-2026-10-15.json"
+      "reports/production-measurement-audit-2026-10-15.json",
+      "reports/measurement-followup-2026-10-15.json",
+      "reports/measurement-completion-2026-10-16.json"
     ]
   },
   "model": "jev-1.13.0",
@@ -73,6 +63,14 @@
     {
       "path": "reports/production-measurement-warm-2026-10-15.json",
       "sha256": "2d3ffcc22b846c0aef63097cf26f63724e13b51436a28d15447b822475d9d5fe"
+    },
+    {
+      "path": "reports/measurement-followup-2026-10-15.json",
+      "sha256": "fc6dc7127d79eda553d53a633d09d85663db7d0257edb5f2dbe7a32fc01884de"
+    },
+    {
+      "path": "reports/measurement-completion-2026-10-16.json",
+      "sha256": "ecc4cc58eae4871240ef4b9cb8718b770bdfbd4bd9b13681d214fc78406d4b9d"
     }
   ],
   "items": [
@@ -622,43 +620,38 @@
       "sample": "1000 accepted reviews from the main run, drawn by a fixed SHA-256 order; golden and pilot IDs excluded",
       "truth": "None. This is model-to-model agreement. It shows where two labellers differ, not which one is right.",
       "status": "measured",
-      "gaps": [
-        {
-          "label": "Output coverage incomplete",
-          "detail": "980 of 1000 valid outputs; 20 missing. Agreement uses observed outputs only."
-        }
-      ],
+      "gaps": [],
       "metrics": [
         {
           "label": "Valid verifier outputs",
-          "value": 980,
+          "value": 1000,
           "format": "count",
           "of": 1000,
-          "note": "20 missing; agreement uses observed outputs only."
+          "note": "0 missing; model agreement on the selected sample."
         },
         {
           "label": "Topic agrees",
-          "value": 793,
+          "value": 808,
           "format": "count",
-          "of": 980
+          "of": 1000
         },
         {
           "label": "Intent agrees",
-          "value": 901,
+          "value": 917,
           "format": "count",
-          "of": 980
+          "of": 1000
         },
         {
           "label": "All three agree",
-          "value": 648,
+          "value": 660,
           "format": "count",
-          "of": 980
+          "of": 1000
         },
         {
-          "label": "Verifier charge",
+          "label": "Original verifier charge",
           "value": "0.017934064",
           "format": "usd",
-          "note": "100 requests of 10 reviews"
+          "note": "Original run only; both follow-up runs are reported separately below."
         }
       ],
       "compare": {
@@ -672,7 +665,7 @@
             "label": "Topic",
             "format": "text",
             "values": [
-              "80.9%",
+              "80.8%",
               "0.69"
             ]
           },
@@ -680,7 +673,7 @@
             "label": "Intent",
             "format": "text",
             "values": [
-              "91.9%",
+              "91.7%",
               "0.86"
             ]
           },
@@ -688,20 +681,23 @@
             "label": "Severity",
             "format": "text",
             "values": [
-              "85.4%",
+              "85.3%",
               "0.73"
             ]
           }
         ]
       },
-      "finding": "Intent agrees most and topic least. Severity differs by 0.17 points on average. 98 of 100 requests returned valid results. Code rejected one that repeated a review ID; one response was unusable and stays held.",
+      "finding": "The completion run added 20 valid outputs. Combined coverage is 1000 of 1000; severity differs by 0.176 points on average. Original rejected outputs and unresolved holds remain saved.",
       "limits": [
         "Agreement is not accuracy: both models can be wrong in the same way.",
-        "The verifier is gpt-oss-120b, the same base model as the evidence extractor, but with a separate prompt and no access to Jev's labels."
+        "The verifier is gpt-oss-120b, the same base model as the evidence extractor, but with a separate prompt and no access to Jev's labels.",
+        "Combined agreement uses the original saved outputs plus the separate Crusoe completion run. Full sample coverage does not establish population accuracy. Original-run charges exclude the two separately reported follow-ups."
       ],
       "sources": [
         "reports/gap-closure-2026-10-16/aggregate.json",
-        "reports/production-measurement-audit-2026-10-15.json"
+        "reports/production-measurement-audit-2026-10-15.json",
+        "reports/measurement-followup-2026-10-15.json",
+        "reports/measurement-completion-2026-10-16.json"
       ]
     },
     {
@@ -757,46 +753,43 @@
       "sample": "600 complaint and cancellation reviews from the historical issue map, blind to their issue",
       "truth": "The historical issue map. It was not validated by people, so disagreement is not proof of error.",
       "status": "measured",
-      "gaps": [
-        {
-          "label": "Output coverage incomplete",
-          "detail": "580 of 600 valid outputs; 20 missing. The historical model map is the comparator, not human truth."
-        }
-      ],
+      "gaps": [],
       "metrics": [
         {
           "label": "Valid grouping outputs",
-          "value": 580,
+          "value": 600,
           "format": "count",
           "of": 600,
-          "note": "20 missing; comparisons use observed outputs only."
+          "note": "0 missing; comparisons use observed outputs."
         },
         {
           "label": "Same issue",
-          "value": 449,
+          "value": 462,
           "format": "count",
-          "of": 580
+          "of": 600
         },
         {
           "label": "Same issue family",
-          "value": 503,
+          "value": 522,
           "format": "count",
-          "of": 580
+          "of": 600
         },
         {
           "label": "Abstained",
           "value": 3,
           "format": "count",
-          "of": 580
+          "of": 600
         }
       ],
-      "finding": "The saved report and public case table cover valid outputs. Two requests repeated a review ID and code rejected them. The separate historical verifier matched the grouping agents on 511 of 600; its recovered trail does not establish historical token usage or charges.",
+      "finding": "The original run saved 580 outputs; the first follow-up added ten and the completion run added 10. Combined coverage is 600 of 600. The historical 511/600 experiment remains separate; its unrecorded token usage is still unknown.",
       "limits": [
         "The stage reads Jev's labels and evidence quote as context, as the historical grouping did."
       ],
       "sources": [
         "reports/gap-closure-2026-10-16/aggregate.json",
-        "reports/production-measurement-audit-2026-10-15.json"
+        "reports/production-measurement-audit-2026-10-15.json",
+        "reports/measurement-followup-2026-10-15.json",
+        "reports/measurement-completion-2026-10-16.json"
       ]
     },
     {
@@ -804,21 +797,16 @@
       "kind": "benchmark",
       "title": "Changed model claims and prompt injection",
       "question": "Do auditors flag changed model claims, and do synthetic instructions change model outputs?",
-      "sample": "43 observed changed-label cases, 50 changed-issue cases, and 8 synthetic attack pairs",
+      "sample": "100 of 100 label-auditor outputs (50 changed and 50 unchanged claims), 100 issue-auditor outputs, and the unchanged eight synthetic attack pairs",
       "truth": "Code altered saved model claims. These changes are not human-validated errors. Synthetic texts are excluded from all business results.",
       "status": "measured",
-      "gaps": [
-        {
-          "label": "Auditor and paired coverage incomplete",
-          "detail": "43 changed-label and 47 unchanged-label auditor outputs are saved; one ten-row label-auditor batch is missing. Blind comparisons also lack 2 label and 4 issue outputs."
-        }
-      ],
+      "gaps": [],
       "metrics": [
         {
-          "label": "Planted labels the auditor caught",
-          "value": 40,
+          "label": "Changed labels the auditor flagged",
+          "value": 46,
           "format": "count",
-          "of": 43
+          "of": 50
         },
         {
           "label": "Planted issues the auditor caught",
@@ -846,24 +834,31 @@
         ],
         "rows": [
           {
-            "label": "Blind verifier disagreed with a planted label",
+            "label": "Label auditor output coverage",
             "format": "text",
             "values": [
-              "40 of 41 paired; 2 missing"
+              "100 of 100"
             ]
           },
           {
-            "label": "Blind grouping disagreed with a planted issue",
+            "label": "Blind verifier disagreed with a changed label",
             "format": "text",
             "values": [
-              "46 of 46 paired; 4 missing"
+              "47 of 50 paired; 0 missing"
+            ]
+          },
+          {
+            "label": "Blind grouping disagreed with a changed issue",
+            "format": "text",
+            "values": [
+              "50 of 50 paired; 0 missing"
             ]
           },
           {
             "label": "Auditor flagged an unchanged Jev label",
             "format": "text",
             "values": [
-              "5 of 47"
+              "7 of 50"
             ]
           },
           {
@@ -878,13 +873,17 @@
       "limits": [
         "Unchanged labels are Jev's and unchanged issues are historical; a flag on them is a disagreement, not proof of a false alarm.",
         "Synthetic texts written for this test; excluded from all business results and accuracy figures. A changed label can be legitimate when the added sentence changes the review's meaning.",
-        "Seven of the 50 selected changed-label cases lacked auditor outputs. Blind comparisons also require a saved prediction.",
         "The historical target-reached helper does not cover every format, identity or canary attack. Paired label/issue changes are reported separately.",
-        "In the mixed-batch probe, verifier and grouping each changed one of eight benign rows; neither changed to the attacker value. These probes do not prove general injection resistance."
+        "In the mixed-batch probe, verifier and grouping each changed one of eight benign rows; neither changed to the attacker value. These probes do not prove general injection resistance.",
+        "The separate OpenRouter/Crusoe follow-up added ten label-auditor outputs. Paired comparisons require both saved auditor and blind outputs. Flags on unchanged machine claims are disagreements, not proven false positives.",
+        "Before the follow-up, 41 of 50 selected changed-label cases had both outputs (41 of the 43 observed auditor cases). The new aggregate uses all 50 selected cases as its coverage denominator.",
+        "The completion run fills the remaining blind-output gaps. The auditor and synthetic injection results did not change."
       ],
       "sources": [
         "reports/gap-closure-2026-10-16/aggregate.json",
-        "reports/production-measurement-audit-2026-10-15.json"
+        "reports/production-measurement-audit-2026-10-15.json",
+        "reports/measurement-followup-2026-10-15.json",
+        "reports/measurement-completion-2026-10-16.json"
       ]
     },
     {
@@ -968,13 +967,17 @@
       "kind": "run",
       "title": "Separate verification run: cost and resume",
       "question": "What is known about charges, held reservations and requests after the restart?",
-      "sample": "337 attempts for 213 logical requests in the separate verification and robustness experiments.",
+      "sample": "337 attempts for 213 logical requests in the separate verification and robustness experiments. The separate follow-up used 10 attempts for five missing batches; its charges are shown separately. The completion run used 3 additional attempts under its separate USD0.33 allowance.",
       "truth": "Recomputed from public text-free call logs. Unknown charges retain their full reservation.",
       "status": "measured",
       "gaps": [
         {
           "label": "Billing unresolved",
           "detail": "125 attempts have unknown charges; all reservations remain held. 1 of 213 logical requests have no settled result."
+        },
+        {
+          "label": "Follow-up billing unresolved",
+          "detail": "6 additional HTTP 429 attempts retain full reservations. All ten approved attempts are exhausted; old holds remain unchanged."
         }
       ],
       "metrics": [
@@ -1005,12 +1008,61 @@
       "limits": [
         "Provider reconciliation is still needed for every unknown charge; HTTP errors are not assumed free.",
         "Public logs support the phase and request arithmetic. SIGINT and checkpoint details remain saved-report evidence; private snapshots were not rechecked in this audit.",
-        "Public call rows give every attempt's route and request hash; 324 have a response hash and 186 a provider generation ID. This run does not prove historical main-run recovery."
+        "Public call rows give every attempt's route and request hash; 324 have a response hash and 186 a provider generation ID. This run does not prove historical main-run recovery.",
+        "The follow-up's USD0.38 allowance is separate. Its six shared-pool rate-limit responses and two invalid-ID responses remain recorded. No additional calls or released holds are implied.",
+        "Completion-run charges are shown separately. All original and first-follow-up holds remain; no historical charge was reconciled by the completion run."
       ],
       "sources": [
         "reports/gap-closure-2026-10-16/aggregate.json",
-        "reports/production-measurement-audit-2026-10-15.json"
-      ]
+        "reports/production-measurement-audit-2026-10-15.json",
+        "reports/measurement-followup-2026-10-15.json",
+        "reports/measurement-completion-2026-10-16.json"
+      ],
+      "compare": {
+        "columns": [
+          "Original run",
+          "Bounded follow-up",
+          "Completion run"
+        ],
+        "rows": [
+          {
+            "label": "Attempts",
+            "format": "int",
+            "values": [
+              337,
+              10,
+              3
+            ]
+          },
+          {
+            "label": "Known charges",
+            "format": "usd",
+            "values": [
+              "0.040251779",
+              "0.001146700",
+              "0.000809700"
+            ]
+          },
+          {
+            "label": "Held reservations",
+            "format": "usd",
+            "values": [
+              "0.373186624",
+              "0.216267600",
+              "0.000000000"
+            ]
+          },
+          {
+            "label": "Unknown charges",
+            "format": "int",
+            "values": [
+              125,
+              6,
+              0
+            ]
+          }
+        ]
+      }
     }
   ]
 }

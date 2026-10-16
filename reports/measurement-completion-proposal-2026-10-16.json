@@ -1,0 +1,132 @@
+{
+  "attempts_per_batch": 3,
+  "batches": 3,
+  "cap_nusd": 330000000,
+  "distinct_source_ids": 30,
+  "execution_gate": "No execution entry point is enabled for this proposal. Bind the approved manifest and new namespace, then rerun preflight and affected tests before inference.",
+  "label_config": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+  "limits": [
+    "Coverage completion is the target. Agreement is not a completion condition or human accuracy.",
+    "Three batches can still fail. Stop at the attempt or exposure limit; further work needs another approval.",
+    "No auditor, human-label, synthetic attack, production-database or grading-release work."
+  ],
+  "manifest_sha256": "186397d8243b8dbe278949e503049ed1ef8c844f9adeb792c58a31e37655a9e3",
+  "max_attempts": 9,
+  "maximum_incremental_charges_plus_holds_nusd": 324401400,
+  "namespace": "measurement-completion-20261016-v1",
+  "prior_followup_cost": {
+    "accounting": "Metered charges use max(provider usage.cost, usage times pinned prices); both amounts are retained. HTTP429 charges remain unknown, with full holds. No invoice reconciliation.",
+    "allowance": "Separate one-time allowance approved by the user; old project costs and holds are unchanged.",
+    "attempts": 10,
+    "batches": 5,
+    "cap_nusd": 380000000,
+    "exposure_nusd": 217414300,
+    "known_charges_nusd": 1146700,
+    "maximum_attempts": 10,
+    "status_counts": {
+      "quarantined_metered": 2,
+      "rejected_http": 6,
+      "succeeded": 2
+    },
+    "unresolved_reservations_nusd": 216267600
+  },
+  "prior_followup_database_sha256": "c83a71c379a8e9c3cfd2e98f1fa581e2d94c97325e51c8435030896d274e5a15",
+  "project_cost_limit": "Historical full-project headroom remains unbounded. This proposal needs a new separate one-time allowance; the old USD0.38 authorization is exhausted.",
+  "requests": [
+    {
+      "request_bytes": 5330,
+      "request_sha256": "27835e717750dcbe487208357c5378c0c82528869b7203661772b418be2fdd39",
+      "role": "verify",
+      "source_id_set_sha256": "a818b2744873425c5848651c5992cf8425dd5de7c40ab493b79233dbfc89c2b2"
+    },
+    {
+      "request_bytes": 4672,
+      "request_sha256": "f8583a521d457efadf0cd326d61d59981b10ffc7b75817d28d1c3864743681d5",
+      "role": "verify",
+      "source_id_set_sha256": "f41a4faf3e33542bc77420ac81f3d95c283b222f6eed776573fd90089052e363"
+    },
+    {
+      "request_bytes": 14141,
+      "request_sha256": "c60fb6c0e0e7ef7d80f0684dfb474d30efba01ecf2a5860e2092c2b81c8dd02a",
+      "role": "group",
+      "source_id_set_sha256": "a5fc5a5bd8a26996c503c8e3beacac12ed3b5f42633b2b578b44bafbbcc970af"
+    }
+  ],
+  "reserve_per_attempt_nusd": 36044600,
+  "retries_per_batch": 2,
+  "reviews_per_batch": 10,
+  "route_check": {
+    "catalog_url": "https://openrouter.ai/api/v1/models/openai/gpt-oss-120b/endpoints",
+    "checked_utc": "2026-10-16T00:09:14.556617+00:00",
+    "context_length": 131072,
+    "max_completion_tokens": 117964,
+    "model": "openai/gpt-oss-120b",
+    "route": {
+      "input_usd_per_token": "5E-8",
+      "output_usd_per_token": "2.5E-7",
+      "route": "crusoe/bf16"
+    },
+    "status": 0,
+    "supported_parameters": [
+      "reasoning",
+      "include_reasoning",
+      "max_tokens",
+      "temperature",
+      "top_p",
+      "stop",
+      "frequency_penalty",
+      "presence_penalty",
+      "seed",
+      "min_p",
+      "repetition_penalty",
+      "top_k",
+      "logit_bias",
+      "structured_outputs",
+      "response_format",
+      "tools",
+      "tool_choice",
+      "reasoning_effort"
+    ],
+    "zdr_catalog_verified": true
+  },
+  "shared_ledger": {
+    "caps_nusd": {
+      "jev": 5000000000,
+      "openrouter": 5000000000
+    },
+    "exposure_nusd": {
+      "jev": 3320208108,
+      "openrouter": 3106732071
+    },
+    "legacy_exposure_nusd": {
+      "jev": 24101700,
+      "openrouter": 726334928
+    },
+    "reservation_holds": {
+      "jev": {
+        "attempts": 8,
+        "held_nusd": 21504000
+      },
+      "openrouter": {
+        "attempts": 170,
+        "held_nusd": 875240200
+      }
+    },
+    "state_sha256": "f238cd64dc6964b33e755c69b6033e6a74d26a1344bd2791a2f7c28beb302c9a"
+  },
+  "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6",
+  "state": "proposal_only_not_authorized",
+  "targets": {
+    "group": {
+      "before": 590,
+      "pending": 10,
+      "target": 600
+    },
+    "verify": {
+      "before": 980,
+      "pending": 20,
+      "target": 1000
+    }
+  },
+  "version": 1
+}

@@ -31,6 +31,8 @@ GAP = "reports/gap-closure-2026-10-16/aggregate.json"  # written by tools/gap_cl
 MEASUREMENT = "reports/production-measurement-audit-2026-10-15.json"
 COST_PILOT = "cost/pilot/report.json"
 FULL_WARM = "reports/production-measurement-warm-2026-10-15.json"
+FOLLOWUP = "reports/measurement-followup-2026-10-15.json"
+COMPLETION = "reports/measurement-completion-2026-10-16.json"
 
 
 def _load(path, sources):
@@ -453,6 +455,117 @@ def operational_measurements(pilot, warm, measured):
     ]
 
 
+def apply_followup(items, followup, measured):
+    """Add the separately recorded gains without rewriting historical reports."""
+    before, after = followup["before"], followup["after"]
+    provenance, cost = followup["provenance"], followup["cost"]
+    if provenance["source_sha256"] != measured["source_sha256"] or provenance["label_config"] != measured["label_config"]:
+        raise ValueError("follow-up source or label configuration differs")
+    if before["verifier_agreement"] != after["verifier_agreement"] or before["coverage"]["verify"] != after["coverage"]["verify"]:
+        raise ValueError("this follow-up must not change verifier coverage or scores")
+    if cost["known_charges_nusd"] + cost["unresolved_reservations_nusd"] != cost["exposure_nusd"] or cost["exposure_nusd"] > cost["cap_nusd"]:
+        raise ValueError("follow-up accounting differs")
+    by_id = {i["id"]: i for i in items}
+    grouping = by_id["grouping-stage"]
+    if grouping["metrics"][0]["value"] != before["coverage"]["group"]["n"]:
+        raise ValueError("follow-up grouping baseline differs")
+    cov, gr = after["coverage"]["group"], after["grouping"]
+    missing = cov["of"] - cov["n"]
+    grouping["gaps"] = [{"label": "Output coverage incomplete", "detail": "%d of %d valid outputs; %d missing. The separate Crusoe follow-up added %d valid assignments. The comparator is the historical model map." %
+        (cov["n"], cov["of"], missing, followup["new_valid_outputs"]["group"])}]
+    grouping["metrics"] = [metric("Valid grouping outputs", cov["n"], "count", of=cov["of"], note="%d missing; comparisons use observed outputs only." % missing),
+        _rate({"label": "Same issue", "share": gr["exact"]}), _rate({"label": "Same issue family", "share": gr["family"]}),
+        _rate({"label": "Abstained", "share": gr["abstained"]})]
+    grouping["finding"] = ("The original run saved %d valid outputs. A separate follow-up added %d through OpenRouter/Crusoe using gpt-oss-120b, low reasoning, no fallback and ZDR. %d selected outputs remain missing. The historical 511/600 comparison remains a separate experiment." %
+        (before["coverage"]["group"]["n"], followup["new_valid_outputs"]["group"], missing))
+    checks = by_id["planted-and-injection"]
+    lab, iss, lj, ij = after["label_auditor"], after["issue_auditor"], after["paired_labels"], after["paired_issues"]
+    checks["sample"] = ("%d of %d label-auditor outputs (%d changed and %d unchanged claims), %d issue-auditor outputs, and the unchanged eight synthetic attack pairs" %
+        (after["coverage"]["audit_label"]["n"], after["coverage"]["audit_label"]["of"], lab["changed_coverage"]["n"], lab["unchanged_coverage"]["n"], after["coverage"]["audit_group"]["n"]))
+    checks["gaps"] = [{"label": "Paired coverage incomplete", "detail": "All %d label-auditor outputs are saved. Combined auditor/blind comparisons still lack %d of %d changed-label cases and %d of %d changed-issue cases." %
+        (after["coverage"]["audit_label"]["n"], lj["missing"], lj["coverage"]["of"], ij["missing"], ij["coverage"]["of"])}]
+    checks["metrics"][0] = _rate({"label": "Changed labels the auditor flagged", "share": lab["changed_detected"]})
+    checks["compare"] = {"row_header": "Check", "columns": ["Result"], "rows": [
+        {"label": "Label auditor output coverage", "format": "text", "values": ["%d of %d" % (after["coverage"]["audit_label"]["n"], after["coverage"]["audit_label"]["of"])]},
+        {"label": "Blind verifier disagreed with a changed label", "format": "text", "values": ["%d of %d paired; %d missing" % (lj["blind_disagreed"]["n"], lj["coverage"]["n"], lj["missing"])]},
+        {"label": "Blind grouping disagreed with a changed issue", "format": "text", "values": ["%d of %d paired; %d missing" % (ij["blind_disagreed"]["n"], ij["coverage"]["n"], ij["missing"])]},
+        {"label": "Auditor flagged an unchanged Jev label", "format": "text", "values": ["%d of %d" % (lab["unchanged_flagged_any"]["n"], lab["unchanged_flagged_any"]["of"])]},
+        {"label": "Auditor flagged an unchanged historical issue", "format": "text", "values": ["%d of %d" % (iss["unchanged_flagged"]["n"], iss["unchanged_flagged"]["of"])]}]}
+    checks["limits"] = [x for x in checks["limits"] if not x.startswith("Seven of the 50")]
+    checks["limits"].append("The separate OpenRouter/Crusoe follow-up added ten label-auditor outputs. Paired comparisons require both saved auditor and blind outputs. Flags on unchanged machine claims are disagreements, not proven false positives.")
+    checks["limits"].append("Before the follow-up, 41 of 50 selected changed-label cases had both outputs (41 of the 43 observed auditor cases). The new aggregate uses all 50 selected cases as its coverage denominator.")
+    operations = by_id["gap-operations"]
+    old_cost = measured["cost"]
+    operations["compare"] = {"columns": ["Original run", "Bounded follow-up"], "rows": [
+        {"label": "Attempts", "format": "int", "values": [old_cost["attempts"], cost["attempts"]]},
+        {"label": "Known charges", "format": "usd", "values": [_usd(old_cost["known_charge_nusd"]), _usd(cost["known_charges_nusd"])]},
+        {"label": "Held reservations", "format": "usd", "values": [_usd(old_cost["held_nusd"]), _usd(cost["unresolved_reservations_nusd"])]},
+        {"label": "Unknown charges", "format": "int", "values": [old_cost["unknown_charge_attempts"], cost["status_counts"].get("rejected_http", 0)]}]}
+    operations["sample"] += " The separate follow-up used %d attempts for five missing batches; its charges are shown separately." % cost["attempts"]
+    operations["gaps"].append({"label": "Follow-up billing unresolved", "detail": "%d additional HTTP 429 attempts retain full reservations. All ten approved attempts are exhausted; old holds remain unchanged." % cost["status_counts"].get("rejected_http", 0)})
+    operations["limits"].append("The follow-up's USD0.38 allowance is separate. Its six shared-pool rate-limit responses and two invalid-ID responses remain recorded. No additional calls or released holds are implied.")
+    verifier = by_id["blind-verifier-batch10"]
+    verifier["limits"].append("The separate Crusoe follow-up produced zero valid verifier outputs. This card's score and charge metrics describe the original run; follow-up charges are reported separately.")
+    for item in (grouping, checks, operations, verifier):
+        item["sources"] = [*item["sources"], FOLLOWUP]
+
+
+def apply_completion(items, completion, followup, measured):
+    """Advance observed coverage from a separately validated, bounded run."""
+    if completion['before'] != followup['after']:
+        raise ValueError('completion baseline differs')
+    if completion['source_sha256'] != measured['source_sha256'] or completion['label_config'] != measured['label_config']:
+        raise ValueError('completion source or configuration differs')
+    cost, after = completion['cost'], completion['after']
+    if cost['known_charges_nusd'] + cost['unresolved_reservations_nusd'] != cost['exposure_nusd'] or cost['exposure_nusd'] > cost['cap_nusd']:
+        raise ValueError('completion accounting differs')
+    for role in ('verify', 'group'):
+        before_cov, cov = completion['before']['coverage'][role], after['coverage'][role]
+        if before_cov['of'] != cov['of'] or cov['n'] != before_cov['n'] + completion['new_valid_outputs'][role] or cov['n'] > cov['of']:
+            raise ValueError('completion coverage differs')
+    by_id = {item['id']: item for item in items}
+    verifier, grouping = by_id['blind-verifier-batch10'], by_id['grouping-stage']
+    cov, agreement, stats = after['coverage']['verify'], after['verifier_agreement'], completion['verifier_statistics']
+    missing = cov['of'] - cov['n']
+    verifier['gaps'] = ([{'label': 'Output coverage incomplete', 'detail': '%d of %d valid outputs; %d missing.' % (cov['n'], cov['of'], missing)}] if missing else [])
+    verifier['metrics'] = [metric('Valid verifier outputs', cov['n'], 'count', of=cov['of'], note='%d missing; model agreement on the selected sample.' % missing),
+        *[_rate({'label': label, 'share': agreement[field]}) for field, label in (('topic', 'Topic agrees'), ('intent', 'Intent agrees'), ('joint', 'All three agree'))],
+        {**verifier['metrics'][-1], 'label': 'Original verifier charge', 'note': 'Original run only; both follow-up runs are reported separately below.'}]
+    verifier['compare']['rows'] = [{'label': field.capitalize(), 'format': 'text', 'values': ['%.1f%%' % (100 * agreement[field]['rate']), '%.2f' % stats['kappa'][field]]}
+                                  for field in ('topic', 'intent', 'severity')]
+    verifier['finding'] = ('The completion run added %d valid outputs. Combined coverage is %d of %d; severity differs by %.3f points on average. Original rejected outputs and unresolved holds remain saved.' %
+        (completion['new_valid_outputs']['verify'], cov['n'], cov['of'], stats['severity_mae']))
+    verifier['limits'] = [text for text in verifier['limits'] if not text.startswith('The separate Crusoe follow-up produced')]
+    verifier['limits'].append('Combined agreement uses the original saved outputs plus the separate Crusoe completion run. Full sample coverage does not establish population accuracy. Original-run charges exclude the two separately reported follow-ups.')
+    cov, gr = after['coverage']['group'], after['grouping']
+    missing = cov['of'] - cov['n']
+    grouping['gaps'] = ([{'label': 'Output coverage incomplete', 'detail': '%d of %d valid outputs; %d missing.' % (cov['n'], cov['of'], missing)}] if missing else [])
+    grouping['metrics'] = [metric('Valid grouping outputs', cov['n'], 'count', of=cov['of'], note='%d missing; comparisons use observed outputs.' % missing),
+        *[_rate({'label': label, 'share': gr[key]}) for key, label in (('exact', 'Same issue'), ('family', 'Same issue family'), ('abstained', 'Abstained'))]]
+    grouping['finding'] = ('The original run saved 580 outputs; the first follow-up added ten and the completion run added %d. Combined coverage is %d of %d. The historical 511/600 experiment remains separate; its unrecorded token usage is still unknown.' %
+        (completion['new_valid_outputs']['group'], cov['n'], cov['of']))
+    checks = by_id['planted-and-injection']
+    lj, ij = after['paired_labels'], after['paired_issues']
+    checks['gaps'] = ([{'label': 'Paired coverage incomplete', 'detail': '%d changed-label and %d changed-issue cases still lack a paired output.' % (lj['missing'], ij['missing'])}]
+                      if lj['missing'] or ij['missing'] else [])
+    for row, paired in zip(checks['compare']['rows'][1:3], (lj, ij)):
+        row['values'] = ['%d of %d paired; %d missing' % (paired['blind_disagreed']['n'], paired['coverage']['n'], paired['missing'])]
+    checks['limits'].append('The completion run fills the remaining blind-output gaps. The auditor and synthetic injection results did not change.')
+    ops = by_id['gap-operations']
+    ops['compare']['columns'].append('Completion run')
+    extra = [cost['attempts'], _usd(cost['known_charges_nusd']), _usd(cost['unresolved_reservations_nusd']),
+             sum(n for status, n in cost['status_counts'].items() if status not in ('succeeded', 'quarantined_metered'))]
+    for row, value in zip(ops['compare']['rows'], extra): row['values'].append(value)
+    ops['sample'] += ' The completion run used %d additional attempts under its separate USD0.33 allowance.' % cost['attempts']
+    ops['limits'].append('Completion-run charges are shown separately. All original and first-follow-up holds remain; no historical charge was reconciled by the completion run.')
+    for item in (verifier, grouping, checks, ops): item['sources'].append(COMPLETION)
+    vc = after['coverage']['verify']
+    return {'source_sha256': completion['source_sha256'], 'config_hash': completion['label_config'],
+            'selected': vc['of'], 'observed': vc['n'], 'missing': vc['of'] - vc['n'],
+            'agreement_counts': {key: val['n'] for key, val in agreement.items()}, 'not_human_accuracy': True,
+            'status': 'sample_measured', 'sources': [GAP, MEASUREMENT, FOLLOWUP, COMPLETION]}
+
+
 def build():
     sources = []
     pilot, rubric, checkpoint = _load(PILOT, sources), _load(RUBRIC, sources), _load(CHECKPOINT, sources)
@@ -461,8 +574,9 @@ def build():
     measured = _load(MEASUREMENT, sources)
     items += gap_closure(_load(GAP, sources), measured)
     items += operational_measurements(_load(COST_PILOT, sources), _load(FULL_WARM, sources), measured)
-    verification = {"source_sha256": measured["source_sha256"], "config_hash": measured["label_config"],
-                    **measured["verifier"], "status": "sample_measured", "sources": [GAP, MEASUREMENT]}
+    followup = _load(FOLLOWUP, sources)
+    apply_followup(items, followup, measured)
+    verification = apply_completion(items, _load(COMPLETION, sources), followup, measured)
     return {"version": 1, "verification": verification, "model": checkpoint["model"], "prompt_version": checkpoint["prompt_version"],
             "built_from": sources, "items": items}
 

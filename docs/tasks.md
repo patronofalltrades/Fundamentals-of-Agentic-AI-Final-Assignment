@@ -1,5 +1,100 @@
 # Coordination record
 
+## Completion memo integration — 16 October 2026
+
+Owner: Codex, same `feat/bounded-measurement-followup` worktree. Scope: both
+tracked provisional memo copies, the expanded decision memo, memo claim-check
+scope labels and final validation. Add completed verifier 1,000/1,000, grouping
+600/600 and label auditor 100/100 coverage, measured agreement and separate
+charges/holds. Preserve the issue-ranking claim ledger, recommendation,
+attribution, golden limits and full-course checker status. The historical
+511/600 trail is now recovered; its usage and charges remain unknown.
+All relevant evaluation cards are already Measured from saved evidence.
+No new paid call or production database write is authorized. Hanif later
+explicitly confirmed pushing, merging and deploying this scoped package.
+
+Validation: 463 Python tests ran (461 passed; two expected private-fixture
+skips). Frontend build, typecheck and all four frontend tests passed. All 47
+tracked frontend files matched the cached build source. Chrome passed 27 local
+aggregate-only memo/evaluation checks with no console errors. The two memo
+copies match; all 164 original ranking claims are unchanged and pass the
+existing public-text and saved-claim gates. Evaluation registry, measurement
+audit and completion aggregates reproduce offline. A text-free scan of the 26
+completion/memo package files found no saved source IDs or full source texts
+of at least 24 characters. Private run files remain ignored and mode 0600.
+The full-course checker remains `review_required`.
+
+## Approved completion execution — 16 October 2026
+
+Owner: Codex in `feat/bounded-measurement-followup`. Hanif approved the specified
+source/machine data sharing and a new separate one-time US$0.33 allowance at
+00:18:20 UTC. Scope: the exact three-batch manifest ending `655a9e3`, 20 verifier
+rows and ten grouping members, OpenRouter/Crusoe, at most nine attempts. The
+new executor binds the complete digest, policy, pending IDs and request hashes.
+Header capture, durable cooldown and whole-batch validation apply. Existing
+holds and source artifacts stay unchanged. No publication is authorized.
+
+Completed: all three batches passed their first attempt. Verifier coverage is
+1,000/1,000; grouping is 600/600. Known charge and exposure: US$0.000809700;
+new unresolved holds: zero. Original artifacts and historical ledger rows/caps
+were verified unchanged. The earlier six US$0.216267600 holds remain. Joint
+verifier agreement is 660/1,000; exact grouping agreement is 462/600. Both paired
+claim comparisons now cover all 50 cases. See
+`reports/measurement-completion-2026-10-16.md`. The publication package is local.
+Final checks: 463 Python tests (461 passed, two expected skips), generated-report
+checks and CLI help; frontend build, clean 36-file typecheck and four Node tests;
+local browser coverage/hold checks with zero console errors. Independent ledger
+and privacy scans passed. No push, merge, deployment or production write.
+
+## Follow-up diagnosis and publication preparation — 15 October 2026
+
+Owner: Codex, same isolated `feat/bounded-measurement-followup` worktree.
+Scope: saved-response diagnosis, future retry/header and identity safeguards,
+synthetic tests, aggregate-only report builder, evaluation registry, pipeline caption, and this
+record. All original run files, receipts, outputs and cost holds stay unchanged.
+No new paid calls, saved database writes, push or deployment. Publication is
+prepared locally for review. Future inference needs separate approval.
+
+16 October: the local aggregate now records verifier 980/1,000, grouping
+590/600 and label auditor 100/100. Header presence, Retry-After compliance and
+the exact upstream rate remain unknown. The old runner had no backoff. The
+future safeguards capture rate headers, persist a 45-second minimum interval
+and Retry-After cooldown, and reject old run schemas without migration. New
+output-ID enums are proposal-only and preserve strict whole-batch validation.
+
+Hanif requested full verifier and grouping coverage. A read-only proposal now
+freezes the remaining 20 verifier reviews and ten grouping members as three
+ten-review batches. Proposed maximum: nine attempts, two retries per batch,
+US$0.324401400 worst-case exposure under a new separate US$0.33 allowance.
+All prior holds remain. The proposal has no execute path and awaits specific
+approval, a bound completion executor and a fresh preflight. See
+`reports/measurement-completion-proposal-2026-10-16.md`.
+
+## Bounded measurement completion — 15 October 2026
+
+Owner: Codex, `feat/bounded-measurement-followup`, isolated
+`spotify-rubric-pr33` worktree. Scope: `tools/bounded_gap_followup.py`, its
+synthetic tests, and this record. The display fix was published in PR #36.
+New paid results remain local pending a publication handoff.
+
+Hanif explicitly approved a separate one-time US$0.38 allowance at 23:22:06 UTC,
+independent of the old US$49.99 project ceiling. Source sharing was approved at
+23:08:14 UTC. This covers only five frozen ten-review batches through OpenRouter
+to Crusoe, at most two attempts per batch and ten total. Preserve old costs,
+holds and outputs. Keep the existing provider caps. Stop on uncertain delivery.
+No production database writes, grading release changes or course submission.
+
+Execution used all ten attempts: two valid batches, two metered invalid batches
+with unknown/repeated IDs, and six HTTP 429 rejections. New valid outputs:
+grouping ten, label auditor ten, verifier zero. Known charges: US$0.001146700;
+unresolved reservations: US$0.216267600; combined exposure: US$0.217414300.
+The attempt limit is exhausted. No further call is authorized by this run.
+Original run files and historical ledger rows/caps are unchanged. All receipts,
+recomputed aggregates and paired joins remain private and ignored. A final
+report-join error was fixed offline and covered by a regression test; no call
+was repeated for that repair. Combined coverage is verifier 980/1,000,
+grouping 590/600, label auditor 100/100; paired labels 48/50 and issues 47/50.
+
 ## Measurement status follow-up — 15 October 2026
 
 Owner: Codex, `feat/measurement-status-scope`, existing isolated

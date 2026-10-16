@@ -1,0 +1,660 @@
+{
+  "after": {
+    "coverage": {
+      "audit_group": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "audit_label": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "group": {
+        "n": 590,
+        "of": 600,
+        "rate": 0.9833
+      },
+      "verify": {
+        "n": 980,
+        "of": 1000,
+        "rate": 0.98
+      }
+    },
+    "grouping": {
+      "abstained": {
+        "n": 3,
+        "of": 590,
+        "rate": 0.0051
+      },
+      "exact": {
+        "n": 454,
+        "of": 590,
+        "rate": 0.7695
+      },
+      "family": {
+        "n": 512,
+        "of": 590,
+        "rate": 0.8678
+      }
+    },
+    "issue_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged": {
+        "n": 3,
+        "of": 50,
+        "rate": 0.06
+      }
+    },
+    "label_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 46,
+        "of": 50,
+        "rate": 0.92
+      },
+      "changed_detected_by_field": {
+        "severity": {
+          "n": 22,
+          "of": 25,
+          "rate": 0.88
+        },
+        "topic": {
+          "n": 24,
+          "of": 25,
+          "rate": 0.96
+        }
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged_any": {
+        "n": 7,
+        "of": 50,
+        "rate": 0.14
+      },
+      "unchanged_flagged_by_field": {
+        "intent": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        },
+        "severity": {
+          "n": 4,
+          "of": 50,
+          "rate": 0.08
+        },
+        "topic": {
+          "n": 3,
+          "of": 50,
+          "rate": 0.06
+        }
+      }
+    },
+    "paired_issues": {
+      "blind_disagreed": {
+        "n": 47,
+        "of": 47,
+        "rate": 1.0
+      },
+      "coverage": {
+        "n": 47,
+        "of": 50,
+        "rate": 0.94
+      },
+      "missing": 3,
+      "table": {
+        "auditor_only": 0,
+        "blind_only": 2,
+        "both_flagged": 45,
+        "neither_flagged": 0
+      }
+    },
+    "paired_labels": {
+      "blind_disagreed": {
+        "n": 45,
+        "of": 48,
+        "rate": 0.9375
+      },
+      "coverage": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "missing": 2,
+      "table": {
+        "auditor_only": 1,
+        "blind_only": 2,
+        "both_flagged": 43,
+        "neither_flagged": 2
+      }
+    },
+    "verifier_agreement": {
+      "intent": {
+        "n": 901,
+        "of": 980,
+        "rate": 0.9194
+      },
+      "joint": {
+        "n": 648,
+        "of": 980,
+        "rate": 0.6612
+      },
+      "severity": {
+        "n": 837,
+        "of": 980,
+        "rate": 0.8541
+      },
+      "topic": {
+        "n": 793,
+        "of": 980,
+        "rate": 0.8092
+      }
+    }
+  },
+  "before": {
+    "coverage": {
+      "audit_group": {
+        "n": 100,
+        "of": 100,
+        "rate": 1.0
+      },
+      "audit_label": {
+        "n": 90,
+        "of": 100,
+        "rate": 0.9
+      },
+      "group": {
+        "n": 580,
+        "of": 600,
+        "rate": 0.9667
+      },
+      "verify": {
+        "n": 980,
+        "of": 1000,
+        "rate": 0.98
+      }
+    },
+    "grouping": {
+      "abstained": {
+        "n": 3,
+        "of": 580,
+        "rate": 0.0052
+      },
+      "exact": {
+        "n": 449,
+        "of": 580,
+        "rate": 0.7741
+      },
+      "family": {
+        "n": 503,
+        "of": 580,
+        "rate": 0.8672
+      }
+    },
+    "issue_auditor": {
+      "changed_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "changed_detected": {
+        "n": 48,
+        "of": 50,
+        "rate": 0.96
+      },
+      "unchanged_coverage": {
+        "n": 50,
+        "of": 50,
+        "rate": 1.0
+      },
+      "unchanged_flagged": {
+        "n": 3,
+        "of": 50,
+        "rate": 0.06
+      }
+    },
+    "label_auditor": {
+      "changed_coverage": {
+        "n": 43,
+        "of": 50,
+        "rate": 0.86
+      },
+      "changed_detected": {
+        "n": 40,
+        "of": 43,
+        "rate": 0.9302
+      },
+      "changed_detected_by_field": {
+        "severity": {
+          "n": 21,
+          "of": 23,
+          "rate": 0.913
+        },
+        "topic": {
+          "n": 19,
+          "of": 20,
+          "rate": 0.95
+        }
+      },
+      "unchanged_coverage": {
+        "n": 47,
+        "of": 50,
+        "rate": 0.94
+      },
+      "unchanged_flagged_any": {
+        "n": 5,
+        "of": 47,
+        "rate": 0.1064
+      },
+      "unchanged_flagged_by_field": {
+        "intent": {
+          "n": 2,
+          "of": 47,
+          "rate": 0.0426
+        },
+        "severity": {
+          "n": 4,
+          "of": 47,
+          "rate": 0.0851
+        },
+        "topic": {
+          "n": 2,
+          "of": 47,
+          "rate": 0.0426
+        }
+      }
+    },
+    "paired_issues": {
+      "blind_disagreed": {
+        "n": 46,
+        "of": 46,
+        "rate": 1.0
+      },
+      "coverage": {
+        "n": 46,
+        "of": 50,
+        "rate": 0.92
+      },
+      "missing": 4,
+      "table": {
+        "auditor_only": 0,
+        "blind_only": 2,
+        "both_flagged": 44,
+        "neither_flagged": 0
+      }
+    },
+    "paired_labels": {
+      "blind_disagreed": {
+        "n": 40,
+        "of": 41,
+        "rate": 0.9756
+      },
+      "coverage": {
+        "n": 41,
+        "of": 50,
+        "rate": 0.82
+      },
+      "missing": 9,
+      "table": {
+        "auditor_only": 0,
+        "blind_only": 2,
+        "both_flagged": 38,
+        "neither_flagged": 1
+      }
+    },
+    "verifier_agreement": {
+      "intent": {
+        "n": 901,
+        "of": 980,
+        "rate": 0.9194
+      },
+      "joint": {
+        "n": 648,
+        "of": 980,
+        "rate": 0.6612
+      },
+      "severity": {
+        "n": 837,
+        "of": 980,
+        "rate": 0.8541
+      },
+      "topic": {
+        "n": 793,
+        "of": 980,
+        "rate": 0.8092
+      }
+    }
+  },
+  "cost": {
+    "accounting": "Metered charges use max(provider usage.cost, usage times pinned prices); both amounts are retained. HTTP429 charges remain unknown, with full holds. No invoice reconciliation.",
+    "allowance": "Separate one-time allowance approved by the user; old project costs and holds are unchanged.",
+    "attempts": 10,
+    "batches": 5,
+    "cap_nusd": 380000000,
+    "exposure_nusd": 217414300,
+    "known_charges_nusd": 1146700,
+    "maximum_attempts": 10,
+    "status_counts": {
+      "quarantined_metered": 2,
+      "rejected_http": 6,
+      "succeeded": 2
+    },
+    "unresolved_reservations_nusd": 216267600
+  },
+  "diagnosis": {
+    "deterministic_complete_id_recovery": false,
+    "http429": {
+      "backoff_implemented_in_executed_version": false,
+      "cause_limit": "Metadata identifies the shared upstream pool; the headers and exact server reset time were not saved. Rapid retries are observed; their causal contribution is not measured.",
+      "count": 6,
+      "exact_rate_limit": null,
+      "header_handling_implemented_in_executed_version": false,
+      "limit_source": "upstream_provider_shared_pool",
+      "next_admission_seconds_after_429": [
+        0.25238,
+        0.243454,
+        0.256386,
+        0.322797,
+        0.332485,
+        0.247281
+      ],
+      "provider": "Crusoe",
+      "rate_headers_respected": null,
+      "response_headers_saved": false,
+      "retry_after_presence": null,
+      "retry_after_respected": null
+    },
+    "invalid_batches": [
+      {
+        "attempt": 1,
+        "identity": {
+          "complete_exact_bijection": false,
+          "duplicate_values": 0,
+          "exact_occurrences": 9,
+          "extra_duplicate_occurrences": 0,
+          "missing": 1,
+          "repair_by_position_or_similarity_permitted": false,
+          "requested": 10,
+          "returned": 10,
+          "unique_exact": 9,
+          "unknown": 1
+        },
+        "role": "verify"
+      },
+      {
+        "attempt": 1,
+        "identity": {
+          "complete_exact_bijection": false,
+          "duplicate_values": 1,
+          "exact_occurrences": 10,
+          "extra_duplicate_occurrences": 1,
+          "missing": 1,
+          "repair_by_position_or_similarity_permitted": false,
+          "requested": 10,
+          "returned": 10,
+          "unique_exact": 9,
+          "unknown": 0
+        },
+        "role": "audit_label"
+      }
+    ],
+    "recovery_limit": "No complete exact one-to-one mapping exists. Position, nearest spelling and assignment by omission are guesses. Whole-batch rejection remains; no partial row salvage."
+  },
+  "limits": [
+    "Model comparisons, not human accuracy. Flags on unchanged machine claims are disagreements, not proven false positives.",
+    "Twenty verifier and ten grouping outputs remain missing; the ten-attempt limit is exhausted.",
+    "The label auditor has 100 valid outputs; paired label and issue comparisons remain incomplete.",
+    "Existing issue-auditor and synthetic injection outputs are unchanged. No new human answers or product outcomes.",
+    "The first report join failed after receipts were saved. It was repaired offline without another request."
+  ],
+  "namespace": "measurement-followup-20261015-v1",
+  "new_valid_outputs": {
+    "audit_label": 10,
+    "group": 10,
+    "verify": 0
+  },
+  "provenance": {
+    "allowlist_sha256": "b8f2edb158e85aea2d725fbfc34926797ad8acd6e53a5599b86da71f2a1ea6c8",
+    "execution_commit": "c9d6c4aae2a86ea4c23c141e99b970d1579fdb3f",
+    "label_config": "0bda2b8478fab805c56f033227017f6f37da9feb7da6b6a79b98b859cb10c647",
+    "original_run_and_historical_ledger_preserved": true,
+    "plan_sha256": "797d89195ac3b918a4ff8fb4bc598ac5291b811377dc02bd7516c3af0b4ed599",
+    "raw_receipts_private": true,
+    "report_repair_commit": "f930f0427bc8e7fce7d688b24d532f8479557056",
+    "source_artifact_sha256": {
+      "followup_database": "c83a71c379a8e9c3cfd2e98f1fa581e2d94c97325e51c8435030896d274e5a15",
+      "original_database": "80518a744542d86212976d50c81055340f799586dad59b17d42cb0dbd2a1b660",
+      "original_plan": "35f7f5593931b256469f3c238eb81182adbbe68747216b7c1a3b729a9e40980c"
+    },
+    "source_sha256": "1fc85de68a304dd8978b537cfa58793d5f41cbaf417fa32cb53899f83a2fcef6"
+  },
+  "receipts": [
+    {
+      "attempt_within_batch": 1,
+      "created_utc": "2026-10-15T23:33:28.681737+00:00",
+      "derived_charge_nusd": 248150,
+      "elapsed_seconds": 6.342938209000003,
+      "http_status": 200,
+      "input_tokens": 1013,
+      "known_charge_nusd": 248150,
+      "output_tokens": 790,
+      "reasoning_tokens": 429,
+      "request_sha256": "78e0a22f1530ee6582deabc740cb69e73cc62d03aded93b143ec44102481f8a6",
+      "reservation_nusd": 36044600,
+      "response_sha256": "c5f27d2d3aad53f7bc6e2c290c9bdefe3ab926235fdc75853aafffc76d02a21c",
+      "role": "verify",
+      "sequence": 1,
+      "settled_utc": "2026-10-15T23:33:35.053950+00:00",
+      "status": "quarantined_metered",
+      "usage_charge_nusd": 248150
+    },
+    {
+      "attempt_within_batch": 2,
+      "created_utc": "2026-10-15T23:33:35.660947+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.44193233300000045,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "78e0a22f1530ee6582deabc740cb69e73cc62d03aded93b143ec44102481f8a6",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "verify",
+      "sequence": 2,
+      "settled_utc": "2026-10-15T23:33:36.104695+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 1,
+      "created_utc": "2026-10-15T23:33:36.357075+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.2667123329999974,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "2f95339ad6662570f7f688f2d876de34fd45032958b142f90bd99db61f6120da",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "verify",
+      "sequence": 3,
+      "settled_utc": "2026-10-15T23:33:36.625466+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 2,
+      "created_utc": "2026-10-15T23:33:36.868920+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.2774105420000019,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "2f95339ad6662570f7f688f2d876de34fd45032958b142f90bd99db61f6120da",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "verify",
+      "sequence": 4,
+      "settled_utc": "2026-10-15T23:33:37.148047+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 1,
+      "created_utc": "2026-10-15T23:33:37.404433+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.1743886659999987,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "7da61e48167826eb44015565d755e873c91764573db37c134edd673a41be0ea0",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "group",
+      "sequence": 5,
+      "settled_utc": "2026-10-15T23:33:37.581221+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 2,
+      "created_utc": "2026-10-15T23:33:37.904018+00:00",
+      "derived_charge_nusd": 305200,
+      "elapsed_seconds": 4.754747458000001,
+      "http_status": 200,
+      "input_tokens": 2594,
+      "known_charge_nusd": 305200,
+      "output_tokens": 702,
+      "reasoning_tokens": 309,
+      "request_sha256": "7da61e48167826eb44015565d755e873c91764573db37c134edd673a41be0ea0",
+      "reservation_nusd": 36044600,
+      "response_sha256": "46d781d0d7e72d20891ff7dcd51650dfa26761d9ca28f5281a6b3f1a3acdadc4",
+      "role": "group",
+      "sequence": 6,
+      "settled_utc": "2026-10-15T23:33:42.660972+00:00",
+      "status": "succeeded",
+      "usage_charge_nusd": 305200
+    },
+    {
+      "attempt_within_batch": 1,
+      "created_utc": "2026-10-15T23:33:43.188469+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.2484897500000045,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "1550be09ab7429764364203bc54f663d69d62aef753c6616f221b7b7fd945bdd",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "group",
+      "sequence": 7,
+      "settled_utc": "2026-10-15T23:33:43.438294+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 2,
+      "created_utc": "2026-10-15T23:33:43.770779+00:00",
+      "derived_charge_nusd": null,
+      "elapsed_seconds": 0.1921036669999978,
+      "http_status": 429,
+      "input_tokens": null,
+      "known_charge_nusd": null,
+      "output_tokens": null,
+      "reasoning_tokens": null,
+      "request_sha256": "1550be09ab7429764364203bc54f663d69d62aef753c6616f221b7b7fd945bdd",
+      "reservation_nusd": 36044600,
+      "response_sha256": "965bbdb0cf95f5a6b5b6d50b6c20c211bbe6973debf36c32ca81483b7f2ea823",
+      "role": "group",
+      "sequence": 8,
+      "settled_utc": "2026-10-15T23:33:43.964829+00:00",
+      "status": "rejected_http",
+      "usage_charge_nusd": null
+    },
+    {
+      "attempt_within_batch": 1,
+      "created_utc": "2026-10-15T23:33:44.212110+00:00",
+      "derived_charge_nusd": 268050,
+      "elapsed_seconds": 6.060799042000006,
+      "http_status": 200,
+      "input_tokens": 1121,
+      "known_charge_nusd": 268050,
+      "output_tokens": 848,
+      "reasoning_tokens": 394,
+      "request_sha256": "66424a909e5e778fbc093bdee0287c7ab6769383ad515e502cd8d53b5ecf6532",
+      "reservation_nusd": 36044600,
+      "response_sha256": "e96c61a46a1de06e60ea25d5ffc9bc0d286c144267283ac3bfeef1d7dd42fb8d",
+      "role": "audit_label",
+      "sequence": 9,
+      "settled_utc": "2026-10-15T23:33:50.276194+00:00",
+      "status": "quarantined_metered",
+      "usage_charge_nusd": 268050
+    },
+    {
+      "attempt_within_batch": 2,
+      "created_utc": "2026-10-15T23:33:50.849601+00:00",
+      "derived_charge_nusd": 325300,
+      "elapsed_seconds": 5.903183542000001,
+      "http_status": 200,
+      "input_tokens": 1121,
+      "known_charge_nusd": 325300,
+      "output_tokens": 1077,
+      "reasoning_tokens": 652,
+      "request_sha256": "66424a909e5e778fbc093bdee0287c7ab6769383ad515e502cd8d53b5ecf6532",
+      "reservation_nusd": 36044600,
+      "response_sha256": "fe403b74e0d57e5e21c6bc9222b77f7c09a16080edb105cc81988e6d1dca507c",
+      "role": "audit_label",
+      "sequence": 10,
+      "settled_utc": "2026-10-15T23:33:56.754316+00:00",
+      "status": "succeeded",
+      "usage_charge_nusd": 325300
+    }
+  ],
+  "recorded_through_utc": "2026-10-15T23:33:56.754316+00:00",
+  "route": {
+    "concurrency": 1,
+    "data_collection": "deny",
+    "fallback": false,
+    "max_tokens": 4096,
+    "model": "openai/gpt-oss-120b",
+    "provider": "Crusoe",
+    "reasoning": "low",
+    "reviews_per_request": 10,
+    "service": "OpenRouter",
+    "tag": "crusoe/bf16",
+    "zdr": true
+  },
+  "version": 1
+}

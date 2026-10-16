@@ -182,7 +182,7 @@ export default function MemoPanel({ variant = "summary" }: { variant?: "summary"
         {memo.data.text && (
           <Badge variant="secondary" className={checked ? "gap-1.5 rounded-full text-positive" : "gap-1.5 rounded-full text-negative"}>
             {checked ? <ShieldCheck className="size-3.5" aria-hidden="true" /> : <TriangleAlert className="size-3.5" aria-hidden="true" />}
-            {checked ? "Numeric claims match saved values" : fmt.label(memo.data.status)}
+            {checked ? "Ranking claims match saved values" : fmt.label(memo.data.status)}
           </Badge>
         )}
       </div>
